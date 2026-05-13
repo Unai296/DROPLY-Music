@@ -32,7 +32,7 @@ const media = [
     title:    "In Da Getto",
     artist:   "J. Balvin, Skrillex",
     cover:    "https://i.ytimg.com/vi/7aPzYlc2RY4/maxresdefault.jpg",
-    file:     "./music/indagetto.mp3",
+    file:     "./Music/indagetto.mp3",
     category: "Reggaeton",
     duration: "2:10"
   },
