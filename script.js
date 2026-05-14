@@ -469,7 +469,268 @@ const media = [
     file:     "./Music/manosrotas.mp3",
     category: "Reggaeton",
     duration: "2:45"
-  }
+  },
+  {
+    type:     "music",
+    title:    "KOKO",
+    artist:   "Omar Courtz",
+    cover:    "https://images.genius.com/f201d42444f05535e679524c12538736.1000x1000x1.png",
+    file:     "./Music/koko.mp3",
+    category: "Reggaeton",
+    duration: "3:16"
+  },
+    {
+    type:     "music",
+    title:    "Y Que Fue?",
+    artist:   "Don Miguelo",
+    cover:    "https://i.ytimg.com/vi/16nZ6K7sim4/hq720.jpg?sqp=-oaymwE7CK4FEIIDSFryq4qpAy0IARUAAAAAGAElAADIQj0AgKJD8AEB-AH-CYAC0AWKAgwIABABGGUgWyhLMA8=&rs=AOn4CLAm5BKIjd4rwtUHQHFpRU5wZArpbA",
+    file:     "./Music/yquefue.mp3",
+    category: "Reggaeton",
+    duration: "2:43"
+  },
+    {
+    type:     "music",
+    title:    "Gata Only",
+    artist:   "FloyyMenor, Cris MJ",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273c4583f3ad76630879a75450a",
+    file:     "./Music/gataonly.mp3",
+    category: "Reggaeton",
+    duration: "3:42"
+  },
+    {
+    type:     "music",
+    title:    "FOREVER TU GANTEL",
+    artist:   "Omar Courtz, Ñengo Flow",
+    cover:    "https://m.media-amazon.com/images/I/41Qlx8iByTL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/forevertugantel.mp3",
+    category: "Reggaeton",
+    duration: "3:46"
+  },
+    {
+    type:     "music",
+    title:    "NINFO",
+    artist:   "JC Reyes, De La Rose, MC Menor JP",
+    cover:    "https://images.genius.com/60b39231e971719e4c609413d5bcc851.1000x1000x1.png",
+    file:     "./Music/ninfo.mp3",
+    category: "Reggaeton",
+    duration: "3:04"
+  },
+    {
+    type:     "music",
+    title:    "China",
+    artist:   "Anuel AA, Karol G, J. Balvin, Daddy Yankee, Ozuna",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2735fa6dc9fc261344044c301a9",
+    file:     "./Music/china.mp3",
+    category: "Reggaeton",
+    duration: "4:55"
+  },
+    {
+    type:     "music",
+    title:    "Gasolina",
+    artist:   "Daddy Yankee",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2734f15e5871e85d1da64024c3d",
+    file:     "./Music/gasolina.mp3",
+    category: "Reggaeton",
+    duration: "3:12"
+  },
+    {
+    type:     "music",
+    title:    "Mayores",
+    artist:   "Becky G, Bad Bunny",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/b6d13738038b285630370f5be059380f/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/mayores.mp3",
+    category: "Reggaeton",
+    duration: "3:21"
+  },
+    {
+    type:     "music",
+    title:    "Sin Pijama",
+    artist:   "Becky G, Natti Natasha",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273d7ce6f9b0a15181635a933d9",
+    file:     "./Music/sinpijama.mp3",
+    category: "Reggaeton",
+    duration: "3:08"
+  },
+    {
+    type:     "music",
+    title:    "Moulaga",
+    artist:   "Heuss L'enfoiré, JuL",
+    cover:    "https://m.media-amazon.com/images/I/51QolFGPe7L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/moulaga.mp3",
+    category: "Reggaeton",
+    duration: "2:56"
+  },
+    {
+    type:     "music",
+    title:    "MALA",
+    artist:   "6ix9ine, Anuel AA",
+    cover:    "https://i1.sndcdn.com/artworks-000447592197-j0yaci-large.jpg",
+    file:     "./Music/mala.mp3",
+    category: "Reggaeton",
+    duration: "3:26"
+  },
+    {
+    type:     "music",
+    title:    "Downtown",
+    artist:   "Anitta, J Balvin",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2738c6b830c36c7b4ac43c3cee8",
+    file:     "./Music/downtown.mp3",
+    category: "Reggaeton",
+    duration: "3:19"
+  },
+   {
+    type:     "music",
+    title:    "Ram Pam Pam",
+    artist:   "Natti Natasha, Becky G",
+    cover:    "https://linkstorage.linkfire.com/medialinks/images/446136ec-c173-43e7-9612-94c1829582a3/artwork-440x440.jpg",
+    file:     "./Music/rampampam.mp3",
+    category: "Reggaeton",
+    duration: "3:38"
+  },
+   {
+    type:     "music",
+    title:    "La Gozadera",
+    artist:   "Gente De Zona, Marc Anthony",
+    cover:    "https://images.genius.com/cf43fd45336758c065537970f6a79f96.1000x1000x1.jpg",
+    file:     "./Music/lagozadera.mp3",
+    category: "Reggaeton",
+    duration: "3:23"
+  },
+   {
+    type:     "music",
+    title:    "BAILE INoLVIDABLE",
+    artist:   "BAD BUNNY",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273bbd45c8d36e0e045ef640411",
+    file:     "./Music/baileinolvidable.mp3",
+    category: "Reggaeton",
+    duration: "6:18"
+  },
+   {
+    type:     "music",
+    title:    "Con Altura",
+    artist:   "ROSALÍA, J Balvin, El Guincho",
+    cover:    "https://images.genius.com/a8b0efd41e6a43091837da78850cf312.1000x1000x1.png",
+    file:     "./Music/conaltura.mp3",
+    category: "Reggaeton",
+    duration: "2:44"
+  },
+   {
+    type:     "music",
+    title:    "La Bicicleta",
+    artist:   "Carlos Vives, Shakira",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273e588b4129b0afd8595ac55b0",
+    file:     "./Music/labicicleta.mp3",
+    category: "Reggaeton",
+    duration: "3:46"
+  },
+   {
+    type:     "music",
+    title:    "NUEVAYoL",
+    artist:   "BAD BUNNY",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273bbd45c8d36e0e045ef640411",
+    file:     "./Music/nuevayol.mp3",
+    category: "Reggaeton",
+    duration: "3:43"
+  },
+   {
+    type:     "music",
+    title:    "Singapur (Remix)",
+    artist:   "El Alfa, Farruko, Myke Towers, Justin Quiles, Chencho Corleone",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273c32233e3541a756a90880fb1",
+    file:     "./Music/singapur.mp3",
+    category: "Reggaeton",
+    duration: "4:50"
+  },
+   {
+    type:     "music",
+    title:    "Azul",
+    artist:   "J Balvin",
+    cover:    "https://www.lahiguera.net/musicalia/artistas/j_balvin/disco/10426/tema/23157/j_balvin_azul-portada.jpg",
+    file:     "./Music/azul.mp3",
+    category: "Reggaeton",
+    duration: "3:55"
+  },
+   {
+    type:     "music",
+    title:    "Lola",
+    artist:   "Jedis, Gote, Nolep",
+    cover:    "https://i.scdn.co/image/ab67616d00001e02fb1041333d9a712a182acfa0",
+    file:     "./Music/lola.mp3",
+    category: "Reggaeton",
+    duration: "4:23"
+  },
+   {
+    type:     "music",
+    title:    "Thalía (Remix)",
+    artist:   "Cyril Kamer, Rvfv, Polimá Westcoast",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2733e242bdd9632c6a49a693b1b",
+    file:     "./Music/thaliaremix.mp3",
+    category: "Reggaeton",
+    duration: "3:50"
+  },
+    {
+    type:     "music",
+    title:    "DAVID GUETTA MASHUP",
+    artist:   "David Guetta",
+    cover:    "https://i.ytimg.com/vi/UhBfoDqaOhk/maxresdefault.jpg",
+    file:     "./Music/davidguettamashup.mp3",
+    category: "Electronic",
+    duration: "2:42"
+  },
+    {
+    type:     "music",
+    title:    "David Guetta live @Tomorrowland 2025",
+    artist:   "David Guetta",
+    cover:    "https://i1.sndcdn.com/artworks-Pg0qY2DtKiskHtWd-3llczw-t1080x1080.png",
+    file:     "./Music/tomorrowland.mp3",
+    category: "Electronic",
+    duration: "1:14:48"
+  },
+    {
+    type:     "music",
+    title:    "David Guetta live @Tomorrowland Brasil 2016",
+    artist:   "David Guetta",
+    cover:    "https://cdn.edmliveset.com/wp-content/uploads/2016/04/Tomorrowland-Brazil-2016.jpg",
+    file:     "./Music/tomorrowland2016.mp3",
+    category: "Electronic",
+    duration: "1:35:50"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ];
 
 /* ══════════════════════════════════════════════════════
