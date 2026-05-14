@@ -677,15 +677,160 @@ const media = [
     category: "Electronic",
     duration: "2:42"
   },
+    {
+    type:     "music",
+    title:    "Sientate en Ese Deo",
+    artist:   "El Alfa",
+    cover:    "https://images.genius.com/6898ac4006eb392cc4c2fe4429fb3c57.597x597x1.png",
+    file:     "./Music/sientateenesedeo.mp3",
+    category: "Reggaeton",
+    duration: "4:42"
+  },
+    {
+    type:     "music",
+    title:    "La Gerencia",
+    artist:   "Tito El Bambino, Fronti, Wisin, Hanzel La H, Arcángel",
+    cover:    "https://akamai.sscdn.co/uploadfile/letras/albuns/b/3/4/0/4332821765558369.jpg",
+    file:     "./Music/lagerencia.mp3",
+    category: "Reggaeton",
+    duration: "5:00"
+  },
+    {
+    type:     "music",
+    title:    "Dembow y Reggaeton",
+    artist:   "El Alfa, Yandel, Myke Towers",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273c4e2ae0d7a6ba307bdd3cc0d",
+    file:     "./Music/dembowyreggaeton.mp3",
+    category: "Reggaeton",
+    duration: "4:11"
+  },
+    {
+    type:     "music",
+    title:    "BESALO",
+    artist:   "EL ALFA, Rauw Alejandro",
+    cover:    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMVwbetQqCv73bf6t9mP31J9CucAlGW_k8YA&s",
+    file:     "./Music/besalo.mp3",
+    category: "Reggaeton",
+    duration: "2:43"
+  },
+   {
+    type:     "music",
+    title:    "Caile",
+    artist:   "Luar La L",
+    cover:    "https://i.scdn.co/image/ab67616d0000b27305c2cc3e87e9aa15d9db3dd9",
+    file:     "./Music/caile.mp3",
+    category: "Reggaeton",
+    duration: "2:21"
+  },
+   {
+    type:     "music",
+    title:    "No Me Conoce (Remix)",
+    artist:   "Jhay Cortez, J. Balvin, Bad Bunny",
+    cover:    "https://images.genius.com/2115ebd8003b44a027daa8d52cbcf08c.1000x1000x1.png",
+    file:     "./Music/nomeconoceremix.mp3",
+    category: "Reggaeton",
+    duration: "5:05"
+  },
+ {
+    type:     "music",
+    title:    "Soltera (Remix)",
+    artist:   "Lunay, Daddy Yankee, Bad Bunny",
+    cover:    "https://i.scdn.co/image/ab67616d0000b27358e34ee7bc215e1b03ff78d4",
+    file:     "./Music/solteraremix.mp3",
+    category: "Reggaeton",
+    duration: "4:25"
+  },
+ {
+    type:     "music",
+    title:    "Q U E V A S H A C E R H O Y ?",
+    artist:   "Omar Courtz, De La Rose",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/bafa3d3f485cf157d393eb84f7db9f71/500x500.jpg",
+    file:     "./Music/q_u_e_v_a_s_h_a_c_e_r_h_o_y.mp3",
+    category: "Reggaeton",
+    duration: "3:44"
+  },
+ {
+    type:     "music",
+    title:    "Hola Señorita",
+    artist:   "GIMS, Maluma",
+    cover:    "https://m.media-amazon.com/images/M/MV5BZDI1NzIxMTctZTUxMi00NmY4LWEzODAtYWQ1NWEwMGE0MWFhXkEyXkFqcGc@._V1_QL75_UY190_CR31,0,190,190_.jpg",
+    file:     "./Music/holaseñorita.mp3",
+    category: "Reggaeton",
+    duration: "3:33"
+  },
+   {
+    type:     "music",
+    title:    "MOTINHA 2.0 (Remix)",
+    artist:   "Dennis DJ, Luísa Sonza, Emilia",
+    cover:    "https://s.mxmcdn.net/images-storage/albums2/4/7/9/3/2/5/87523974_500_500.jpg",
+    file:     "./Music/motinha.mp3",
+    category: "Reggaeton",
+    duration: "1:58"
+  },
+   {
+    type:     "music",
+    title:    "Si Se Da (Remix)",
+    artist:   "Myke Towers, Farruko, Arcangel, Sech, Zion",
+    cover:    "https://images.genius.com/eb6adbb6247e85fca2cc94fb9388fd3a.1000x1000x1.png",
+    file:     "./Music/siseda.mp3",
+    category: "Reggaeton",
+    duration: "5:35"
+  },
+   {
+    type:     "music",
+    title:    "4K",
+    artist:   "El Alfa, Darell, Noriel",
+    cover:    "https://m.media-amazon.com/images/I/41H6GkRuYiL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/4k.mp3",
+    category: "Reggaeton",
+    duration: "3:35"
+  },
+   {
+    type:     "music",
+    title:    "Tusa",
+    artist:   "KAROL G, Nicki Minaj",
+    cover:    "https://upload.wikimedia.org/wikipedia/en/0/07/Karol_G_featuring_Nicki_Minaj_-_Tusa.png",
+    file:     "./Music/tusa.mp3",
+    category: "Reggaeton",
+    duration: "3:23"
+  },
+   {
+    type:     "music",
+    title:    "La Forma En Que Me Miras",
+    artist:   "Super Yei, Sammy, Myke Towers, Lenny Tavarez, Rafa Pabon",
+    cover:    "https://i1.sndcdn.com/artworks-000384998541-nkcy6u-t500x500.jpg",
+    file:     "./Music/laformaenquemiras.mp3",
+    category: "Reggaeton",
+    duration: "5:03"
+  },
+   {
+    type:     "music",
+    title:    "Superman Sin Capa",
+    artist:   "El Alfa",
+    cover:    "https://m.media-amazon.com/images/I/519xrzwtqjL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/supermansincapa.mp3",
+    category: "Reggaeton",
+    duration: "3:50"
+  },
+   {
+    type:     "music",
+    title:    "Cuando No Era Cantante (Remix)",
+    artist:   "El Bogueto, Anuel AA, Fuerza Regida, Yung Beef",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/e62f70e7b366e618da1cbf0eed47de8c/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/cuandonoeracantante.mp3",
+    category: "Reggaeton",
+    duration: "5:27"
+  },
+   {
+    type:     "music",
+    title:    "Ya No Tiene Novio",
+    artist:   "Sebastián Yatra, Mau, Ricky",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273f89d8cc59e29c9d2f846e903",
+    file:     "./Music/yanotienenovio.mp3",
+    category: "Reggaeton",
+    duration: "4:07"
+  },
    
-
-
-
-
-
-
-
-
 
 
 
