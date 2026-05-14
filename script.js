@@ -677,24 +677,7 @@ const media = [
     category: "Electronic",
     duration: "2:42"
   },
-    {
-    type:     "music",
-    title:    "David Guetta live @Tomorrowland 2025",
-    artist:   "David Guetta",
-    cover:    "https://i1.sndcdn.com/artworks-Pg0qY2DtKiskHtWd-3llczw-t1080x1080.png",
-    file:     "./Music/tomorrowland.mp3",
-    category: "Electronic",
-    duration: "1:14:48"
-  },
-    {
-    type:     "music",
-    title:    "David Guetta live @Tomorrowland Brasil 2016",
-    artist:   "David Guetta",
-    cover:    "https://cdn.edmliveset.com/wp-content/uploads/2016/04/Tomorrowland-Brazil-2016.jpg",
-    file:     "./Music/tomorrowland2016.mp3",
-    category: "Electronic",
-    duration: "1:35:50"
-  },
+   
 
 
 
