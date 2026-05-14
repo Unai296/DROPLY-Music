@@ -977,11 +977,11 @@ function loadTrack(item) {
   // — Audio —
   audioEl.src = item.file;
   audioEl.load();
-  setupMediaSession(item);
   audioEl.play()
     .then(() => {
       isPlaying = true;
       updatePlayIcons(true);
+      setupMediaSession(item);
     })
     .catch(err => {
       isPlaying = false;
@@ -1019,21 +1019,15 @@ function togglePlay() {
 }
 
 // Prev
-sheetPrev.addEventListener("click", playPrev);
+sheetPrev.addEventListener("click", () => {
+  if (playlist.length === 0) return;
+  currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
+  loadTrack(playlist[currentTrackIdx]);
+});
 
 // Next
 sheetNext.addEventListener("click", playNext);
 miniNext.addEventListener("click", playNext);
-
-function playPrev() {
-  if (playlist.length === 0) return;
-  if (shuffleMode) {
-    currentTrackIdx = Math.floor(Math.random() * playlist.length);
-  } else {
-    currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
-  }
-  loadTrack(playlist[currentTrackIdx]);
-}
 
 function playNext() {
   if (playlist.length === 0) return;
@@ -1129,20 +1123,12 @@ audioEl.addEventListener("ended", () => {
   }
 });
 
-audioEl.addEventListener("play", () => {
-  isPlaying = true;
-  updatePlayIcons(true);
-  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-});
-audioEl.addEventListener("pause", () => {
-  isPlaying = false;
-  updatePlayIcons(false);
-  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-});
+audioEl.addEventListener("play",  () => { isPlaying = true;  updatePlayIcons(true);  });
+audioEl.addEventListener("pause", () => { isPlaying = false; updatePlayIcons(false); });
 
-/* ══════════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    10. SEARCH PAGE
-══════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function buildGenreGrid() {
   const colors = ["#e94f4f","#1db954","#1f77b4","#d62728","#9467bd","#ff7f0e","#2ca02c","#ff1493"];
   getCategories().forEach((cat, i) => {
@@ -1275,12 +1261,10 @@ function setupMediaSession(item) {
       src: cover, sizes: `${s}x${s}`, type: "image/jpeg"
     }))
   });
-  navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
   navigator.mediaSession.setActionHandler("play",          () => audioEl.play());
   navigator.mediaSession.setActionHandler("pause",         () => audioEl.pause());
-  navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
+  navigator.mediaSession.setActionHandler("previoustrack", () => sheetPrev.click());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
-  navigator.mediaSession.setActionHandler("stop",          () => audioEl.pause());
   navigator.mediaSession.setActionHandler("seekbackward",  ({ seekOffset }) => {
     audioEl.currentTime = Math.max(0, audioEl.currentTime - (seekOffset ?? 10));
   });
