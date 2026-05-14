@@ -677,7 +677,25 @@ const media = [
     category: "Electronic",
     duration: "2:42"
   },
-   
+    {
+    type:     "music",
+    title:    "David Guetta live @Tomorrowland 2025",
+    artist:   "David Guetta",
+    cover:    "https://i1.sndcdn.com/artworks-Pg0qY2DtKiskHtWd-3llczw-t1080x1080.png",
+    file:     "./Music/tomorrowland.mp3",
+    category: "Electronic",
+    duration: "1:14:48"
+  },
+    {
+    type:     "music",
+    title:    "David Guetta live @Tomorrowland Brasil 2016",
+    artist:   "David Guetta",
+    cover:    "https://cdn.edmliveset.com/wp-content/uploads/2016/04/Tomorrowland-Brazil-2016.jpg",
+    file:     "./Music/tomorrowland2016.mp3",
+    category: "Electronic",
+    duration: "1:35:50"
+  },
+
 
 
 
@@ -1100,6 +1118,17 @@ audioEl.addEventListener("timeupdate", () => {
 
   // Mini player progress line
   miniProgressFill.style.width = pct + "%";
+
+  // Lock screen progress bar
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration:     audioEl.duration,
+        playbackRate: audioEl.playbackRate,
+        position:     audioEl.currentTime
+      });
+    } catch (_) {}
+  }
 });
 
 audioEl.addEventListener("ended", () => {
@@ -1253,6 +1282,15 @@ function setupMediaSession(item) {
   navigator.mediaSession.setActionHandler("pause",         () => audioEl.pause());
   navigator.mediaSession.setActionHandler("previoustrack", () => sheetPrev.click());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
+  navigator.mediaSession.setActionHandler("seekbackward",  ({ seekOffset }) => {
+    audioEl.currentTime = Math.max(0, audioEl.currentTime - (seekOffset ?? 10));
+  });
+  navigator.mediaSession.setActionHandler("seekforward",   ({ seekOffset }) => {
+    audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + (seekOffset ?? 10));
+  });
+  navigator.mediaSession.setActionHandler("seekto",        ({ seekTime }) => {
+    audioEl.currentTime = seekTime;
+  });
 }
 
 /* ══════════════════════════════════════════════════════
