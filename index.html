@@ -10,7 +10,7 @@
 </head>
 <body>
 
-  <!-- ══════════════════════════════ TOP BAR ══════════════════════════════ -->
+  <!-- ══ TOP BAR ══ -->
   <header class="topbar" id="topbar">
     <div class="topbar-inner">
       <a href="#" class="logo">DROPLY MUSIC</a>
@@ -22,7 +22,10 @@
     </div>
   </header>
 
-  <!-- ══════════════════════════════ PAGES ══════════════════════════════ -->
+  <!-- ══ TOAST CONTAINER ══ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ══ PAGES ══ -->
   <div class="pages-container" id="pagesContainer">
 
     <!-- PAGE: HOME -->
@@ -30,8 +33,8 @@
       <section class="hero-compact">
         <div class="hero-compact-bg"></div>
         <div class="hero-compact-content">
-          <p class="hero-eyebrow">Streaming de calidad</p>
-          <h1 class="hero-title">Tu música <em>sin límites</em></h1>
+          <p class="hero-eyebrow">Streaming sin anuncios</p>
+          <h1 class="hero-title">Implementacion de música <em>en desarrollo</em></h1>
           <p class="hero-sub">Descubre y escucha tu colección sin anuncios</p>
           <button class="btn-hero" id="heroExplore">Explorar ahora</button>
         </div>
@@ -39,7 +42,7 @@
 
       <section class="cat-bar" id="catBar">
         <div class="cat-inner" id="catInner">
-          <button class="cat-pill active" data-cat="all">Todo</button>
+          <button class="cat-pill active" data-cat="all">Recomendadas</button>
         </div>
       </section>
 
@@ -79,16 +82,97 @@
       <div class="library-list" id="favoritosList"></div>
     </div>
 
-  </div><!-- /pages-container -->
+    <!-- PAGE: PLAYLISTS -->
+    <div class="page" id="pagePlaylists">
+      <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
+        <h2 class="library-title">Mis Playlists</h2>
+        <button class="btn-create-playlist" id="btnCreatePlaylist">
+          <svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva playlist
+        </button>
+      </div>
+      <div id="playlistsGrid" class="playlists-grid"></div>
+    </div>
 
-  <!-- ══════════════════════════════ NOW PLAYING SHEET ══════════════════════════════ -->
+    <!-- PAGE: HISTORIAL -->
+    <div class="page" id="pageHistorial">
+      <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
+        <h2 class="library-title">Historial</h2>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="lib-tab active" data-tab="recent" id="tabRecent">Recientes</button>
+          <button class="lib-tab" data-tab="top" id="tabTop">Más escuchadas</button>
+        </div>
+      </div>
+      <div class="library-list" id="historialList"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ PLAYLIST DETAIL MODAL ══ -->
+  <div class="modal-overlay" id="playlistDetailModal">
+    <div class="modal-card playlist-detail-card">
+      <button class="modal-close" id="playlistDetailClose">✕</button>
+      <div class="playlist-detail-header">
+        <div class="playlist-detail-cover" id="playlistDetailCover"></div>
+        <div class="playlist-detail-meta">
+          <p class="playlist-detail-label">PLAYLIST</p>
+          <h2 class="playlist-detail-name" id="playlistDetailName">—</h2>
+          <p class="playlist-detail-count" id="playlistDetailCount">0 canciones</p>
+          <div class="playlist-detail-actions">
+            <button class="btn-play-playlist" id="btnPlayPlaylist">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+              Reproducir
+            </button>
+            <button class="btn-delete-playlist" id="btnDeletePlaylist">Eliminar</button>
+          </div>
+        </div>
+      </div>
+      <div class="playlist-detail-list" id="playlistDetailList"></div>
+    </div>
+  </div>
+
+  <!-- ══ CREATE PLAYLIST MODAL ══ -->
+  <div class="modal-overlay" id="createPlaylistModal">
+    <div class="modal-card" style="max-width:380px">
+      <button class="modal-close" id="createPlaylistClose">✕</button>
+      <div class="modal-inner">
+        <h3 class="modal-title" style="margin-bottom:1.2rem">Nueva Playlist</h3>
+        <input type="text" id="playlistNameInput" placeholder="Nombre de la playlist…" class="playlist-name-input" maxlength="40" />
+        <button class="btn-hero" style="width:100%;justify-content:center;margin-top:1rem" id="confirmCreatePlaylist">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADD TO PLAYLIST MODAL ══ -->
+  <div class="modal-overlay" id="addToPlaylistModal">
+    <div class="modal-card" style="max-width:380px">
+      <button class="modal-close" id="addToPlaylistClose">✕</button>
+      <div class="modal-inner">
+        <h3 class="modal-title" style="margin-bottom:1rem">Añadir a playlist</h3>
+        <div id="addToPlaylistList" class="add-to-playlist-list"></div>
+        <button class="btn-create-playlist" style="width:100%;justify-content:center;margin-top:.75rem" id="addNewPlaylistBtn">
+          <svg viewBox="0 0 24 24" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva playlist
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NOW PLAYING SHEET ══ -->
   <div class="now-playing-sheet" id="nowPlayingSheet">
+    <div class="sheet-bg-blur" id="sheetBgBlur"></div>
     <div class="sheet-handle-wrap">
       <div class="sheet-handle"></div>
     </div>
-    <button class="sheet-close-btn" id="sheetClose">
-      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
+    <div class="sheet-top-row">
+      <button class="sheet-close-btn" id="sheetClose">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <span class="sheet-top-label">Reproduciendo ahora</span>
+      <button class="sheet-queue-btn" id="sheetQueueBtn" aria-label="Cola">
+        <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
     <div class="sheet-cover-wrap">
       <img class="sheet-cover" id="sheetCover" src="" alt="" />
     </div>
@@ -98,9 +182,14 @@
         <h2 class="sheet-title" id="sheetTitle">—</h2>
         <p class="sheet-artist" id="sheetArtist">—</p>
       </div>
-      <button class="sheet-heart" id="sheetHeart" aria-label="Me gusta">
-        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </button>
+      <div class="sheet-info-actions">
+        <button class="sheet-heart" id="sheetHeart" aria-label="Me gusta">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="sheet-add-menu-btn" id="sheetAddMenu" aria-label="Más opciones">
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
+        </button>
+      </div>
     </div>
     <div class="sheet-progress-wrap">
       <div class="sheet-bar" id="sheetBar">
@@ -131,13 +220,52 @@
       </button>
     </div>
     <div class="sheet-volume-wrap">
-      <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
       <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="1" />
+      <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
     </div>
     <audio id="mainAudio"></audio>
+    <audio id="preloadAudio"></audio>
   </div>
 
-  <!-- ══════════════════════════════ MINI PLAYER ══════════════════════════════ -->
+  <!-- ══ QUEUE PANEL ══ -->
+  <div class="queue-panel" id="queuePanel">
+    <div class="queue-panel-header">
+      <h3 class="queue-panel-title">Cola de reproducción</h3>
+      <div class="queue-panel-actions">
+        <button class="queue-clear-btn" id="queueClearBtn">Vaciar</button>
+        <button class="queue-close-btn" id="queueCloseBtn">✕</button>
+      </div>
+    </div>
+    <div class="queue-now-playing" id="queueNowPlaying"></div>
+    <div class="queue-list-wrap">
+      <p class="queue-section-label" id="queueNextLabel" style="display:none">A continuación</p>
+      <div class="queue-list" id="queueList"></div>
+    </div>
+  </div>
+  <div class="queue-overlay" id="queueOverlay"></div>
+
+  <!-- ══ TRACK CONTEXT MENU ══ -->
+  <div class="context-menu" id="contextMenu">
+    <button class="ctx-item" id="ctxPlayNow">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+      Reproducir ahora
+    </button>
+    <button class="ctx-item" id="ctxAddQueue">
+      <svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Añadir a la cola
+    </button>
+    <button class="ctx-item" id="ctxAddPlaylist">
+      <svg viewBox="0 0 24 24" width="16" height="16"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+      Añadir a playlist
+    </button>
+    <button class="ctx-item" id="ctxLike">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Me gusta
+    </button>
+  </div>
+
+  <!-- ══ MINI PLAYER ══ -->
   <div class="mini-player" id="miniPlayer">
     <div class="mini-player-inner" id="miniPlayerExpand">
       <div class="mini-cover">
@@ -162,7 +290,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════ BOTTOM NAV ══════════════════════════════ -->
+  <!-- ══ BOTTOM NAV ══ -->
   <nav class="bottom-nav" id="bottomNav">
     <button class="bnav-btn active" data-page="pageHome" aria-label="Inicio">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -175,6 +303,14 @@
     <button class="bnav-btn" data-page="pageFavoritos" aria-label="Favoritos">
       <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       <span>Likes</span>
+    </button>
+    <button class="bnav-btn" data-page="pagePlaylists" aria-label="Playlists">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Playlists</span>
+    </button>
+    <button class="bnav-btn" data-page="pageHistorial" aria-label="Historial">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Historial</span>
     </button>
   </nav>
 
