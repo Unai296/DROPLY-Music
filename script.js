@@ -824,6 +824,121 @@ const media = [
 
 
 
+  {
+    type:     "music",
+    title:    "TALENTO",
+    artist:   "YAN BLOCK",
+    cover:    "https://images.genius.com/d96f36811a933372f0199ecbaa890fef.1000x1000x1.png",
+    file:     "./Music/talento.mp3",
+    category: "Reggaeton",
+    duration: "2:33"
+  },
+   
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "BIENVENIDA",
+    artist:   "Clarent",
+    cover:    "https://images.genius.com/4852cb7ec2963e5f72b1e8f87e8928e3.1000x1000x1.png",
+    file:     "./Music/bienvenida.mp3",
+    category: "Reggaeton",
+    duration: "1:45"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "Secuestro",
+    artist:   "SLAYTER, Yan Block, NTG",
+    cover:    "https://m.media-amazon.com/images/I/61KjgepxdwL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/secuestro.mp3",
+    category: "Reggaeton",
+    duration: "3:14"
+  },
+   
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "YOGURCITO (REMIX)",
+    artist:   "Blessd, Anuel AA, Yan Block, Luar La L, Kris R, ROA",
+    cover:    "https://m.media-amazon.com/images/I/31P5CYOaluL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/yogurcito.mp3",
+    category: "Reggaeton",
+    duration: "6:15"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "X’CLUSIVO (REMIX)",
+    artist:   "GONZY, SAIKO, ARCANGEL",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2735327757614a832374e491778",
+    file:     "./Music/xclusivo.mp3",
+    category: "Reggaeton",
+    duration: "3:35"
+  },
+   
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "COOOK PARDON",
+    artist:   "LVBEL C5, AKDO",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2738e675f63b19c17334f7d62d9",
+    file:     "./Music/cookpardon.mp3",
+    category: "Reggaeton",
+    duration: "1:32"
+  },
+   
+
+
+
 ];
 
 /* ══════════════════════════════════════════════════════
