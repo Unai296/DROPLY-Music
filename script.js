@@ -1040,14 +1040,39 @@ function buildCategoryPills() {
   });
 }
 
+const HOME_RANDOM_COUNT = 12; // cuántas canciones mostrar en el home "Todo"
+let homeRandomSeed = []; // selección aleatoria actual
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function renderGrid() {
-  const items = filteredMedia();
+  let items = filteredMedia();
   mediaGrid.innerHTML = "";
   playlist = media.filter(m => m.type === "music");
 
-  const labels = { all: "Todo el contenido", music: "Música", video: "Vídeos" };
+  const labels = { all: "Destacados para ti", music: "Música", video: "Vídeos" };
   sectionTitle.textContent = labels[currentFilter] || currentFilter;
-  countBadge.textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
+
+  // En "Todo" mostramos una selección aleatoria de HOME_RANDOM_COUNT canciones
+  const isHome = currentFilter === "all" && currentSearch === "";
+  if (isHome) {
+    // Regenerar seed solo si está vacío
+    if (homeRandomSeed.length === 0) {
+      homeRandomSeed = shuffleArray(items).slice(0, HOME_RANDOM_COUNT);
+    }
+    items = homeRandomSeed;
+    countBadge.textContent = `${HOME_RANDOM_COUNT} de ${filteredMedia().length}`;
+  } else {
+    homeRandomSeed = []; // reset para próxima vez que vuelvan a "Todo"
+    countBadge.textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
+  }
 
   if (items.length === 0) {
     mediaGrid.innerHTML = `<div class="no-results fade-in"><h3>Sin resultados</h3><p>Prueba con otro término o categoría.</p></div>`;
@@ -1235,25 +1260,28 @@ sheetBar.addEventListener("touchend", () => { dragging = false; }, { passive: tr
    9. AUDIO EVENTS
 ══════════════════════════════════════════════════════ */
 audioEl.addEventListener("timeupdate", () => {
-  if (!audioEl.duration) return;
-  const pct = (audioEl.currentTime / audioEl.duration) * 100;
+  const dur = audioEl.duration;
+  const cur = audioEl.currentTime;
+  if (!dur || isNaN(dur) || !isFinite(dur)) return;
+
+  const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
 
   // Sheet progress
-  sheetFill.style.width  = pct + "%";
-  sheetThumb.style.left  = pct + "%";
-  sheetCurrent.textContent  = formatTime(audioEl.currentTime);
-  sheetDuration.textContent = formatTime(audioEl.duration);
+  sheetFill.style.width = pct + "%";
+  sheetThumb.style.left = pct + "%"; // CSS ya centra con transform: translate(-50%, -50%)
+  sheetCurrent.textContent  = formatTime(cur);
+  sheetDuration.textContent = formatTime(dur);
 
   // Mini player progress line
   miniProgressFill.style.width = pct + "%";
 
-  // Lock screen progress bar
+  // Lock screen position
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.setPositionState({
-        duration:     audioEl.duration,
-        playbackRate: audioEl.playbackRate,
-        position:     audioEl.currentTime
+        duration:     dur,
+        playbackRate: audioEl.playbackRate || 1,
+        position:     Math.min(cur, dur)
       });
     } catch (_) {}
   }
@@ -1410,15 +1438,14 @@ function setupMediaSession(item) {
   navigator.mediaSession.setActionHandler("pause",         () => audioEl.pause());
   navigator.mediaSession.setActionHandler("previoustrack", () => sheetPrev.click());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
-  navigator.mediaSession.setActionHandler("seekbackward",  ({ seekOffset }) => {
-    audioEl.currentTime = Math.max(0, audioEl.currentTime - (seekOffset ?? 10));
-  });
-  navigator.mediaSession.setActionHandler("seekforward",   ({ seekOffset }) => {
-    audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + (seekOffset ?? 10));
-  });
-  navigator.mediaSession.setActionHandler("seekto",        ({ seekTime }) => {
-    audioEl.currentTime = seekTime;
-  });
+  // seekbackward/seekforward → cambiamos a anterior/siguiente (más útil en pantalla bloqueada)
+  try { navigator.mediaSession.setActionHandler("seekbackward", () => sheetPrev.click()); } catch(_) {}
+  try { navigator.mediaSession.setActionHandler("seekforward",  () => playNext()); } catch(_) {}
+  try {
+    navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
+      if (audioEl.duration) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration, seekTime));
+    });
+  } catch(_) {}
 }
 
 /* ══════════════════════════════════════════════════════

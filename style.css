@@ -772,7 +772,7 @@ input { font-family: inherit; }
   border-radius: 50%;
   background: var(--text);
   opacity: 0;
-  transition: opacity var(--t), left .12s linear;
+  transition: opacity var(--t);
 }
 .sheet-bar:hover .sheet-thumb { opacity: 1; }
 .sheet-times {
@@ -1078,3 +1078,47 @@ input { font-family: inherit; }
 .modal-time { font-size:.7rem; color:var(--text-soft); flex-shrink:0; font-variant-numeric:tabular-nums; min-width:36px; }
 .modal-bar { flex:1; height:5px; background:var(--bg3); border-radius:99px; position:relative; cursor:pointer; }
 .modal-fill { height:100%; background:var(--accent); border-radius:99px; width:0%; transition:width .1s linear; }
+
+/* ══════════════════════════════════════════════════════
+   LIBRARY PAGE
+══════════════════════════════════════════════════════ */
+.library-page-header {
+  padding: 1.4rem 1.1rem 0;
+}
+.library-page-title {
+  font-family: var(--font-head);
+  font-size: 1.6rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+.lib-filters {
+  display: flex;
+  gap: .4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--border);
+}
+.lib-filters::-webkit-scrollbar { display: none; }
+.lib-filter {
+  flex-shrink: 0;
+  padding: .28rem .9rem;
+  border-radius: 99px;
+  border: 1.5px solid rgba(255,255,255,.14);
+  background: transparent;
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  transition: all var(--t);
+  white-space: nowrap;
+}
+.lib-filter.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.library-list-wrap {
+  padding: .5rem 0 1rem;
+}
