@@ -13,7 +13,7 @@
   <!-- ══════════════════════════════ TOP BAR ══════════════════════════════ -->
   <header class="topbar" id="topbar">
     <div class="topbar-inner">
-      <a href="#" class="logo">DROPLY</a>
+      <a href="#" class="logo">DROPLY MUSIC</a>
       <div class="topbar-actions">
         <button class="topbar-icon-btn" id="topbarSearchBtn" aria-label="Buscar">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
@@ -27,25 +27,22 @@
 
     <!-- PAGE: HOME -->
     <div class="page active" id="pageHome">
-      <!-- Hero compacto -->
       <section class="hero-compact">
         <div class="hero-compact-bg"></div>
         <div class="hero-compact-content">
           <p class="hero-eyebrow">Streaming de calidad</p>
-          <h1 class="hero-title">Implementacion de Música <em>en Desarrollo</em></h1>
+          <h1 class="hero-title">Tu música <em>sin límites</em></h1>
           <p class="hero-sub">Descubre y escucha tu colección sin anuncios</p>
           <button class="btn-hero" id="heroExplore">Explorar ahora</button>
         </div>
       </section>
 
-      <!-- Category pills -->
       <section class="cat-bar" id="catBar">
         <div class="cat-inner" id="catInner">
           <button class="cat-pill active" data-cat="all">Todo</button>
         </div>
       </section>
 
-      <!-- Grid -->
       <main class="grid-section" id="gridSection">
         <div class="grid-header">
           <h2 class="section-title" id="sectionTitle">Todo el contenido</h2>
@@ -74,9 +71,17 @@
       </div>
     </div>
 
+    <!-- PAGE: FAVORITOS -->
+    <div class="page" id="pageFavoritos">
+      <div class="library-header">
+        <h2 class="library-title">❤ Likes</h2>
+      </div>
+      <div class="library-list" id="favoritosList"></div>
+    </div>
 
+  </div><!-- /pages-container -->
 
-  <!-- ══════════════════════════════ MODAL PLAYER (ahora como sheet) ══════════════════════════════ -->
+  <!-- ══════════════════════════════ NOW PLAYING SHEET ══════════════════════════════ -->
   <div class="now-playing-sheet" id="nowPlayingSheet">
     <div class="sheet-handle-wrap">
       <div class="sheet-handle"></div>
@@ -108,7 +113,7 @@
       </div>
     </div>
     <div class="sheet-controls">
-      <button class="sheet-ctrl-btn" id="sheetShuffle" aria-label="Aleatório">
+      <button class="sheet-ctrl-btn" id="sheetShuffle" aria-label="Aleatorio">
         <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
       </button>
       <button class="sheet-ctrl-btn sheet-skip" id="sheetPrev" aria-label="Anterior">
@@ -132,7 +137,7 @@
     <audio id="mainAudio"></audio>
   </div>
 
-  <!-- ══════════════════════════════ MINI PLAYER (bottom bar) ══════════════════════════════ -->
+  <!-- ══════════════════════════════ MINI PLAYER ══════════════════════════════ -->
   <div class="mini-player" id="miniPlayer">
     <div class="mini-player-inner" id="miniPlayerExpand">
       <div class="mini-cover">
@@ -167,6 +172,11 @@
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
       <span>Buscar</span>
     </button>
+    <button class="bnav-btn" data-page="pageFavoritos" aria-label="Favoritos">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <span>Likes</span>
+    </button>
+  </nav>
 
   <script src="script.js"></script>
 </body>

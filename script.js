@@ -1,19 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
-   DROPLY — script.js  (adaptado al HTML v3 con sheet player)
-   ──────────────────────────────────────────────────────────
+   DROPLY — script.js  FIXED VERSION
    CÓMO AÑADIR CONTENIDO:
    1. Añade tu archivo de audio en /Music/
    2. Añade la portada donde quieras (URL o ruta local)
-   3. Añade un nuevo objeto al array `media` más abajo:
-      {
-        type:     "music" | "video"
-        title:    "Nombre del tema",
-        artist:   "Nombre del artista",
-        cover:    "covers/mi-portada.jpg",
-        file:     "./Music/mi-cancion.mp3",
-        category: "Jazz",
-        duration: "3:42"   ← opcional
-      }
+   3. Añade un nuevo objeto al array `media` más abajo
 ═══════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════
@@ -834,31 +824,6 @@ const media = [
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ];
 
 /* ══════════════════════════════════════════════════════
@@ -871,73 +836,74 @@ let isPlaying       = false;
 let playlist        = [];
 let shuffleMode     = false;
 let repeatMode      = false;
-let likedTracks     = new Set();
+
+// ── Favoritos: persisted per device in localStorage ──
+const LIKED_KEY = "droply_liked_v1";
+function loadLiked() {
+  try { return new Set(JSON.parse(localStorage.getItem(LIKED_KEY) || "[]")); }
+  catch(_) { return new Set(); }
+}
+function saveLiked() {
+  try { localStorage.setItem(LIKED_KEY, JSON.stringify([...likedTracks])); } catch(_) {}
+}
+let likedTracks = loadLiked();
 
 /* ══════════════════════════════════════════════════════
-   3. DOM REFS — mapeados al HTML nuevo
+   3. DOM REFS
 ══════════════════════════════════════════════════════ */
-// Audio
-const audioEl         = document.getElementById("mainAudio");
+const audioEl          = document.getElementById("mainAudio");
 
 // Pages
-const pagesContainer  = document.getElementById("pagesContainer");
-const pageHome        = document.getElementById("pageHome");
-const pageSearch      = document.getElementById("pageSearch");
-const pageLibrary     = document.getElementById("pageLibrary");
+const mediaGrid        = document.getElementById("mediaGrid");
+const catInner         = document.getElementById("catInner");
+const sectionTitle     = document.getElementById("sectionTitle");
+const countBadge       = document.getElementById("countBadge");
+const heroExplore      = document.getElementById("heroExplore");
+const gridSection      = document.getElementById("gridSection");
 
-// Home grid
-const mediaGrid       = document.getElementById("mediaGrid");
-const catInner        = document.getElementById("catInner");
-const sectionTitle    = document.getElementById("sectionTitle");
-const countBadge      = document.getElementById("countBadge");
-const heroExplore     = document.getElementById("heroExplore");
-const gridSection     = document.getElementById("gridSection");
-
-// Sheet player (now playing)
-const nowPlayingSheet = document.getElementById("nowPlayingSheet");
-const sheetClose      = document.getElementById("sheetClose");
-const sheetCover      = document.getElementById("sheetCover");
-const sheetCategory   = document.getElementById("sheetCategory");
-const sheetTitle      = document.getElementById("sheetTitle");
-const sheetArtist     = document.getElementById("sheetArtist");
-const sheetHeart      = document.getElementById("sheetHeart");
-const sheetPlay       = document.getElementById("sheetPlay");
-const sheetPrev       = document.getElementById("sheetPrev");
-const sheetNext       = document.getElementById("sheetNext");
-const sheetShuffle    = document.getElementById("sheetShuffle");
-const sheetRepeat     = document.getElementById("sheetRepeat");
-const sheetBar        = document.getElementById("sheetBar");
-const sheetFill       = document.getElementById("sheetFill");
-const sheetThumb      = document.getElementById("sheetThumb");
-const sheetCurrent    = document.getElementById("sheetCurrent");
-const sheetDuration   = document.getElementById("sheetDuration");
-const volSlider       = document.getElementById("volSlider");
+// Sheet player
+const nowPlayingSheet  = document.getElementById("nowPlayingSheet");
+const sheetClose       = document.getElementById("sheetClose");
+const sheetCover       = document.getElementById("sheetCover");
+const sheetCategory    = document.getElementById("sheetCategory");
+const sheetTitle       = document.getElementById("sheetTitle");
+const sheetArtist      = document.getElementById("sheetArtist");
+const sheetHeart       = document.getElementById("sheetHeart");
+const sheetPlay        = document.getElementById("sheetPlay");
+const sheetPrev        = document.getElementById("sheetPrev");
+const sheetNext        = document.getElementById("sheetNext");
+const sheetShuffle     = document.getElementById("sheetShuffle");
+const sheetRepeat      = document.getElementById("sheetRepeat");
+const sheetBar         = document.getElementById("sheetBar");
+const sheetFill        = document.getElementById("sheetFill");
+const sheetThumb       = document.getElementById("sheetThumb");
+const sheetCurrent     = document.getElementById("sheetCurrent");
+const sheetDuration    = document.getElementById("sheetDuration");
+const volSlider        = document.getElementById("volSlider");
 
 // Mini player
-const miniPlayer      = document.getElementById("miniPlayer");
-const miniPlayerExpand= document.getElementById("miniPlayerExpand");
-const miniCover       = document.getElementById("miniCover");
-const miniTitle       = document.getElementById("miniTitle");
-const miniArtist      = document.getElementById("miniArtist");
-const miniPlay        = document.getElementById("miniPlay");
-const miniNext        = document.getElementById("miniNext");
-const miniProgressFill= document.getElementById("miniProgressFill");
+const miniPlayer       = document.getElementById("miniPlayer");
+const miniPlayerExpand = document.getElementById("miniPlayerExpand");
+const miniCover        = document.getElementById("miniCover");
+const miniTitle        = document.getElementById("miniTitle");
+const miniArtist       = document.getElementById("miniArtist");
+const miniPlay         = document.getElementById("miniPlay");
+const miniNext         = document.getElementById("miniNext");
+const miniProgressFill = document.getElementById("miniProgressFill");
 
 // Search page
-const searchInput     = document.getElementById("searchInput");
-const searchClear     = document.getElementById("searchClear");
-const searchBrowse    = document.getElementById("searchBrowse");
-const searchResults   = document.getElementById("searchResults");
-const genreGrid       = document.getElementById("genreGrid");
+const searchInput      = document.getElementById("searchInput");
+const searchClear      = document.getElementById("searchClear");
+const searchBrowse     = document.getElementById("searchBrowse");
+const searchResults    = document.getElementById("searchResults");
+const genreGrid        = document.getElementById("genreGrid");
 
-// Library page
-const libraryList     = document.getElementById("libraryList");
+// Favoritos page
+const favoritosList    = document.getElementById("favoritosList");
 
-// Bottom nav
-const bottomNav       = document.getElementById("bottomNav");
-
-// Topbar search btn
-const topbarSearchBtn = document.getElementById("topbarSearchBtn");
+// Bottom nav + topbar
+const bottomNav        = document.getElementById("bottomNav");
+const topbarSearchBtn  = document.getElementById("topbarSearchBtn");
 
 /* ══════════════════════════════════════════════════════
    4. HELPERS
@@ -951,20 +917,18 @@ function filteredMedia() {
     const matchFilter =
       currentFilter === "all"   ? true :
       currentFilter === "music" ? item.type === "music" :
-      currentFilter === "video" ? item.type === "video" :
       item.category.toLowerCase() === currentFilter.toLowerCase();
 
     const q = currentSearch.toLowerCase().trim();
     const matchSearch = q === "" || [item.title, item.artist, item.category].some(s =>
       s.toLowerCase().includes(q)
     );
-
     return matchFilter && matchSearch;
   });
 }
 
 function formatTime(sec) {
-  if (isNaN(sec) || !isFinite(sec)) return "0:00";
+  if (isNaN(sec) || !isFinite(sec) || sec < 0) return "0:00";
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -982,17 +946,12 @@ function getPlaceholderCover(category = "music") {
 }
 
 function updatePlayIcons(playing) {
-  // Sheet player icons
-  const iconPlay  = sheetPlay.querySelector(".icon-play");
-  const iconPause = sheetPlay.querySelector(".icon-pause");
-  if (iconPlay)  iconPlay.style.display  = playing ? "none" : "";
-  if (iconPause) iconPause.style.display = playing ? "" : "none";
-
-  // Mini player icons
-  const mIconPlay  = miniPlay.querySelector(".icon-play");
-  const mIconPause = miniPlay.querySelector(".icon-pause");
-  if (mIconPlay)  mIconPlay.style.display  = playing ? "none" : "";
-  if (mIconPause) mIconPause.style.display = playing ? "" : "none";
+  [sheetPlay, miniPlay].forEach(btn => {
+    btn.querySelector(".icon-play").style.display  = playing ? "none" : "";
+    btn.querySelector(".icon-pause").style.display = playing ? "" : "none";
+  });
+  // Cover scale animation
+  sheetCover.classList.toggle("playing", playing);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1006,20 +965,21 @@ function showPage(pageId) {
   bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.page === pageId);
   });
+
+  // Refresh favoritos when entering
+  if (pageId === "pageFavoritos") renderFavoritos();
 }
 
 bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
   btn.addEventListener("click", () => showPage(btn.dataset.page));
 });
 
-// Topbar search → ir a search page
 topbarSearchBtn.addEventListener("click", () => showPage("pageSearch"));
 
 /* ══════════════════════════════════════════════════════
    6. BUILD HOME GRID
 ══════════════════════════════════════════════════════ */
 function buildCategoryPills() {
-  // Keep the "Todo" pill, remove extras
   catInner.querySelectorAll(".cat-pill:not([data-cat='all'])").forEach(p => p.remove());
 
   getCategories().forEach(cat => {
@@ -1040,8 +1000,8 @@ function buildCategoryPills() {
   });
 }
 
-const HOME_RANDOM_COUNT = 12; // cuántas canciones mostrar en el home "Todo"
-let homeRandomSeed = []; // selección aleatoria actual
+const HOME_RANDOM_COUNT = 12;
+let homeRandomSeed = [];
 
 function shuffleArray(arr) {
   const a = [...arr];
@@ -1057,20 +1017,18 @@ function renderGrid() {
   mediaGrid.innerHTML = "";
   playlist = media.filter(m => m.type === "music");
 
-  const labels = { all: "Destacados para ti", music: "Música", video: "Vídeos" };
+  const labels = { all: "Destacados para ti", music: "Música" };
   sectionTitle.textContent = labels[currentFilter] || currentFilter;
 
-  // En "Todo" mostramos una selección aleatoria de HOME_RANDOM_COUNT canciones
   const isHome = currentFilter === "all" && currentSearch === "";
   if (isHome) {
-    // Regenerar seed solo si está vacío
     if (homeRandomSeed.length === 0) {
       homeRandomSeed = shuffleArray(items).slice(0, HOME_RANDOM_COUNT);
     }
     items = homeRandomSeed;
     countBadge.textContent = `${HOME_RANDOM_COUNT} de ${filteredMedia().length}`;
   } else {
-    homeRandomSeed = []; // reset para próxima vez que vuelvan a "Todo"
+    homeRandomSeed = [];
     countBadge.textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
   }
 
@@ -1112,39 +1070,38 @@ function renderGrid() {
       loadTrack(item);
     });
     card.addEventListener("click", () => loadTrack(item));
-
     mediaGrid.appendChild(card);
   });
 }
 
 /* ══════════════════════════════════════════════════════
-   7. LOAD TRACK → mini player + sheet
+   7. LOAD TRACK
 ══════════════════════════════════════════════════════ */
 function loadTrack(item) {
   if (item.type !== "music") return;
 
   const cover = item.cover || getPlaceholderCover(item.category);
 
-  // Update playlist index
   playlist = media.filter(m => m.type === "music");
-  currentTrackIdx = playlist.findIndex(p => p.title === item.title && p.artist === item.artist);
+  currentTrackIdx = playlist.findIndex(p => p.file === item.file);
 
-  // — Mini player —
+  // Mini player
   miniCover.src = cover;
-  miniTitle.textContent = item.title;
+  miniTitle.textContent  = item.title;
   miniArtist.textContent = item.artist;
   miniPlayer.classList.add("visible");
 
-  // — Sheet player —
-  sheetCover.src = cover;
-  sheetCategory.textContent = item.category;
-  sheetTitle.textContent = item.title;
-  sheetArtist.textContent = item.artist;
+  // Sheet player
+  sheetCover.src             = cover;
+  sheetCategory.textContent  = item.category;
+  sheetTitle.textContent     = item.title;
+  sheetArtist.textContent    = item.artist;
 
   // Heart state
-  sheetHeart.classList.toggle("liked", likedTracks.has(item.title));
+  const liked = likedTracks.has(item.file);
+  sheetHeart.classList.toggle("liked", liked);
 
-  // — Audio —
+  // Audio
   audioEl.src = item.file;
   audioEl.load();
   audioEl.play()
@@ -1163,12 +1120,10 @@ function loadTrack(item) {
 /* ══════════════════════════════════════════════════════
    8. SHEET PLAYER CONTROLS
 ══════════════════════════════════════════════════════ */
-// Open sheet on mini player tap
 miniPlayerExpand.addEventListener("click", () => {
   nowPlayingSheet.classList.add("open");
 });
 
-// Close sheet
 sheetClose.addEventListener("click", () => {
   nowPlayingSheet.classList.remove("open");
 });
@@ -1188,26 +1143,35 @@ function togglePlay() {
   }
 }
 
-// Prev
-sheetPrev.addEventListener("click", () => {
+// Prev track
+function playPrev() {
   if (playlist.length === 0) return;
+  // If more than 3s into song, restart it instead
+  if (audioEl.currentTime > 3) {
+    audioEl.currentTime = 0;
+    return;
+  }
   currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
   loadTrack(playlist[currentTrackIdx]);
-});
+}
 
-// Next
-sheetNext.addEventListener("click", playNext);
-miniNext.addEventListener("click", playNext);
-
+// Next track
 function playNext() {
   if (playlist.length === 0) return;
   if (shuffleMode) {
-    currentTrackIdx = Math.floor(Math.random() * playlist.length);
+    let next;
+    do { next = Math.floor(Math.random() * playlist.length); }
+    while (playlist.length > 1 && next === currentTrackIdx);
+    currentTrackIdx = next;
   } else {
     currentTrackIdx = (currentTrackIdx + 1) % playlist.length;
   }
   loadTrack(playlist[currentTrackIdx]);
 }
+
+sheetPrev.addEventListener("click", playPrev);
+sheetNext.addEventListener("click", playNext);
+miniNext.addEventListener("click", playNext);
 
 // Shuffle
 sheetShuffle.addEventListener("click", () => {
@@ -1221,40 +1185,67 @@ sheetRepeat.addEventListener("click", () => {
   sheetRepeat.classList.toggle("active", repeatMode);
 });
 
-// Heart / like
+// Heart / like — uses file path as unique key
 sheetHeart.addEventListener("click", () => {
-  const title = sheetTitle.textContent;
-  if (likedTracks.has(title)) {
-    likedTracks.delete(title);
+  const track = playlist[currentTrackIdx];
+  if (!track) return;
+  const key = track.file;
+
+  if (likedTracks.has(key)) {
+    likedTracks.delete(key);
     sheetHeart.classList.remove("liked");
   } else {
-    likedTracks.add(title);
+    likedTracks.add(key);
     sheetHeart.classList.add("liked");
+  }
+  saveLiked();
+  // If favoritos page is currently visible, refresh it
+  if (document.getElementById("pageFavoritos").classList.contains("active")) {
+    renderFavoritos();
   }
 });
 
 // Volume
 volSlider.addEventListener("input", () => {
-  audioEl.volume = volSlider.value;
+  audioEl.volume = parseFloat(volSlider.value);
 });
 
-// Progress bar — sheet
+/* ── Progress bar ───────────────────────────────────── */
+function seekToPercent(pct) {
+  if (audioEl.duration && isFinite(audioEl.duration)) {
+    audioEl.currentTime = Math.max(0, Math.min(1, pct)) * audioEl.duration;
+  }
+}
+
+// Click on bar
 sheetBar.addEventListener("click", e => {
   const rect = sheetBar.getBoundingClientRect();
-  const pct  = (e.clientX - rect.left) / rect.width;
-  if (audioEl.duration) audioEl.currentTime = pct * audioEl.duration;
+  seekToPercent((e.clientX - rect.left) / rect.width);
 });
 
 // Touch drag on progress bar
-let dragging = false;
-sheetBar.addEventListener("touchstart", () => { dragging = true; }, { passive: true });
-sheetBar.addEventListener("touchmove", e => {
-  if (!dragging) return;
+let barDragging = false;
+sheetBar.addEventListener("touchstart", e => {
+  barDragging = true;
   const rect = sheetBar.getBoundingClientRect();
-  const pct  = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width));
-  if (audioEl.duration) audioEl.currentTime = pct * audioEl.duration;
+  seekToPercent((e.touches[0].clientX - rect.left) / rect.width);
 }, { passive: true });
-sheetBar.addEventListener("touchend", () => { dragging = false; }, { passive: true });
+sheetBar.addEventListener("touchmove", e => {
+  if (!barDragging) return;
+  const rect = sheetBar.getBoundingClientRect();
+  seekToPercent((e.touches[0].clientX - rect.left) / rect.width);
+}, { passive: true });
+sheetBar.addEventListener("touchend", () => { barDragging = false; }, { passive: true });
+
+/* ── Swipe down to close sheet ──────────────────────── */
+let sheetTouchStartY = 0;
+nowPlayingSheet.addEventListener("touchstart", e => {
+  sheetTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+nowPlayingSheet.addEventListener("touchend", e => {
+  const dy = e.changedTouches[0].clientY - sheetTouchStartY;
+  if (dy > 80) nowPlayingSheet.classList.remove("open");
+}, { passive: true });
 
 /* ══════════════════════════════════════════════════════
    9. AUDIO EVENTS
@@ -1262,20 +1253,20 @@ sheetBar.addEventListener("touchend", () => { dragging = false; }, { passive: tr
 audioEl.addEventListener("timeupdate", () => {
   const dur = audioEl.duration;
   const cur = audioEl.currentTime;
-  if (!dur || isNaN(dur) || !isFinite(dur)) return;
+  if (!dur || isNaN(dur) || !isFinite(dur) || dur <= 0) return;
 
   const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
 
   // Sheet progress
-  sheetFill.style.width = pct + "%";
-  sheetThumb.style.left = pct + "%"; // CSS ya centra con transform: translate(-50%, -50%)
+  sheetFill.style.width  = pct + "%";
+  sheetThumb.style.left  = pct + "%";
   sheetCurrent.textContent  = formatTime(cur);
   sheetDuration.textContent = formatTime(dur);
 
-  // Mini player progress line
+  // Mini progress line
   miniProgressFill.style.width = pct + "%";
 
-  // Lock screen position
+  // Lock screen position state
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.setPositionState({
@@ -1283,7 +1274,7 @@ audioEl.addEventListener("timeupdate", () => {
         playbackRate: audioEl.playbackRate || 1,
         position:     Math.min(cur, dur)
       });
-    } catch (_) {}
+    } catch(_) {}
   }
 });
 
@@ -1378,69 +1369,74 @@ searchClear.addEventListener("click", () => {
 });
 
 /* ══════════════════════════════════════════════════════
-   11. LIBRARY PAGE
+   11. FAVORITOS PAGE
 ══════════════════════════════════════════════════════ */
-function renderLibrary(filter = "all") {
-  libraryList.innerHTML = "";
-  const items = filter === "all"
-    ? media.filter(m => m.type === "music")
-    : media.filter(m => m.type === "music" && m.category === filter);
+function renderFavoritos() {
+  favoritosList.innerHTML = "";
 
-  items.forEach(item => {
+  const likedItems = media.filter(m => m.type === "music" && likedTracks.has(m.file));
+
+  if (likedItems.length === 0) {
+    favoritosList.innerHTML = `
+      <div class="fav-empty">
+        <svg viewBox="0 0 24 24" width="48" height="48" style="margin:0 auto 1rem;display:block;color:#e94f4f;opacity:.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <p style="color:#b3b3b3;text-align:center;font-size:.9rem">Aún no tienes canciones favoritas.<br>Pulsa el ❤ en cualquier canción.</p>
+      </div>`;
+    return;
+  }
+
+  likedItems.forEach((item, idx) => {
     const cover = item.cover || getPlaceholderCover(item.category);
     const row = document.createElement("div");
-    row.className = "library-row";
+    row.className = "library-item fade-in";
     row.innerHTML = `
-      <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'" />
-      <div class="library-row-info">
-        <span class="library-row-title">${item.title}</span>
-        <span class="library-row-artist">${item.artist}</span>
+      <span class="library-item-num">${idx + 1}</span>
+      <div class="library-thumb">
+        <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'" />
       </div>
-      <span class="library-row-dur">${item.duration || ""}</span>`;
+      <div class="library-info">
+        <span class="library-track-title">${item.title}</span>
+        <span class="library-track-artist">${item.artist}</span>
+      </div>
+      <span class="library-item-dur">${item.duration || ""}</span>`;
     row.addEventListener("click", () => {
+      // Play the liked list as the current playlist context
+      playlist = likedItems;
+      currentTrackIdx = idx;
       loadTrack(item);
       showPage("pageHome");
     });
-    libraryList.appendChild(row);
+    favoritosList.appendChild(row);
   });
 }
 
-document.querySelectorAll(".lib-filter").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".lib-filter").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    renderLibrary(btn.dataset.lib);
-  });
-});
-
 /* ══════════════════════════════════════════════════════
-   12. HERO BUTTON
-══════════════════════════════════════════════════════ */
-heroExplore.addEventListener("click", () => {
-  gridSection.scrollIntoView({ behavior: "smooth" });
-});
-
-/* ══════════════════════════════════════════════════════
-   13. MEDIA SESSION (pantalla apagada / auriculares)
+   12. MEDIA SESSION (pantalla bloqueada / auriculares)
+   NOTA: NO usamos seekbackward/seekforward para que las
+   flechas del SO muestren prev/next en vez de ±10 seg.
 ══════════════════════════════════════════════════════ */
 function setupMediaSession(item) {
   if (!("mediaSession" in navigator)) return;
   const cover = item.cover || getPlaceholderCover(item.category);
+
   navigator.mediaSession.metadata = new MediaMetadata({
-    title:   item.title,
-    artist:  item.artist,
-    album:   item.category,
+    title:  item.title,
+    artist: item.artist,
+    album:  item.category,
     artwork: [96, 128, 192, 256, 384, 512].map(s => ({
       src: cover, sizes: `${s}x${s}`, type: "image/jpeg"
     }))
   });
-  navigator.mediaSession.setActionHandler("play",          () => audioEl.play());
-  navigator.mediaSession.setActionHandler("pause",         () => audioEl.pause());
-  navigator.mediaSession.setActionHandler("previoustrack", () => sheetPrev.click());
+
+  // Only prev/next — this makes the lock screen arrows skip tracks
+  navigator.mediaSession.setActionHandler("play",          () => { audioEl.play(); });
+  navigator.mediaSession.setActionHandler("pause",         () => { audioEl.pause(); });
+  navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
-  // seekbackward/seekforward → cambiamos a anterior/siguiente (más útil en pantalla bloqueada)
-  try { navigator.mediaSession.setActionHandler("seekbackward", () => sheetPrev.click()); } catch(_) {}
-  try { navigator.mediaSession.setActionHandler("seekforward",  () => playNext()); } catch(_) {}
+
+  // Explicitly NULL-ify seek handlers so OS doesn't show seek buttons
+  try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
+  try { navigator.mediaSession.setActionHandler("seekforward",  null); } catch(_) {}
   try {
     navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
       if (audioEl.duration) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration, seekTime));
@@ -1449,14 +1445,21 @@ function setupMediaSession(item) {
 }
 
 /* ══════════════════════════════════════════════════════
+   13. HERO BUTTON
+══════════════════════════════════════════════════════ */
+heroExplore.addEventListener("click", () => {
+  gridSection.scrollIntoView({ behavior: "smooth" });
+});
+
+/* ══════════════════════════════════════════════════════
    14. KEYBOARD SHORTCUTS
 ══════════════════════════════════════════════════════ */
 document.addEventListener("keydown", e => {
   if (document.activeElement.tagName === "INPUT") return;
-  if (e.key === " ") { e.preventDefault(); togglePlay(); }
-  if (e.key === "Escape") nowPlayingSheet.classList.remove("open");
+  if (e.key === " ")          { e.preventDefault(); togglePlay(); }
+  if (e.key === "Escape")     nowPlayingSheet.classList.remove("open");
   if (e.key === "ArrowRight") playNext();
-  if (e.key === "ArrowLeft")  sheetPrev.click();
+  if (e.key === "ArrowLeft")  playPrev();
 });
 
 /* ══════════════════════════════════════════════════════
@@ -1467,66 +1470,62 @@ window.addEventListener("scroll", () => {
 }, { passive: true });
 
 /* ══════════════════════════════════════════════════════
-   16. CSS HELPERS — inject missing styles if needed
-   (search results, library rows, genre pills, liked heart)
+   16. EXTRA STYLES (injected)
 ══════════════════════════════════════════════════════ */
-(function injectDynamicStyles() {
+(function injectStyles() {
   const style = document.createElement("style");
   style.textContent = `
     /* Genre pills in search */
-    .genre-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; padding: 1rem; }
+    .genre-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.75rem; padding:1rem; }
     .genre-pill {
-      padding: 1.4rem 1rem; border-radius: 10px; font-size: .9rem;
-      font-weight: 600; color: #fff; text-align: left; cursor: pointer;
-      transition: opacity .18s;
+      padding:1.4rem 1rem; border-radius:10px; font-size:.9rem;
+      font-weight:600; color:#fff; text-align:left; cursor:pointer;
+      transition:opacity .18s;
     }
-    .genre-pill:hover { opacity: .85; }
+    .genre-pill:hover { opacity:.85; }
 
     /* Search result rows */
     .search-result-row {
-      display: flex; align-items: center; gap: .9rem;
-      padding: .7rem 1rem; cursor: pointer; border-radius: 8px;
-      transition: background .15s;
+      display:flex; align-items:center; gap:.9rem;
+      padding:.7rem 1rem; cursor:pointer; border-radius:8px;
+      transition:background .15s;
     }
-    .search-result-row:hover { background: rgba(255,255,255,.05); }
-    .search-result-row img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink:0; }
-    .search-result-info { flex: 1; min-width: 0; }
-    .search-result-title { display: block; font-size: .9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .search-result-artist { display: block; font-size: .78rem; color: var(--text-mid); }
-    .search-result-cat { font-size: .72rem; color: var(--accent); background: var(--accent-glow); padding: .2rem .5rem; border-radius: 99px; white-space: nowrap; }
+    .search-result-row:hover { background:rgba(255,255,255,.05); }
+    .search-result-row img { width:48px; height:48px; border-radius:6px; object-fit:cover; flex-shrink:0; }
+    .search-result-info { flex:1; min-width:0; }
+    .search-result-title { display:block; font-size:.9rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .search-result-artist { display:block; font-size:.78rem; color:var(--text-mid); }
+    .search-result-cat { font-size:.72rem; color:var(--accent); background:var(--accent-glow); padding:.2rem .5rem; border-radius:99px; white-space:nowrap; }
 
-    /* Library rows */
-    .library-row {
-      display: flex; align-items: center; gap: .9rem;
-      padding: .7rem 1rem; cursor: pointer; border-radius: 8px;
-      transition: background .15s;
-    }
-    .library-row:hover { background: rgba(255,255,255,.05); }
-    .library-row img { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; flex-shrink:0; }
-    .library-row-info { flex: 1; min-width: 0; }
-    .library-row-title { display: block; font-size: .9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .library-row-artist { display: block; font-size: .78rem; color: var(--text-mid); }
-    .library-row-dur { font-size: .78rem; color: var(--text-soft); flex-shrink:0; }
-
-    /* Liked heart */
-    .sheet-heart.liked svg { fill: var(--accent); stroke: var(--accent); }
+    /* Liked heart filled */
+    .sheet-heart.liked svg { fill:var(--accent); stroke:var(--accent); }
 
     /* Shuffle / repeat active */
-    .sheet-ctrl-btn.active svg { stroke: var(--accent); }
+    .sheet-ctrl-btn.active svg { stroke:var(--accent); }
 
     /* Mini player visible */
-    .mini-player.visible { transform: translateY(0); }
+    .mini-player.visible { display:flex; }
 
     /* Sheet open */
-    .now-playing-sheet.open { transform: translateY(0) !important; }
+    .now-playing-sheet.open { transform:translateY(0) !important; }
 
     /* No results */
-    .no-results { text-align: center; padding: 3rem 1rem; color: var(--text-mid); }
-    .no-results h3 { margin-bottom: .4rem; }
+    .no-results { text-align:center; padding:3rem 1rem; color:var(--text-mid); }
+    .no-results h3 { margin-bottom:.4rem; }
 
     /* Fade-in */
-    .fade-in { animation: fadeInUp .3s ease both; }
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeInUp .3s ease both; }
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Favoritos empty state */
+    .fav-empty { padding:4rem 1rem; }
+
+    /* Cover playing scale */
+    .sheet-cover { transition:transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s; }
+    .sheet-cover.playing { transform:scale(1.05); }
+
+    /* Library item (reuse) */
+    .library-list { padding:0 1.1rem 1rem; }
   `;
   document.head.appendChild(style);
 })();
@@ -1539,5 +1538,4 @@ window.addEventListener("scroll", () => {
   buildCategoryPills();
   renderGrid();
   buildGenreGrid();
-  renderLibrary();
 })();
