@@ -1440,6 +1440,12 @@ function updatePlayIcons(playing) {
     btn.querySelector(".icon-pause").style.display = playing ? "" : "none";
   });
   sheetCover.classList.toggle("playing", playing);
+  setMediaSessionPlaybackState(playing);
+}
+
+function setMediaSessionPlaybackState(playing) {
+  if (!("mediaSession" in navigator)) return;
+  try { navigator.mediaSession.playbackState = playing ? "playing" : "paused"; } catch (_) {}
 }
 
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
@@ -1628,18 +1634,33 @@ function renderGrid() {
 const CROSSFADE_DURATION = 20000; // ms — crossfade only at natural end of song
 
 // Crossfade state
-let crossfadeNextAudio = null;  // the incoming track pre-playing silently
-let crossfadeNextItem  = null;  // the item object for the incoming track
-let crossfadeTimer     = null;  // interval ticking the fade
-let crossfadeActive    = false; // true while a crossfade is in progress
-let fromQueueFlag      = false; // used inside crossfade completion
+let crossfadeNextAudio    = null;  // the incoming track pre-playing silently
+let crossfadeNextItem     = null;  // the item object for the incoming track
+let crossfadeTimer        = null;  // interval ticking the fade
+let crossfadeActive       = false; // true while a crossfade is in progress
+let crossfadeReady        = false; // true once the incoming track can play
+let crossfadeReadyHandler = null;
+let crossfadeErrorHandler = null;
+let fromQueueFlag         = false; // used inside crossfade completion
 
 function cancelCrossfade() {
-  if (crossfadeTimer)     { clearInterval(crossfadeTimer); crossfadeTimer = null; }
-  if (crossfadeNextAudio) { crossfadeNextAudio.pause(); crossfadeNextAudio.src = ""; crossfadeNextAudio = null; }
-  crossfadeNextItem  = null;
-  crossfadeActive    = false;
-  // Restore full volume on main element
+  if (crossfadeTimer) {
+    clearInterval(crossfadeTimer);
+    crossfadeTimer = null;
+  }
+  if (crossfadeNextAudio) {
+    if (crossfadeReadyHandler) crossfadeNextAudio.removeEventListener("canplay", crossfadeReadyHandler);
+    if (crossfadeErrorHandler) crossfadeNextAudio.removeEventListener("error", crossfadeErrorHandler);
+    crossfadeNextAudio.pause();
+    crossfadeNextAudio.src = "";
+    crossfadeNextAudio.load();
+    crossfadeNextAudio = null;
+  }
+  crossfadeNextItem     = null;
+  crossfadeActive       = false;
+  crossfadeReady        = false;
+  crossfadeReadyHandler = null;
+  crossfadeErrorHandler = null;
   const vol = parseFloat(volSlider.value) || 1;
   audioEl.volume = vol;
 }
@@ -1649,12 +1670,79 @@ function startCrossfade(nextItem) {
   if (!nextItem) return;
   crossfadeActive   = true;
   crossfadeNextItem = nextItem;
+  crossfadeReady    = false;
 
   const targetVol = parseFloat(volSlider.value) || audioEl.volume || 1;
+  const oldVol    = audioEl.volume;
+  const steps     = 60;
+  const interval  = CROSSFADE_DURATION / steps;
+  let step        = 0;
 
-  // Start next track silently
+  const beginFade = () => {
+    if (!crossfadeActive || !crossfadeNextAudio) return;
+    if (crossfadeTimer) return;
+
+    crossfadeTimer = setInterval(() => {
+      step++;
+      const t = step / steps;
+      audioEl.volume            = Math.max(0, oldVol * (1 - t));
+      crossfadeNextAudio.volume = Math.min(targetVol, targetVol * t);
+
+      if (step >= steps) {
+        clearInterval(crossfadeTimer);
+        crossfadeTimer = null;
+
+        // Swap incoming audio into main element
+        const newSrc  = crossfadeNextAudio.src;
+        const newTime = crossfadeNextAudio.currentTime;
+        crossfadeNextAudio.pause();
+        crossfadeNextAudio.src = "";
+        crossfadeNextAudio = null;
+
+        audioEl.src = newSrc;
+        audioEl.volume = targetVol;
+        audioEl.load();
+        const resumeWithPosition = () => {
+          try { audioEl.currentTime = newTime; } catch (_) {}
+          audioEl.play().catch(() => {});
+          audioEl.removeEventListener("loadedmetadata", resumeWithPosition);
+        };
+        audioEl.addEventListener("loadedmetadata", resumeWithPosition);
+
+        crossfadeActive   = false;
+        const ni = nextItem;
+        crossfadeNextItem = null;
+
+        // Update history/counts
+        historyTracks.unshift({ file: ni.file, timestamp: Date.now() });
+        historyTracks = historyTracks.filter((v, i, arr) => arr.findIndex(x => x.file === v.file) === i).slice(0, 100);
+        saveHistory();
+        playCounts[ni.file] = (playCounts[ni.file] || 0) + 1;
+        savePlayCounts();
+
+        if (!fromQueueFlag) {
+          currentTrackIdx = playlist.findIndex(p => p.file === ni.file);
+        }
+        preloadNext(ni);
+      }
+    }, interval);
+  };
+
   crossfadeNextAudio = new Audio(nextItem.file);
+  crossfadeNextAudio.preload = "auto";
   crossfadeNextAudio.volume = 0;
+  crossfadeReadyHandler = () => {
+    crossfadeReady = true;
+    beginFade();
+  };
+  crossfadeErrorHandler = () => {
+    const pending = crossfadeNextItem;
+    cancelCrossfade();
+    if (pending) loadTrack(pending, true);
+  };
+  crossfadeNextAudio.addEventListener("canplay", crossfadeReadyHandler, { once: true });
+  crossfadeNextAudio.addEventListener("error", crossfadeErrorHandler, { once: true });
+  crossfadeNextAudio.load();
   crossfadeNextAudio.play().catch(() => {});
 
   // Update UI to show incoming track immediately
@@ -1670,52 +1758,6 @@ function startCrossfade(nextItem) {
   sheetHeart.classList.toggle("liked", likedTracks.has(nextItem.file));
   renderQueueNowPlaying(nextItem);
   setupMediaSession(nextItem);
-
-  const oldVol   = audioEl.volume;
-  const steps    = 60;
-  const interval = CROSSFADE_DURATION / steps;
-  let step = 0;
-
-  crossfadeTimer = setInterval(() => {
-    step++;
-    const t = step / steps;
-    audioEl.volume            = Math.max(0, oldVol * (1 - t));
-    crossfadeNextAudio.volume = Math.min(targetVol, targetVol * t);
-
-    if (step >= steps) {
-      clearInterval(crossfadeTimer);
-      crossfadeTimer = null;
-
-      // Swap incoming audio into main element
-      const newSrc  = crossfadeNextAudio.src;
-      const newTime = crossfadeNextAudio.currentTime;
-      crossfadeNextAudio.pause();
-      crossfadeNextAudio.src = "";
-      crossfadeNextAudio = null;
-
-      audioEl.src = newSrc;
-      audioEl.volume = targetVol;
-      audioEl.load();
-      audioEl.currentTime = newTime;
-      audioEl.play().catch(() => {});
-
-      crossfadeActive   = false;
-      const ni = nextItem;
-      crossfadeNextItem = null;
-
-      // Update history/counts
-      historyTracks.unshift({ file: ni.file, timestamp: Date.now() });
-      historyTracks = historyTracks.filter((v,i,arr)=>arr.findIndex(x=>x.file===v.file)===i).slice(0,100);
-      saveHistory();
-      playCounts[ni.file] = (playCounts[ni.file] || 0) + 1;
-      savePlayCounts();
-
-      if (!fromQueueFlag) {
-        currentTrackIdx = playlist.findIndex(p => p.file === ni.file);
-      }
-      preloadNext(ni);
-    }
-  }, interval);
 }
 
 function loadTrack(item, fromQueue = false) {
@@ -1929,9 +1971,12 @@ miniPlay.addEventListener("click", togglePlay);
 function togglePlay() {
   if (!audioEl.src) return;
   if (audioEl.paused) {
+    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.play().catch(() => {});
     audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); });
   } else {
-    audioEl.pause(); isPlaying = false; updatePlayIcons(false);
+    audioEl.pause();
+    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.pause();
+    isPlaying = false; updatePlayIcons(false);
   }
 }
 
@@ -2039,8 +2084,14 @@ audioEl.addEventListener("timeupdate", () => {
 
 audioEl.addEventListener("ended", () => {
   if (repeatMode) { audioEl.currentTime = 0; audioEl.play(); return; }
-  // If crossfade is still in progress, do nothing (it will swap when done)
-  if (crossfadeActive) return;
+  if (crossfadeActive) {
+    if (!crossfadeReady && crossfadeNextItem) {
+      const pending = crossfadeNextItem;
+      cancelCrossfade();
+      loadTrack(pending, true);
+    }
+    return;
+  }
   // Song shorter than crossfade window — just go to next normally
   playNext();
 });
@@ -2469,8 +2520,14 @@ function setupMediaSession(item) {
     title: item.title, artist: item.artist, album: item.category,
     artwork: [96, 128, 192, 256, 384, 512].map(s => ({ src: cover, sizes: `${s}x${s}`, type: "image/jpeg" }))
   });
-  navigator.mediaSession.setActionHandler("play",          () => { audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); }); });
-  navigator.mediaSession.setActionHandler("pause",         () => { audioEl.pause(); isPlaying = false; updatePlayIcons(false); });
+  navigator.mediaSession.setActionHandler("play",          () => {
+    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.play().catch(() => {});
+    audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); });
+  });
+  navigator.mediaSession.setActionHandler("pause",         () => {
+    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.pause();
+    audioEl.pause(); isPlaying = false; updatePlayIcons(false);
+  });
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
   try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
@@ -2478,6 +2535,7 @@ function setupMediaSession(item) {
   try { navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
     if (audioEl.duration) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration, seekTime));
   }); } catch(_) {}
+  setMediaSessionPlaybackState(isPlaying);
 }
 
 /* ══════════════════════════════════════════════════════
