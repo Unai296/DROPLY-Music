@@ -915,3 +915,502 @@ input { font-family: inherit; }
 .eq-bar:nth-child(1) { animation: eq1 .8s ease-in-out infinite; }
 .eq-bar:nth-child(2) { animation: eq2 .8s ease-in-out .2s infinite; }
 .eq-bar:nth-child(3) { animation: eq3 .8s ease-in-out .1s infinite; }
+/* ══════════════════════════════════════════════════════
+   AI DJ SYSTEM — DROPLY v5
+   Estilos para el panel completo de IA DJ
+══════════════════════════════════════════════════════ */
+
+/* ── Topbar AI DJ button ─────────────────────────────── */
+.ai-dj-topbar-btn {
+  position: relative;
+  color: var(--text-mid);
+  transition: color var(--t);
+}
+.ai-dj-topbar-btn:hover { color: var(--accent); }
+.ai-dj-topbar-btn.active { color: var(--accent); }
+.ai-dj-topbar-btn.active svg { filter: drop-shadow(0 0 6px var(--accent-glow)); }
+
+/* ── AI DJ Overlay ───────────────────────────────────── */
+.ai-dj-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 800;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s var(--ease);
+}
+.ai-dj-overlay.open { opacity: 1; pointer-events: all; }
+
+/* ── AI DJ Panel ─────────────────────────────────────── */
+.ai-dj-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 850;
+  transform: translateY(100%);
+  transition: transform .38s cubic-bezier(.32,.72,0,1);
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  background: var(--bg2);
+  border-top: 1px solid rgba(233,79,79,.2);
+  box-shadow: 0 -12px 60px rgba(0,0,0,.6);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.ai-dj-panel.open {
+  transform: translateY(0);
+}
+@media (min-width: 768px) {
+  .ai-dj-panel {
+    max-width: 540px;
+    left: 50%; right: auto;
+    transform: translateX(-50%) translateY(100%);
+    border-radius: 20px 20px 0 0;
+  }
+  .ai-dj-panel.open {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.ai-dj-panel-inner {
+  padding: 1.1rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.4rem);
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.ai-dj-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+.ai-dj-header-left {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.ai-dj-logo-wrap {
+  position: relative;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(233,79,79,.25), rgba(233,79,79,.08));
+  border-radius: 10px;
+  border: 1px solid rgba(233,79,79,.3);
+}
+.ai-dj-pulse {
+  position: absolute; inset: -3px;
+  border-radius: 13px;
+  border: 1.5px solid rgba(233,79,79,.4);
+  animation: aiDjPulse 2.5s ease-in-out infinite;
+}
+@keyframes aiDjPulse {
+  0%, 100% { opacity: .4; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.15); }
+}
+.ai-dj-icon {
+  width: 18px; height: 18px;
+  fill: none; stroke: var(--accent);
+  stroke-width: 1.8;
+}
+.ai-dj-title {
+  font-family: var(--font-head);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .04em;
+}
+.ai-dj-subtitle {
+  font-size: .68rem;
+  color: var(--text-soft);
+  font-weight: 400;
+  margin-top: .05rem;
+  letter-spacing: .04em;
+}
+.ai-dj-header-right {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.ai-dj-mode-toggle {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .32rem .8rem;
+  border-radius: 99px;
+  border: 1.5px solid rgba(255,255,255,.12);
+  font-size: .71rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--text-mid);
+  transition: all var(--t);
+}
+.ai-dj-mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.ai-dj-mode-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.ai-dj-close-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-mid);
+  transition: all var(--t);
+}
+.ai-dj-close-btn:hover { background: var(--bg4); color: var(--text); }
+
+/* ── Mood Bar ────────────────────────────────────────── */
+.ai-dj-mood-bar {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: .6rem .85rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ai-dj-mood-bar::-webkit-scrollbar { display: none; }
+.ai-dj-mood-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .15rem;
+  flex-shrink: 0;
+}
+.ai-dj-mood-label {
+  font-size: .55rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: var(--text-soft);
+  text-transform: uppercase;
+}
+.ai-dj-mood-value {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.ai-dj-mood-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,.08);
+  flex-shrink: 0;
+  margin: 0 .2rem;
+}
+.ai-dj-energy-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.ai-dj-energy-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--bg4);
+  transition: background var(--t);
+}
+.ai-dj-energy-dot.active { background: var(--accent); }
+
+/* ── Input Area ──────────────────────────────────────── */
+.ai-dj-input-wrap {
+  margin-bottom: .85rem;
+}
+.ai-dj-input-inner {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: .55rem .6rem .55rem .85rem;
+  border: 1.5px solid rgba(255,255,255,.08);
+  transition: border-color var(--t), box-shadow var(--t);
+  margin-bottom: .55rem;
+}
+.ai-dj-input-inner:focus-within {
+  border-color: rgba(233,79,79,.4);
+  box-shadow: 0 0 0 3px rgba(233,79,79,.08);
+}
+.ai-dj-input-icon {
+  color: var(--text-soft);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.ai-dj-input-icon svg {
+  fill: none; stroke: currentColor;
+  stroke-width: 1.6;
+}
+.ai-dj-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: .88rem;
+  font-family: var(--font-body);
+  min-width: 0;
+  caret-color: var(--accent);
+}
+.ai-dj-input::placeholder { color: var(--text-soft); }
+.ai-dj-mix-btn {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .45rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+  transition: background var(--t), transform var(--t), box-shadow var(--t);
+  box-shadow: 0 3px 12px var(--accent-glow);
+}
+.ai-dj-mix-btn:hover {
+  background: var(--accent-lt);
+  transform: scale(1.04);
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+.ai-dj-mix-btn:active { transform: scale(.97); }
+.ai-dj-surprise-btn {
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  width: 100%;
+  padding: .5rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,.1);
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  transition: all var(--t);
+}
+.ai-dj-surprise-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(233,79,79,.06);
+}
+
+/* ── Mixing Indicator ────────────────────────────────── */
+.ai-dj-mixing {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .7rem .85rem;
+  background: linear-gradient(135deg, rgba(233,79,79,.12), rgba(233,79,79,.05));
+  border-radius: 10px;
+  border: 1px solid rgba(233,79,79,.2);
+  margin-bottom: .85rem;
+}
+.ai-dj-bars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 20px;
+  flex-shrink: 0;
+}
+.ai-dj-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: aiDjBarAnim 1s ease-in-out infinite;
+}
+.ai-dj-bar:nth-child(1) { animation-delay: 0s;    height: 60%; }
+.ai-dj-bar:nth-child(2) { animation-delay: .15s;  height: 100%; }
+.ai-dj-bar:nth-child(3) { animation-delay: .3s;   height: 40%; }
+.ai-dj-bar:nth-child(4) { animation-delay: .45s;  height: 80%; }
+.ai-dj-bar:nth-child(5) { animation-delay: .6s;   height: 55%; }
+@keyframes aiDjBarAnim {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(.3); }
+}
+.ai-dj-mixing-text {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+/* ── Prompt History ──────────────────────────────────── */
+.ai-dj-history { margin-bottom: .85rem; }
+.ai-dj-history-label {
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: .5rem;
+}
+.ai-dj-history-chips {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+.ai-dj-history-chip {
+  padding: .28rem .75rem;
+  border-radius: 99px;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,.08);
+  font-size: .73rem;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all var(--t);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-dj-history-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Quick Vibes ─────────────────────────────────────── */
+.ai-dj-vibes-label {
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: .55rem;
+}
+.ai-dj-vibes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .4rem;
+}
+@media (max-width: 360px) {
+  .ai-dj-vibes-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.ai-dj-vibe-btn {
+  padding: .55rem .3rem;
+  border-radius: 10px;
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  font-size: .7rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  text-align: center;
+  line-height: 1.3;
+  transition: all var(--t);
+  cursor: pointer;
+}
+.ai-dj-vibe-btn:hover {
+  border-color: rgba(233,79,79,.35);
+  color: var(--text);
+  background: var(--bg4);
+}
+.ai-dj-vibe-btn.active {
+  border-color: var(--accent);
+  background: rgba(233,79,79,.1);
+  color: var(--accent);
+}
+
+/* ── AI DJ Mini Bar (in home page) ──────────────────── */
+.ai-dj-mini-bar {
+  margin: 0 1.1rem .5rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(233,79,79,.15), rgba(233,79,79,.05));
+  border: 1px solid rgba(233,79,79,.25);
+  animation: fadeInUp .3s var(--ease) both;
+}
+.ai-dj-mini-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .85rem;
+}
+.ai-dj-mini-bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 14px;
+  flex-shrink: 0;
+}
+.ai-dj-mini-bars .ai-dj-bar { height: 60%; }
+.ai-dj-mini-label {
+  flex: 1;
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-dj-mini-stop {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(233,79,79,.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+  transition: all var(--t);
+}
+.ai-dj-mini-stop:hover { background: var(--accent); color: #fff; }
+
+/* ── Hero with AI button ─────────────────────────────── */
+.hero-btns {
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+.btn-hero-ai {
+  background: rgba(233,79,79,.15) !important;
+  color: var(--accent) !important;
+  border: 1.5px solid rgba(233,79,79,.35) !important;
+  box-shadow: none !important;
+}
+.btn-hero-ai:hover {
+  background: rgba(233,79,79,.25) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(233,79,79,.15) !important;
+}
+
+/* ── AI badge on sheet cover ─────────────────────────── */
+.sheet-cover-wrap { position: relative; }
+.sheet-ai-badge {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: flex; align-items: center; gap: .3rem;
+  padding: .28rem .65rem;
+  border-radius: 99px;
+  background: rgba(233,79,79,.85);
+  backdrop-filter: blur(6px);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #fff;
+  animation: fadeInUp .3s var(--ease) both;
+}
+.sheet-ai-badge svg { fill: #fff; stroke: none; }
+
+/* ── Queue AI tags ───────────────────────────────────── */
+.queue-item-ai-tag {
+  font-size: .58rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: .8;
+  margin-top: .1rem;
+  display: block;
+}
+
+/* ── Auto DJ indicator on playing card ──────────────── */
+.media-card.ai-playing .card-cover::before {
+  content: ''; position: absolute;
+  inset: 0; border-radius: var(--r-xs);
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  animation: aiCardGlow 2s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes aiCardGlow {
+  0%, 100% { box-shadow: inset 0 0 12px rgba(233,79,79,.3); border-color: var(--accent); }
+  50% { box-shadow: inset 0 0 24px rgba(233,79,79,.2); border-color: var(--accent-lt); }
+}
+
+/* ── Responsive adjustments ──────────────────────────── */
+@media (max-width: 380px) {
+  .ai-dj-title { font-size: 1rem; }
+  .ai-dj-panel-inner { padding: 1rem 1rem calc(env(safe-area-inset-bottom, 0px) + 1.2rem); }
+  .ai-dj-vibes-grid { grid-template-columns: repeat(4, 1fr); }
+  .ai-dj-vibe-btn { font-size: .62rem; padding: .45rem .2rem; }
+}
