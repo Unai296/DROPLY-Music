@@ -1007,12 +1007,6 @@ const media = [
     category: "Dance-Pop",
     duration: "3:33"
   },
-   
-
-
-
-
-
       {
     type:     "music",
     title:    "Better Off Alone",
@@ -1022,17 +1016,6 @@ const media = [
     category: "90s",
     duration: "2:55"
   },
-   
-
-
-
-
-
-
-
-
-
-
       {
     type:     "music",
     title:    "I'm Still Standing",
@@ -1042,19 +1025,6 @@ const media = [
     category: "Dance-Pop",
     duration: "3:02"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
       {
     type:     "music",
     title:    "Aserejé",
@@ -1064,22 +1034,6 @@ const media = [
     category: "Dance-Pop",
     duration: "3:33"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {
     type:     "music",
     title:    "I know you want me",
@@ -1089,22 +1043,6 @@ const media = [
     category: "Dance-Pop",
     duration: "4:00"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {
     type:     "music",
     title:    "BLA BLA BLA",
@@ -1114,26 +1052,6 @@ const media = [
     category: "Electronic",
     duration: "3:11"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {
     type:     "music",
     title:    "Danza Kuduro",
@@ -1143,44 +1061,187 @@ const media = [
     category: "Reggaeton",
     duration: "3:18"
   },
+  {
+    type:     "music",
+    title:    "Olvidar",
+    artist:   "Morad",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/272af21ce5be9cbd3d4ac0db0cc0cab5/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/olvidar.mp3",
+    category: "Reggaeton",
+    duration: "2:57"
+  },
+  {
+    type:     "music",
+    title:    "SIGUE",
+    artist:   "BENY JR FT MORAD",
+    cover:    "https://images.genius.com/6f4195419969480a4fbd80dab61266a0.1000x1000x1.png",
+    file:     "./Music/sigue.mp3",
+    category: "Reggaeton",
+    duration: "3:31"
+  },
+  {
+    type:     "music",
+    title:    "Contento",
+    artist:   "Morad",
+    cover:    "https://images.genius.com/3c69ccbd190cec4a98edf084a658c01d.1000x1000x1.png",
+    file:     "./Music/contento.mp3",
+    category: "Reggaeton",
+    duration: "3:30"
+  },
+  {
+    type:     "music",
+    title:    "Soñar",
+    artist:   "Morad",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273dfc07c8c7df28f36fad5017f",
+    file:     "./Music/soñar.mp3",
+    category: "Reggaeton",
+    duration: "4:15"
+  },
+  {
+    type:     "music",
+    title:    "Te Boté (Remix)",
+    artist:   "Nio Garcia, Casper Magico, Bad Bunny, Darell, Ozuna, Nicky Jam",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273a5779a2f04a513fac2fd1d15",
+    file:     "./Music/tebote.mp3",
+    category: "Reggaeton",
+    duration: "6:58"
+  },
+  {
+    type:     "music",
+    title:    "Esclava (Remix)",
+    artist:   "Anonimus, Almighty, Anuel AA, Bryant Myers",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273fc974b3893de83eba6c1f862",
+    file:     "./Music/esclava.mp3",
+    category: "Reggaeton",
+    duration: "4:41"
+  },
+  {
+    type:     "music",
+    title:    "BRAQUAGE DE L’ÉTÉ",
+    artist:   "YOUKA, CYRIL KAMER",
+    cover:    "https://m.media-amazon.com/images/I/51MCuWWbx5L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/braquage_del_eté.mp3",
+    category: "Reggaeton",
+    duration: "2:09"
+  },
+  {
+    type:     "music",
+    title:    "Casanova",
+    artist:   "LOLA ÍNDIGO, RVFV, SOOLKING",
+    cover:    "https://universalmusic.es/wp-content/uploads/sites/50/2023/12/lola_indigo_top5.jpeg",
+    file:     "./Music/casanova.mp3",
+    category: "Reggaeton",
+    duration: "4:03"
+  },
+    {
+    type:     "music",
+    title:    "Prendio (Remix)",
+    artist:   "RVFV, OMAR MONTES, DAVILES DE NOVELDA",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/c72ce1a61f596e9723839de3c591d023/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/prendio.mp3",
+    category: "Reggaeton",
+    duration: "3:11"
+  },
+    {
+    type:     "music",
+    title:    "La rubia (Remix 2)",
+    artist:   "La nueva escuela, Omar Montes",
+    cover:    "https://m.media-amazon.com/images/I/51g3CMJ0UZL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/larubia.mp3",
+    category: "Reggaeton",
+    duration: "3:30"
+  },
+    {
+    type:     "music",
+    title:    "MUEVE ESE CULO",
+    artist:   "JC REYES, GLOOSITO",
+    cover:    "https://m.media-amazon.com/images/I/413QydatXeL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/mueveeseculo.mp3",
+    category: "Reggaeton",
+    duration: "2:33"
+  },
+    {
+    type:     "music",
+    title:    "Magic In The Air",
+    artist:   "Magic System, Ahmed Chawki",
+    cover:    "https://m.media-amazon.com/images/I/71BxXSyM6GL._UF894,1000_QL80_.jpg",
+    file:     "./Music/magic_in_the_air.mp3",
+    category: "Dance-Pop",
+    duration: "3:53"
+  },
+    {
+    type:     "music",
+    title:    "C'est La Vie",
+    artist:   "Khaled",
+    cover:    "https://m.media-amazon.com/images/I/611ckdsBGeL._UF894,1000_QL80_.jpg",
+    file:     "./Music/c'est_la_vie.mp3",
+    category: "Dance-Pop",
+    duration: "3:47"
+  },
+    {
+    type:     "music",
+    title:    "A Sky Full Of Stars",
+    artist:   "Coldplay",
+    cover:    "https://i1.sndcdn.com/artworks-000086432916-4b0kzg-t1080x1080.jpg",
+    file:     "./Music/a_sky_full_of_stars.mp3",
+    category: "Dance-Pop",
+    duration: "4:13"
+  },
+    {
+    type:     "music",
+    title:    "Viva La Vida",
+    artist:   "Coldplay",
+    cover:    "https://m.media-amazon.com/images/I/9145yafeO2L._UF894,1000_QL80_.jpg",
+    file:     "./Music/viva_la_vida.mp3",
+    category: "Dance-Pop",
+    duration: "4:02"
+  },
+    {
+    type:     "music",
+    title:    "Paradise",
+    artist:   "Coldplay",
+    cover:    "https://upload.wikimedia.org/wikipedia/en/2/22/Coldplay_-_Paradise.JPG",
+    file:     "./Music/paradise.mp3",
+    category: "Dance-Pop",
+    duration: "4:20"
+  },
+    {
+    type:     "music",
+    title:    "Clocks",
+    artist:   "Coldplay",
+    cover:    "https://m.media-amazon.com/images/I/41POdN+-ZcL._UF894,1000_QL80_.jpg",
+    file:     "./Music/clocks.mp3",
+    category: "Dance-Pop",
+    duration: "4:15"
+  },
+    {
+    type:     "music",
+    title:    "Adventure Of A Lifetime",
+    artist:   "Coldplay",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2738ff7c3580d429c8212b9a3b6",
+    file:     "./Music/adventure_of_a_lifetime.mp3",
+    category: "Dance-Pop",
+    duration: "4:24"
+  },
+    {
+    type:     "music",
+    title:    "Fix You",
+    artist:   "Coldplay",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/8a1a3e7c5e46b5f763328d95431ac19a/1900x1900-000000-80-0-0.jpg",
+    file:     "./Music/fix_you.mp3",
+    category: "Dance-Pop",
+    duration: "4:53"
+  },
+    {
+    type:     "music",
+    title:    "Hymn For The Weekend",
+    artist:   "Coldplay",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/5df065fdcbaffd0f83d09789bad9d2db/1900x1900-000000-80-0-0.jpg",
+    file:     "./Music/hymn_for_the_weekend.mp3",
+    category: "Dance-Pop",
+    duration: "4:20"
+  },
    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
