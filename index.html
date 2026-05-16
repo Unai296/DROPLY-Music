@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>DROPLY — Plataforma Multimedia</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,9 +15,6 @@
     <div class="topbar-inner">
       <a href="#" class="logo">DROPLY MUSIC</a>
       <div class="topbar-actions">
-        <button class="topbar-icon-btn ai-dj-topbar-btn" id="aiDjTopbarBtn" aria-label="AI DJ" title="DROPLY AI DJ">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </button>
         <button class="topbar-icon-btn" id="topbarSearchBtn" aria-label="Buscar">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
         </button>
@@ -29,117 +24,6 @@
 
   <!-- ══ TOAST CONTAINER ══ -->
   <div class="toast-container" id="toastContainer"></div>
-
-  <!-- ══ AI DJ PANEL ══ -->
-  <div class="ai-dj-panel" id="aiDjPanel">
-    <div class="ai-dj-panel-inner">
-      <!-- Header -->
-      <div class="ai-dj-header">
-        <div class="ai-dj-header-left">
-          <div class="ai-dj-logo-wrap">
-            <div class="ai-dj-pulse"></div>
-            <svg class="ai-dj-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <div>
-            <h2 class="ai-dj-title">DROPLY AI DJ</h2>
-            <p class="ai-dj-subtitle" id="aiDjStatusText">Listo para mezclar</p>
-          </div>
-        </div>
-        <div class="ai-dj-header-right">
-          <button class="ai-dj-mode-toggle" id="aiDjModeToggle" title="Modo Auto DJ">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 3l14 9-14 9V3z" fill="currentColor" stroke="none"/></svg>
-            Auto DJ
-          </button>
-          <button class="ai-dj-close-btn" id="aiDjClose">
-            <svg viewBox="0 0 24 24" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Mood Display -->
-      <div class="ai-dj-mood-bar" id="aiDjMoodBar" style="display:none">
-        <div class="ai-dj-mood-item">
-          <span class="ai-dj-mood-label">MOOD</span>
-          <span class="ai-dj-mood-value" id="aiDjMoodValue">—</span>
-        </div>
-        <div class="ai-dj-mood-sep"></div>
-        <div class="ai-dj-mood-item">
-          <span class="ai-dj-mood-label">GÉNERO</span>
-          <span class="ai-dj-mood-value" id="aiDjGenreValue">—</span>
-        </div>
-        <div class="ai-dj-mood-sep"></div>
-        <div class="ai-dj-mood-item">
-          <span class="ai-dj-mood-label">ENERGÍA</span>
-          <div class="ai-dj-energy-dots" id="aiDjEnergyDots"></div>
-        </div>
-        <div class="ai-dj-mood-sep"></div>
-        <div class="ai-dj-mood-item">
-          <span class="ai-dj-mood-label">BPM ~</span>
-          <span class="ai-dj-mood-value" id="aiDjBpmValue">—</span>
-        </div>
-      </div>
-
-      <!-- Input Area -->
-      <div class="ai-dj-input-wrap">
-        <div class="ai-dj-input-inner">
-          <div class="ai-dj-input-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-          </div>
-          <input
-            type="text"
-            id="aiDjInput"
-            class="ai-dj-input"
-            placeholder="pon algo chill, reggaeton antiguo, gym phonk…"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-          />
-          <button class="ai-dj-mix-btn" id="aiDjMixBtn">
-            <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>
-            Mix
-          </button>
-        </div>
-        <button class="ai-dj-surprise-btn" id="aiDjSurpriseBtn">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          Sorpréndeme
-        </button>
-      </div>
-
-      <!-- Mixing Indicator -->
-      <div class="ai-dj-mixing" id="aiDjMixing" style="display:none">
-        <div class="ai-dj-bars">
-          <div class="ai-dj-bar"></div>
-          <div class="ai-dj-bar"></div>
-          <div class="ai-dj-bar"></div>
-          <div class="ai-dj-bar"></div>
-          <div class="ai-dj-bar"></div>
-        </div>
-        <span class="ai-dj-mixing-text">DROPLY AI MIXING…</span>
-      </div>
-
-      <!-- Prompt History -->
-      <div class="ai-dj-history" id="aiDjHistory" style="display:none">
-        <p class="ai-dj-history-label">Sesiones recientes</p>
-        <div class="ai-dj-history-chips" id="aiDjHistoryChips"></div>
-      </div>
-
-      <!-- Quick Vibes -->
-      <div class="ai-dj-vibes">
-        <p class="ai-dj-vibes-label">Vibes rápidos</p>
-        <div class="ai-dj-vibes-grid">
-          <button class="ai-dj-vibe-btn" data-prompt="música chill para relajar">😌 Chill</button>
-          <button class="ai-dj-vibe-btn" data-prompt="reggaeton party bailable">🔥 Party</button>
-          <button class="ai-dj-vibe-btn" data-prompt="música para estudiar concentración">📚 Estudiar</button>
-          <button class="ai-dj-vibe-btn" data-prompt="electrónica energética para gym">💪 Gym</button>
-          <button class="ai-dj-vibe-btn" data-prompt="electrónica suave nocturna">🌙 Nocturna</button>
-          <button class="ai-dj-vibe-btn" data-prompt="reggaeton antiguo clásico">🕹️ Clásicos</button>
-          <button class="ai-dj-vibe-btn" data-prompt="música dance pop happy">✨ Happy</button>
-          <button class="ai-dj-vibe-btn" data-prompt="música triste melancólica">💙 Sad</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="ai-dj-overlay" id="aiDjOverlay"></div>
 
   <!-- ══ PAGES ══ -->
   <div class="pages-container" id="pagesContainer">
@@ -152,30 +36,9 @@
           <p class="hero-eyebrow">Streaming sin anuncios</p>
           <h1 class="hero-title">Implementacion de música <em>en desarrollo</em></h1>
           <p class="hero-sub">Descubre y escucha tu colección sin anuncios</p>
-          <div class="hero-btns">
-            <button class="btn-hero" id="heroExplore">Explorar ahora</button>
-            <button class="btn-hero btn-hero-ai" id="heroAiDj">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              AI DJ
-            </button>
-          </div>
+          <button class="btn-hero" id="heroExplore">Explorar ahora</button>
         </div>
       </section>
-
-      <!-- AI DJ Mini Bar (visible in home when active) -->
-      <div class="ai-dj-mini-bar" id="aiDjMiniBar" style="display:none">
-        <div class="ai-dj-mini-bar-inner">
-          <div class="ai-dj-mini-bars">
-            <div class="ai-dj-bar"></div>
-            <div class="ai-dj-bar"></div>
-            <div class="ai-dj-bar"></div>
-          </div>
-          <span class="ai-dj-mini-label">AI DJ · <span id="aiDjMiniPrompt">Mezcla activa</span></span>
-          <button class="ai-dj-mini-stop" id="aiDjMiniStop" title="Detener AI DJ">
-            <svg viewBox="0 0 24 24" width="12" height="12"><rect x="6" y="6" width="12" height="12" fill="currentColor" stroke="none"/></svg>
-          </button>
-        </div>
-      </div>
 
       <section class="cat-bar" id="catBar">
         <div class="cat-inner" id="catInner">
@@ -312,11 +175,6 @@
     </div>
     <div class="sheet-cover-wrap">
       <img class="sheet-cover" id="sheetCover" src="" alt="" />
-      <!-- AI DJ badge on cover when active -->
-      <div class="sheet-ai-badge" id="sheetAiBadge" style="display:none">
-        <svg viewBox="0 0 24 24" width="10" height="10"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
-        AI DJ
-      </div>
     </div>
     <div class="sheet-info">
       <div class="sheet-text">

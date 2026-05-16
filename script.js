@@ -1440,12 +1440,6 @@ function updatePlayIcons(playing) {
     btn.querySelector(".icon-pause").style.display = playing ? "" : "none";
   });
   sheetCover.classList.toggle("playing", playing);
-  setMediaSessionPlaybackState(playing);
-}
-
-function setMediaSessionPlaybackState(playing) {
-  if (!("mediaSession" in navigator)) return;
-  try { navigator.mediaSession.playbackState = playing ? "playing" : "paused"; } catch (_) {}
 }
 
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
@@ -1631,143 +1625,11 @@ function renderGrid() {
 /* ══════════════════════════════════════════════════════
    9. LOAD TRACK + CROSSFADE
 ══════════════════════════════════════════════════════ */
-const CROSSFADE_DURATION = 20000; // ms — crossfade only at natural end of song
-
-// Crossfade state
-let crossfadeNextAudio    = null;  // the incoming track pre-playing silently
-let crossfadeNextItem     = null;  // the item object for the incoming track
-let crossfadeTimer        = null;  // interval ticking the fade
-let crossfadeActive       = false; // true while a crossfade is in progress
-let crossfadeReady        = false; // true once the incoming track can play
-let crossfadeReadyHandler = null;
-let crossfadeErrorHandler = null;
-let fromQueueFlag         = false; // used inside crossfade completion
-
-function cancelCrossfade() {
-  if (crossfadeTimer) {
-    clearInterval(crossfadeTimer);
-    crossfadeTimer = null;
-  }
-  if (crossfadeNextAudio) {
-    if (crossfadeReadyHandler) crossfadeNextAudio.removeEventListener("canplay", crossfadeReadyHandler);
-    if (crossfadeErrorHandler) crossfadeNextAudio.removeEventListener("error", crossfadeErrorHandler);
-    crossfadeNextAudio.pause();
-    crossfadeNextAudio.src = "";
-    crossfadeNextAudio.load();
-    crossfadeNextAudio = null;
-  }
-  crossfadeNextItem     = null;
-  crossfadeActive       = false;
-  crossfadeReady        = false;
-  crossfadeReadyHandler = null;
-  crossfadeErrorHandler = null;
-  const vol = parseFloat(volSlider.value) || 1;
-  audioEl.volume = vol;
-}
-
-function startCrossfade(nextItem) {
-  if (crossfadeActive) return;
-  if (!nextItem) return;
-  crossfadeActive   = true;
-  crossfadeNextItem = nextItem;
-  crossfadeReady    = false;
-
-  const targetVol = parseFloat(volSlider.value) || audioEl.volume || 1;
-  const oldVol    = audioEl.volume;
-  const steps     = 60;
-  const interval  = CROSSFADE_DURATION / steps;
-  let step        = 0;
-
-  const beginFade = () => {
-    if (!crossfadeActive || !crossfadeNextAudio) return;
-    if (crossfadeTimer) return;
-
-    crossfadeTimer = setInterval(() => {
-      step++;
-      const t = step / steps;
-      audioEl.volume            = Math.max(0, oldVol * (1 - t));
-      crossfadeNextAudio.volume = Math.min(targetVol, targetVol * t);
-
-      if (step >= steps) {
-        clearInterval(crossfadeTimer);
-        crossfadeTimer = null;
-
-        // Swap incoming audio into main element
-        const newSrc  = crossfadeNextAudio.src;
-        const newTime = crossfadeNextAudio.currentTime;
-        crossfadeNextAudio.pause();
-        crossfadeNextAudio.src = "";
-        crossfadeNextAudio = null;
-
-        audioEl.src = newSrc;
-        audioEl.volume = targetVol;
-        audioEl.load();
-        const resumeWithPosition = () => {
-          try { audioEl.currentTime = newTime; } catch (_) {}
-          audioEl.play().catch(() => {});
-          audioEl.removeEventListener("loadedmetadata", resumeWithPosition);
-        };
-        audioEl.addEventListener("loadedmetadata", resumeWithPosition);
-
-        crossfadeActive   = false;
-        const ni = nextItem;
-        crossfadeNextItem = null;
-
-        // Update history/counts
-        historyTracks.unshift({ file: ni.file, timestamp: Date.now() });
-        historyTracks = historyTracks.filter((v, i, arr) => arr.findIndex(x => x.file === v.file) === i).slice(0, 100);
-        saveHistory();
-        playCounts[ni.file] = (playCounts[ni.file] || 0) + 1;
-        savePlayCounts();
-
-        if (!fromQueueFlag) {
-          currentTrackIdx = playlist.findIndex(p => p.file === ni.file);
-        }
-        preloadNext(ni);
-      }
-    }, interval);
-  };
-
-  crossfadeNextAudio = new Audio(nextItem.file);
-  crossfadeNextAudio.preload = "auto";
-  crossfadeNextAudio.volume = 0;
-  crossfadeReadyHandler = () => {
-    crossfadeReady = true;
-    beginFade();
-  };
-  crossfadeErrorHandler = () => {
-    const pending = crossfadeNextItem;
-    cancelCrossfade();
-    if (pending) loadTrack(pending, true);
-  };
-  crossfadeNextAudio.addEventListener("canplay", crossfadeReadyHandler, { once: true });
-  crossfadeNextAudio.addEventListener("error", crossfadeErrorHandler, { once: true });
-  crossfadeNextAudio.load();
-  crossfadeNextAudio.play().catch(() => {});
-
-  // Update UI to show incoming track immediately
-  const cover = nextItem.cover || getPlaceholderCover(nextItem.category);
-  miniCover.src = cover;
-  miniTitle.textContent  = nextItem.title;
-  miniArtist.textContent = nextItem.artist;
-  sheetCover.src = cover;
-  sheetBgBlur.style.backgroundImage = `url(${cover})`;
-  sheetCategory.textContent = nextItem.category;
-  sheetTitle.textContent    = nextItem.title;
-  sheetArtist.textContent   = nextItem.artist;
-  sheetHeart.classList.toggle("liked", likedTracks.has(nextItem.file));
-  renderQueueNowPlaying(nextItem);
-  setupMediaSession(nextItem);
-}
+const CROSSFADE_DURATION = 0; // ms — set > 0 if you want crossfade (e.g. 1500)
 
 function loadTrack(item, fromQueue = false) {
   if (item.type !== "music") return;
   const cover = item.cover || getPlaceholderCover(item.category);
-
-  // Manual skip — cancel any running crossfade and load instantly
-  cancelCrossfade();
-
-  fromQueueFlag = fromQueue;
 
   // Track history
   historyTracks.unshift({ file: item.file, timestamp: Date.now() });
@@ -1784,26 +1646,34 @@ function loadTrack(item, fromQueue = false) {
     currentTrackIdx = playlist.findIndex(p => p.file === item.file);
   }
 
-  // Update UI
+  // Mini player
   miniCover.src = cover;
   miniTitle.textContent  = item.title;
   miniArtist.textContent = item.artist;
   miniPlayer.classList.add("visible");
+
+  // Sheet player
   sheetCover.src = cover;
   sheetBgBlur.style.backgroundImage = `url(${cover})`;
   sheetCategory.textContent = item.category;
   sheetTitle.textContent    = item.title;
   sheetArtist.textContent   = item.artist;
-  sheetHeart.classList.toggle("liked", likedTracks.has(item.file));
+
+  // Heart
+  const liked = likedTracks.has(item.file);
+  sheetHeart.classList.toggle("liked", liked);
+
+  // Highlight playing card
   document.querySelectorAll(".media-card").forEach(c => c.classList.remove("is-playing"));
-  Array.from(document.querySelectorAll(".media-card")).forEach((card, i) => {
-    if (Array.from(filteredMedia())[i]?.file === item.file) card.classList.add("is-playing");
-  });
+  const cards = document.querySelectorAll(".media-card");
+  const items = Array.from(filteredMedia());
+  cards.forEach((card, i) => { if (items[i]?.file === item.file) card.classList.add("is-playing"); });
+
+  // Update queue now-playing
   renderQueueNowPlaying(item);
 
-  const vol = parseFloat(volSlider.value) || audioEl.volume || 1;
-  audioEl.src    = item.file;
-  audioEl.volume = vol;
+  // Audio
+  audioEl.src = item.file;
   audioEl.load();
   audioEl.play()
     .then(() => { isPlaying = true; updatePlayIcons(true); setupMediaSession(item); preloadNext(item); })
@@ -1971,12 +1841,9 @@ miniPlay.addEventListener("click", togglePlay);
 function togglePlay() {
   if (!audioEl.src) return;
   if (audioEl.paused) {
-    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.play().catch(() => {});
     audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); });
   } else {
-    audioEl.pause();
-    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.pause();
-    isPlaying = false; updatePlayIcons(false);
+    audioEl.pause(); isPlaying = false; updatePlayIcons(false);
   }
 }
 
@@ -2072,28 +1939,11 @@ audioEl.addEventListener("timeupdate", () => {
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.setPositionState({ duration: dur, playbackRate: audioEl.playbackRate || 1, position: Math.min(cur, dur) }); } catch(_) {}
   }
-  // Trigger crossfade when CROSSFADE_DURATION ms remain before natural end
-  if (!crossfadeActive && !repeatMode && CROSSFADE_DURATION > 0) {
-    const remaining = (dur - cur) * 1000;
-    if (remaining > 0 && remaining <= CROSSFADE_DURATION) {
-      const nextItem = getNextItem(playlist[currentTrackIdx]);
-      if (nextItem) startCrossfade(nextItem);
-    }
-  }
 });
 
 audioEl.addEventListener("ended", () => {
-  if (repeatMode) { audioEl.currentTime = 0; audioEl.play(); return; }
-  if (crossfadeActive) {
-    if (!crossfadeReady && crossfadeNextItem) {
-      const pending = crossfadeNextItem;
-      cancelCrossfade();
-      loadTrack(pending, true);
-    }
-    return;
-  }
-  // Song shorter than crossfade window — just go to next normally
-  playNext();
+  if (repeatMode) { audioEl.currentTime = 0; audioEl.play(); }
+  else playNext();
 });
 
 audioEl.addEventListener("play",  () => { isPlaying = true;  updatePlayIcons(true);  });
@@ -2520,14 +2370,8 @@ function setupMediaSession(item) {
     title: item.title, artist: item.artist, album: item.category,
     artwork: [96, 128, 192, 256, 384, 512].map(s => ({ src: cover, sizes: `${s}x${s}`, type: "image/jpeg" }))
   });
-  navigator.mediaSession.setActionHandler("play",          () => {
-    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.play().catch(() => {});
-    audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); });
-  });
-  navigator.mediaSession.setActionHandler("pause",         () => {
-    if (crossfadeActive && crossfadeNextAudio) crossfadeNextAudio.pause();
-    audioEl.pause(); isPlaying = false; updatePlayIcons(false);
-  });
+  navigator.mediaSession.setActionHandler("play",          () => { audioEl.play(); });
+  navigator.mediaSession.setActionHandler("pause",         () => { audioEl.pause(); });
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
   try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
@@ -2535,7 +2379,6 @@ function setupMediaSession(item) {
   try { navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
     if (audioEl.duration) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration, seekTime));
   }); } catch(_) {}
-  setMediaSessionPlaybackState(isPlaying);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2566,400 +2409,3 @@ window.addEventListener("scroll", () => {
   // Restore queue panel now-playing if there's a last track (just initialize empty state)
   renderQueueList();
 })();
-/* ═══════════════════════════════════════════════════════════
-   DROPLY AI DJ SYSTEM — v5
-   Sistema completo de IA DJ con mezcla inteligente,
-   análisis de prompts, cola dinámica y Auto DJ mode
-═══════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — METADATA ENRIQUECIDA
-   Cada canción recibe metadata de mood/energía/BPM/vibe
-══════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════
-   DROPLY AI DJ SYSTEM — v6 (Claude API real)
-   PON AQUÍ TU API KEY:
-═══════════════════════════════════════════════════════════ */
-const GEMINI_API_KEY = "AIzaSyAs7j892gZpbaWV2Rva3VwA6Z5_qRPA3Vs";
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — STATE & DOM REFS
-══════════════════════════════════════════════════════ */
-let aiDjActive        = false;
-let aiDjAutoMode      = false;
-let aiDjCurrentPrompt = "";
-let aiDjHistory       = [];
-let aiDjChatHistory   = [];   // memoria de conversación con Gemini
-
-const aiDjPanel       = document.getElementById("aiDjPanel");
-const aiDjOverlay     = document.getElementById("aiDjOverlay");
-const aiDjClose       = document.getElementById("aiDjClose");
-const aiDjTopbarBtn   = document.getElementById("aiDjTopbarBtn");
-const aiDjInput       = document.getElementById("aiDjInput");
-const aiDjMixBtn      = document.getElementById("aiDjMixBtn");
-const aiDjSurpriseBtn = document.getElementById("aiDjSurpriseBtn");
-const aiDjModeToggle  = document.getElementById("aiDjModeToggle");
-const aiDjStatusText  = document.getElementById("aiDjStatusText");
-const aiDjMoodBar     = document.getElementById("aiDjMoodBar");
-const aiDjMoodValue   = document.getElementById("aiDjMoodValue");
-const aiDjGenreValue  = document.getElementById("aiDjGenreValue");
-const aiDjEnergyDots  = document.getElementById("aiDjEnergyDots");
-const aiDjBpmValue    = document.getElementById("aiDjBpmValue");
-const aiDjMixing      = document.getElementById("aiDjMixing");
-const aiDjHistoryEl   = document.getElementById("aiDjHistory");
-const aiDjHistoryChips= document.getElementById("aiDjHistoryChips");
-const aiDjMiniBar     = document.getElementById("aiDjMiniBar");
-const aiDjMiniPrompt  = document.getElementById("aiDjMiniPrompt");
-const aiDjMiniStop    = document.getElementById("aiDjMiniStop");
-const sheetAiBadge    = document.getElementById("sheetAiBadge");
-const heroAiDj        = document.getElementById("heroAiDj");
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — METADATA extendida por canción (opcional)
-   Si una canción no está aquí, se usa su category del catálogo
-══════════════════════════════════════════════════════ */
-const AI_METADATA = {};
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — CATÁLOGO para Claude
-   Generamos un resumen de todas las canciones disponibles
-══════════════════════════════════════════════════════ */
-function buildCatalogSummary() {
-  return media
-    .filter(m => m.type === "music")
-    .map(t => {
-      const key = t.file.replace("./Music/", "").replace(".mp3", "");
-      const meta = AI_METADATA[t.file];
-      if (meta) {
-        return `[${key}] "${t.title}" – ${t.artist} | genre:${meta.genre} mood:${meta.mood} energy:${meta.energy}/10 bpm:${meta.bpm} vibes:${meta.vibe.join(",")} lang:${meta.language} year:${meta.year}`;
-      } else {
-        return `[${key}] "${t.title}" – ${t.artist} | category:${t.category}`;
-      }
-    })
-    .join("\n");
-}
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — LLAMADA A GEMINI API
-══════════════════════════════════════════════════════ */
-async function askGemini(userPrompt) {
-  const catalogSummary = buildCatalogSummary();
-
-  const systemPrompt = `Eres DROPLY DJ, el DJ con IA más inteligente del mundo. Mezclas música como un DJ profesional de verdad: lees el vibe, entiendes emociones, contextos y flujo. No solo emparejas géneros — entiendes qué quiere sentir la persona.
-
-Tienes acceso a este catálogo de canciones (son las ÚNICAS disponibles):
-${catalogSummary}
-
-Cuando el usuario pida una mezcla, responde ÚNICAMENTE con un JSON válido (sin markdown, sin texto antes ni después):
-{
-  "tracks": ["key1", "key2", ...],
-  "narrative": "2-3 frases como un DJ real anunciando la sesión. Creativo y apasionado. En el mismo idioma que el usuario.",
-  "vibe": "una palabra que defina el vibe",
-  "genre": "género principal",
-  "energy": 1-10,
-  "bpm": "ej: ~100 o 90-128",
-  "comments": { "key": "por qué esta canción encaja" }
-}
-
-Reglas de mezcla:
-- Selecciona 8-15 canciones que de verdad encajen con lo pedido
-- Ordénalas con criterio: energía progresiva, transiciones de BPM suaves, arco emocional
-- Una buena sesión tiene historia: calentamiento → pico → bajada (o lo que pida el contexto)
-- Infiere el contexto real. "estudiar a las 2am" → baja energía, sin letra o muy suave. "preparándome para salir" → energía creciente, bailable
-- Mezcla géneros cuando tenga sentido (verano puede combinar reggaeton + eurodance + dance pop)
-- Si el usuario continúa una conversación anterior, recuerda el contexto y evoluciona la sesión
-- Sé opinado. Un DJ tiene gusto propio.
-- Los keys son exactamente los nombres de archivo sin ./Music/ y sin .mp3`;
-
-  // Construir historial en formato Gemini
-  const history = aiDjChatHistory.map(msg => ({
-    role: msg.role === "assistant" ? "model" : "user",
-    parts: [{ text: msg.content }]
-  }));
-
-  const contents = [
-    ...history,
-    { role: "user", parts: [{ text: userPrompt }] }
-  ];
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: contents,
-        generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
-      })
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Error ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  // Guardar en historial de conversación (máx 10 mensajes para no gastar tokens)
-  aiDjChatHistory = [
-    ...aiDjChatHistory,
-    { role: "user", content: userPrompt },
-    { role: "assistant", content: text }
-  ].slice(-10);
-
-  // Parsear JSON
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
-}
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — EJECUTAR MEZCLA
-══════════════════════════════════════════════════════ */
-async function executeAiMix(prompt) {
-  if (!prompt || !prompt.trim()) {
-    showToast("Escribe qué tipo de música quieres", "error");
-    return;
-  }
-
-  const trimmed = prompt.trim();
-  aiDjCurrentPrompt = trimmed;
-
-  // Mostrar animación de carga
-  aiDjMixing.style.display = "flex";
-  document.querySelector(".ai-dj-mixing-text").textContent = "DROPLY DJ PENSANDO…";
-  aiDjStatusText.textContent = "Analizando tu vibe…";
-  aiDjInput.disabled = true;
-  aiDjMixBtn.disabled = true;
-
-  try {
-    const result = await askGemini(trimmed);
-
-    // Resolver tracks del catálogo
-    const allMusic = media.filter(m => m.type === "music");
-    const tracks = (result.tracks || [])
-      .map(key => allMusic.find(t =>
-        t.file === `./Music/${key}.mp3` ||
-        t.file.includes(`/${key}.mp3`) ||
-        t.file.includes(`/${key}`)
-      ))
-      .filter(Boolean);
-
-    if (tracks.length === 0) {
-      showToast("No encontré canciones para ese vibe — prueba con otra descripción", "error");
-      return;
-    }
-
-    // Cargar en cola y reproducir
-    queue = tracks.map(t => t.file);
-    saveQueue();
-    playlist = tracks;
-    currentTrackIdx = 0;
-    loadTrack(tracks[0]);
-    aiDjActive = true;
-
-    // Actualizar UI — Mood bar
-    aiDjMoodBar.style.display = "flex";
-    aiDjMoodValue.textContent  = result.vibe  || "—";
-    aiDjGenreValue.textContent = result.genre || "—";
-    aiDjBpmValue.textContent   = result.bpm   || "—";
-
-    // Puntos de energía
-    const energyVal = parseInt(result.energy) || 5;
-    aiDjEnergyDots.innerHTML = "";
-    for (let i = 1; i <= 10; i++) {
-      const dot = document.createElement("div");
-      dot.className = "ai-dj-energy-dot" + (i <= energyVal ? " active" : "");
-      aiDjEnergyDots.appendChild(dot);
-    }
-
-    // Mini bar
-    aiDjMiniBar.style.display = "";
-    aiDjMiniPrompt.textContent = trimmed;
-    sheetAiBadge.style.display = "flex";
-
-    // Status
-    aiDjStatusText.textContent = `"${trimmed}"`;
-
-    // Narrativa del DJ — mostrar como toast largo
-    if (result.narrative) {
-      showToast(`🎧 ${result.narrative}`, "success");
-    } else {
-      showToast(`🎧 AI DJ · ${tracks.length} canciones mezcladas`, "success");
-    }
-
-    // Historial
-    addToAiDjHistory(trimmed);
-    renderQueueList();
-    setTimeout(closeAiDjPanel, 600);
-
-  } catch (err) {
-    console.error("Droply DJ error:", err);
-    showToast(`Error: ${err.message}`, "error");
-    aiDjStatusText.textContent = "Error — inténtalo de nuevo";
-  } finally {
-    aiDjMixing.style.display = "none";
-    aiDjInput.disabled = false;
-    aiDjMixBtn.disabled = false;
-  }
-}
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — PARAR
-══════════════════════════════════════════════════════ */
-function stopAiDj() {
-  aiDjActive = false;
-  aiDjAutoMode = false;
-  aiDjCurrentPrompt = "";
-  aiDjChatHistory = [];
-  aiDjModeToggle.classList.remove("active");
-  aiDjMiniBar.style.display = "none";
-  sheetAiBadge.style.display = "none";
-  aiDjStatusText.textContent = "Listo para mezclar";
-  aiDjMoodBar.style.display = "none";
-  showToast("AI DJ detenido");
-}
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — ABRIR / CERRAR PANEL
-══════════════════════════════════════════════════════ */
-function openAiDjPanel() {
-  aiDjPanel.classList.add("open");
-  aiDjOverlay.classList.add("open");
-  aiDjTopbarBtn.classList.add("active");
-  document.body.style.overflow = "hidden";
-  setTimeout(() => aiDjInput.focus(), 350);
-}
-function closeAiDjPanel() {
-  aiDjPanel.classList.remove("open");
-  aiDjOverlay.classList.remove("open");
-  aiDjTopbarBtn.classList.remove("active");
-  document.body.style.overflow = "";
-}
-
-aiDjTopbarBtn.addEventListener("click", () =>
-  aiDjPanel.classList.contains("open") ? closeAiDjPanel() : openAiDjPanel()
-);
-aiDjClose.addEventListener("click", closeAiDjPanel);
-aiDjOverlay.addEventListener("click", closeAiDjPanel);
-heroAiDj.addEventListener("click", openAiDjPanel);
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — EVENTOS DE INPUT
-══════════════════════════════════════════════════════ */
-aiDjMixBtn.addEventListener("click", () => executeAiMix(aiDjInput.value));
-aiDjInput.addEventListener("keydown", e => {
-  if (e.key === "Enter") executeAiMix(aiDjInput.value);
-});
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — SORPRÉNDEME
-══════════════════════════════════════════════════════ */
-const SURPRISE_PROMPTS = [
-  "música para conducir sola de noche por la autopista",
-  "algo que ponga de buen humor un domingo perezoso",
-  "sesión pre-fiesta para animarme antes de salir",
-  "música para entrenar duro y no parar",
-  "vibes de playa a las 5 de la tarde con amigos",
-  "algo melancólico pero bonito para llorar un poco",
-  "hits que todo el mundo sabe para cantar en grupo",
-  "música para estudiar sin que me distraiga",
-  "perreo clásico del 2005-2010",
-  "eurodance de los 90 para nostalgear",
-  "algo romántico y suave para una noche íntima",
-  "energía máxima para despertar por la mañana",
-  "trap urbano de madrugada en la calle",
-  "summer vibes tropicales para la playa",
-  "algo que suene a nostalgia de verano pasado",
-];
-
-aiDjSurpriseBtn.addEventListener("click", () => {
-  const rnd = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
-  aiDjInput.value = rnd;
-  executeAiMix(rnd);
-});
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — VIBES RÁPIDOS (botones del panel)
-══════════════════════════════════════════════════════ */
-document.querySelectorAll(".ai-dj-vibe-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".ai-dj-vibe-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    const p = btn.dataset.prompt;
-    aiDjInput.value = p;
-    executeAiMix(p);
-  });
-});
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — AUTO DJ TOGGLE
-══════════════════════════════════════════════════════ */
-aiDjModeToggle.addEventListener("click", () => {
-  aiDjAutoMode = !aiDjAutoMode;
-  aiDjModeToggle.classList.toggle("active", aiDjAutoMode);
-  showToast(aiDjAutoMode ? "Auto DJ activado — mezcla infinita" : "Auto DJ desactivado");
-  aiDjStatusText.textContent = aiDjAutoMode ? "Auto DJ activo" :
-    (aiDjCurrentPrompt ? `"${aiDjCurrentPrompt}"` : "Listo para mezclar");
-});
-
-aiDjMiniStop.addEventListener("click", stopAiDj);
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — AUTO DJ al acabar cola
-══════════════════════════════════════════════════════ */
-audioEl.addEventListener("ended", () => {
-  if (aiDjAutoMode && queue.length === 0 && aiDjCurrentPrompt) {
-    setTimeout(() => {
-      showToast("🔄 Auto DJ — generando siguiente sesión…", "success");
-      executeAiMix(aiDjCurrentPrompt);
-    }, 500);
-  }
-});
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — HISTORIAL
-══════════════════════════════════════════════════════ */
-function addToAiDjHistory(prompt) {
-  aiDjHistory = [prompt, ...aiDjHistory.filter(p => p !== prompt)].slice(0, 6);
-  renderAiDjHistory();
-}
-function renderAiDjHistory() {
-  if (aiDjHistory.length === 0) { aiDjHistoryEl.style.display = "none"; return; }
-  aiDjHistoryEl.style.display = "";
-  aiDjHistoryChips.innerHTML = "";
-  aiDjHistory.forEach(p => {
-    const chip = document.createElement("button");
-    chip.className = "ai-dj-history-chip";
-    chip.textContent = p;
-    chip.addEventListener("click", () => { aiDjInput.value = p; executeAiMix(p); });
-    aiDjHistoryChips.appendChild(chip);
-  });
-}
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — TAGS EN COLA
-══════════════════════════════════════════════════════ */
-new MutationObserver(() => {
-  if (!aiDjActive) return;
-  document.querySelectorAll(".queue-item-info").forEach(info => {
-    if (!info.querySelector(".queue-item-ai-tag")) {
-      const tag = document.createElement("span");
-      tag.className = "queue-item-ai-tag";
-      tag.textContent = "✦ AI DJ";
-      info.appendChild(tag);
-    }
-  });
-}).observe(document.getElementById("queueList"), { childList: true });
-
-/* ══════════════════════════════════════════════════════
-   AI DJ — ATAJO DE TECLADO  Ctrl/Cmd + Shift + A
-══════════════════════════════════════════════════════ */
-document.addEventListener("keydown", e => {
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "A") {
-    e.preventDefault();
-    openAiDjPanel();
-  }
-});
