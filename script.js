@@ -2563,6 +2563,7 @@ const OfflineManager = (() => {
       updateCardDownloadBtn(key, 'done');
       updateDownloadsBadge();
       renderDownloadsList();
+      if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
       if (typeof showToast === 'function') showToast(`"${item.title}" guardada offline`, 'success');
     } catch(err) {
       downloadStates.set(key, 'error');
@@ -2592,6 +2593,7 @@ const OfflineManager = (() => {
     updateCardDownloadBtn(key, 'none');
     updateDownloadsBadge();
     renderDownloadsList();
+    if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
   }
 
   /* ─── Get all downloaded meta ─────────────────── */
@@ -3531,6 +3533,42 @@ function injectPremiumDOM() {
           </h2>
           <button class="offline-clear-btn" id="offlineClearAllBtn">Liberar espacio</button>
         </div>
+
+        <!-- ── Connectivity banner ── -->
+        <div class="offline-status-banner is-online" id="offlineStatusBanner">
+          <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
+          <span id="offlineStatusText">Conectado — escucha también sin internet</span>
+        </div>
+
+        <!-- ── Offline playlist ── -->
+        <div class="offline-playlist-section">
+          <div class="offline-playlist-header">
+            <div>
+              <div class="offline-playlist-title">Mis canciones guardadas</div>
+              <div class="offline-playlist-count" id="offlinePlaylistCount">0 canciones</div>
+            </div>
+            <div class="offline-playlist-controls">
+              <button class="offline-shuffle-btn" id="offlineShuffleBtn" title="Aleatorio">
+                <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                Aleatorio
+              </button>
+              <button class="offline-play-all-btn" id="offlinePlayAllBtn">
+                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                Reproducir todo
+              </button>
+            </div>
+          </div>
+          <div class="offline-track-list" id="offlineTrackList">
+            <div class="offline-empty-playlist">
+              <strong>Sin canciones guardadas</strong>
+              <p>Descarga canciones pulsando el botón <svg viewBox="0 0 24 24" width="13" height="13" style="display:inline;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> en cualquier canción para escucharlas sin conexión.</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="offline-section-divider" />
+
+        <!-- ── Storage + raw downloads list (existing) ── -->
         <div class="page-offline-downloads">
           <div class="offline-storage-bar">
             <div class="offline-storage-label">
@@ -3542,7 +3580,7 @@ function injectPremiumDOM() {
             </div>
           </div>
           <div class="offline-actions-row">
-            <span class="offline-section-label">Descargas</span>
+            <span class="offline-section-label">Detalle de descargas</span>
           </div>
           <div id="downloadsListContainer"></div>
         </div>
@@ -3721,6 +3759,8 @@ function setupPremiumEvents() {
     btn.addEventListener('click', () => {
       if (typeof showPage === 'function') showPage('pageDownloads');
       OfflineManager.renderDownloadsList();
+      renderOfflinePlaylist();
+      updateOfflineStatusBanner();
     });
   });
 
@@ -3737,6 +3777,154 @@ function setupPremiumEvents() {
 
 
 /* ══════════════════════════════════════════════════════
+   OFFLINE PLAYLIST — Render downloaded tracks as playable list
+══════════════════════════════════════════════════════ */
+function renderOfflinePlaylist() {
+  const container = document.getElementById('offlineTrackList');
+  const countEl   = document.getElementById('offlinePlaylistCount');
+  if (!container) return;
+
+  // Get all tracks from the global media array that are downloaded
+  const allTracks = typeof media !== 'undefined' ? media : [];
+  const downloaded = allTracks.filter(t => OfflineManager.isDownloaded(t.file));
+
+  if (countEl) countEl.textContent = downloaded.length === 1
+    ? '1 canción'
+    : `${downloaded.length} canciones`;
+
+  // Show / hide play-all & shuffle buttons
+  const playAllBtn    = document.getElementById('offlinePlayAllBtn');
+  const shuffleBtn    = document.getElementById('offlineShuffleBtn');
+  const hasTracks     = downloaded.length > 0;
+  if (playAllBtn)  playAllBtn.style.display  = hasTracks ? '' : 'none';
+  if (shuffleBtn)  shuffleBtn.style.display  = hasTracks ? '' : 'none';
+
+  if (downloaded.length === 0) {
+    container.innerHTML = `
+      <div class="offline-empty-playlist">
+        <strong>Sin canciones guardadas</strong>
+        <p>Descarga canciones pulsando el botón
+          <svg viewBox="0 0 24 24" width="13" height="13" style="display:inline;vertical-align:middle">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          en cualquier canción para escucharlas sin conexión.</p>
+      </div>`;
+    return;
+  }
+
+  // Get current playing track title to highlight it
+  const currentTitleEl = document.getElementById('sheetTitle') || document.getElementById('miniTitle');
+  const currentTitle   = currentTitleEl ? currentTitleEl.textContent.trim() : '';
+
+  container.innerHTML = downloaded.map((track, i) => {
+    const isPlaying = track.title === currentTitle && currentTitle !== '—';
+    return `
+      <div class="offline-track-row${isPlaying ? ' playing' : ''}"
+           data-file="${track.file}" data-index="${i}" role="button" tabindex="0"
+           aria-label="Reproducir ${track.title}">
+        <span class="offline-track-num">${isPlaying
+          ? `<svg viewBox="0 0 24 24" width="12" height="12" style="color:var(--accent)"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>`
+          : i + 1}</span>
+        <div class="offline-track-thumb">
+          <img src="${track.cover}" alt="" loading="lazy" />
+          <div class="offline-now-playing-eq">
+            <div class="offline-eq-bars">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+        <div class="offline-track-info">
+          <div class="offline-track-title">${track.title}</div>
+          <div class="offline-track-artist">${track.artist}</div>
+        </div>
+        <div class="offline-track-meta">
+          <span class="offline-track-dur">${track.duration || ''}</span>
+          <div class="offline-dot-saved" title="Guardada offline"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Click on a track to play it (using offline src if possible)
+  container.querySelectorAll('.offline-track-row').forEach((row, i) => {
+    const play = async () => {
+      const track = downloaded[i];
+      if (!track) return;
+      // Build an offline queue starting from this track
+      const queue = [...downloaded.slice(i), ...downloaded.slice(0, i)];
+      // Use existing loadTrack if available — it will pick offline src automatically
+      if (typeof loadTrack === 'function') {
+        // Set up queue
+        if (typeof window.playQueue !== 'undefined') {
+          window.playQueue = queue;
+          window.playQueueIndex = 0;
+        }
+        loadTrack(track, false);
+      }
+      // Re-render to update highlight
+      setTimeout(() => renderOfflinePlaylist(), 300);
+    };
+    row.addEventListener('click', play);
+    row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); play(); } });
+  });
+
+  // Play all button
+  if (playAllBtn) {
+    playAllBtn.onclick = () => {
+      if (downloaded.length === 0) return;
+      if (typeof loadTrack === 'function') {
+        if (typeof window.playQueue !== 'undefined') {
+          window.playQueue = [...downloaded];
+          window.playQueueIndex = 0;
+        }
+        loadTrack(downloaded[0], false);
+      }
+      setTimeout(() => renderOfflinePlaylist(), 300);
+    };
+  }
+
+  // Shuffle button
+  if (shuffleBtn) {
+    shuffleBtn.onclick = () => {
+      if (downloaded.length === 0) return;
+      const shuffled = [...downloaded].sort(() => Math.random() - 0.5);
+      if (typeof loadTrack === 'function') {
+        if (typeof window.playQueue !== 'undefined') {
+          window.playQueue = shuffled;
+          window.playQueueIndex = 0;
+        }
+        loadTrack(shuffled[0], false);
+        // Enable shuffle mode if possible
+        if (typeof window.shuffleOn !== 'undefined') window.shuffleOn = true;
+      }
+      setTimeout(() => renderOfflinePlaylist(), 300);
+    };
+  }
+}
+
+function updateOfflineStatusBanner() {
+  const banner = document.getElementById('offlineStatusBanner');
+  const text   = document.getElementById('offlineStatusText');
+  if (!banner || !text) return;
+  if (navigator.onLine) {
+    banner.classList.add('is-online');
+    text.textContent = 'Conectado — escucha también sin internet';
+  } else {
+    banner.classList.remove('is-online');
+    text.textContent = 'Sin conexión — reproduciendo desde caché local';
+  }
+}
+
+// Auto-refresh offline playlist when downloads page is shown
+(function watchOfflinePage() {
+  // Also re-render when connectivity changes
+  window.addEventListener('online',  () => { updateOfflineStatusBanner(); renderOfflinePlaylist(); });
+  window.addEventListener('offline', () => { updateOfflineStatusBanner(); renderOfflinePlaylist(); });
+})();
+
+
+/* ══════════════════════════════════════════════════════
    BOOT — Init all modules after DOM ready
 ══════════════════════════════════════════════════════ */
 function bootPremium() {
@@ -3749,6 +3937,9 @@ function bootPremium() {
   OfflineManager.setupOfflineDetection();
   TransferManager.init();
   CloudSync.init();
+
+  // Render offline playlist (after IDB is ready, slight delay)
+  setTimeout(() => { renderOfflinePlaylist(); updateOfflineStatusBanner(); }, 400);
 
   // Register SW
   registerServiceWorker();
