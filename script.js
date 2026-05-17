@@ -1598,6 +1598,9 @@ function renderGrid() {
         <div class="card-liked-dot ${liked ? 'visible' : ''}">
           <svg viewBox="0 0 24 24"><path fill="#fff" stroke="none" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
+        <button class="card-download-btn" data-file="${item.file}" title="Descargar para offline" aria-label="Descargar">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
       </div>
       <div class="card-body">
         <p class="card-category">${item.category}</p>
@@ -1613,10 +1616,22 @@ function renderGrid() {
       </div>`;
 
     card.querySelector(".card-play-btn").addEventListener("click", e => { e.stopPropagation(); loadTrack(item); });
-    card.addEventListener("click", e => { if (!e.target.closest(".card-more-btn")) loadTrack(item); });
+    card.addEventListener("click", e => { if (!e.target.closest(".card-more-btn") && !e.target.closest(".card-download-btn")) loadTrack(item); });
     card.querySelector(".card-more-btn").addEventListener("click", e => {
       e.stopPropagation();
       openContextMenu(item, e.clientX, e.clientY);
+    });
+    card.querySelector(".card-download-btn").addEventListener("click", e => {
+      e.stopPropagation();
+      if (typeof OfflineManager !== 'undefined') {
+        if (OfflineManager.isDownloaded(item.file)) {
+          if (typeof showToast === 'function') showToast(`"${item.title}" ya está guardada offline`, 'default');
+        } else {
+          OfflineManager.downloadTrack(item);
+        }
+      } else {
+        if (typeof showToast === 'function') showToast('Módulo offline no disponible', 'error');
+      }
     });
     mediaGrid.appendChild(card);
   });
@@ -2408,4 +2423,1343 @@ window.addEventListener("scroll", () => {
   buildGenreGrid();
   // Restore queue panel now-playing if there's a last track (just initialize empty state)
   renderQueueList();
+})();/* ═══════════════════════════════════════════════════════════
+   DROPLY — premium.js  v1.0
+   Módulos: Offline/Descargas · Modo Coche · Transferencia · Cloud Sync
+   
+   IMPORTANTE: Este fichero se carga DESPUÉS de script.js.
+   Extiende sin modificar el código original.
+═══════════════════════════════════════════════════════════ */
+
+'use strict';
+
+/* ══════════════════════════════════════════════════════
+   MÓDULO 1 — GESTIÓN OFFLINE / DESCARGAS (IndexedDB)
+══════════════════════════════════════════════════════ */
+const OfflineManager = (() => {
+  const DB_NAME    = 'droply_offline_v1';
+  const DB_VERSION = 1;
+  const STORE_AUDIO  = 'audio';
+  const STORE_COVERS = 'covers';
+  const STORE_META   = 'meta';
+
+  let db = null;
+
+  /* ─── Open DB ─────────────────────────────────── */
+  async function openDB() {
+    if (db) return db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains(STORE_AUDIO))  d.createObjectStore(STORE_AUDIO);
+        if (!d.objectStoreNames.contains(STORE_COVERS)) d.createObjectStore(STORE_COVERS);
+        if (!d.objectStoreNames.contains(STORE_META))   d.createObjectStore(STORE_META);
+      };
+      req.onsuccess = e => { db = e.target.result; resolve(db); };
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  /* ─── Generic IDB helpers ─────────────────────── */
+  async function idbSet(store, key, value) {
+    const d = await openDB();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).put(value, key);
+      tx.oncomplete = () => res(true);
+      tx.onerror    = () => rej(tx.error);
+    });
+  }
+  async function idbGet(store, key) {
+    const d = await openDB();
+    return new Promise((res, rej) => {
+      const req = d.transaction(store, 'readonly').objectStore(store).get(key);
+      req.onsuccess = () => res(req.result || null);
+      req.onerror   = () => rej(req.error);
+    });
+  }
+  async function idbDel(store, key) {
+    const d = await openDB();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete = () => res(true);
+      tx.onerror    = () => rej(tx.error);
+    });
+  }
+  async function idbKeys(store) {
+    const d = await openDB();
+    return new Promise((res, rej) => {
+      const req = d.transaction(store, 'readonly').objectStore(store).getAllKeys();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror   = () => rej(req.error);
+    });
+  }
+
+  /* ─── State ───────────────────────────────────── */
+  const downloadStates = new Map(); // file -> 'pending'|'downloading'|'done'|'error'
+  let downloadedKeys   = new Set();
+  let downloadQueue    = [];
+  let isDownloading    = false;
+
+  /* ─── Init ────────────────────────────────────── */
+  async function init() {
+    try {
+      await openDB();
+      const keys = await idbKeys(STORE_META);
+      downloadedKeys = new Set(keys);
+      keys.forEach(k => downloadStates.set(k, 'done'));
+      updateAllCardDownloadButtons();
+      updateDownloadsBadge();
+    } catch(e) {
+      console.warn('[DROPLY Offline] IndexedDB no disponible:', e);
+    }
+  }
+
+  /* ─── Download a track ────────────────────────── */
+  async function downloadTrack(item, onProgress) {
+    if (!item?.file) return;
+    const key = item.file;
+    if (downloadStates.get(key) === 'done') return;
+    if (downloadStates.get(key) === 'downloading') return;
+
+    downloadStates.set(key, 'downloading');
+    updateCardDownloadBtn(key, 'downloading');
+
+    try {
+      // Fetch audio
+      const audioResp = await fetch(key);
+      if (!audioResp.ok) throw new Error(`HTTP ${audioResp.status}`);
+      const total    = parseInt(audioResp.headers.get('content-length') || '0');
+      const reader   = audioResp.body.getReader();
+      const chunks   = [];
+      let loaded     = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.byteLength;
+        if (total > 0 && onProgress) onProgress(loaded / total);
+      }
+
+      const audioBlob = new Blob(chunks, { type: 'audio/mpeg' });
+
+      // Fetch cover (best-effort)
+      let coverBlob = null;
+      try {
+        const coverResp = await fetch(item.cover);
+        if (coverResp.ok) coverBlob = await coverResp.blob();
+      } catch(_) {}
+
+      // Save to IDB
+      await idbSet(STORE_AUDIO,  key, audioBlob);
+      await idbSet(STORE_META,   key, { title: item.title, artist: item.artist, category: item.category, duration: item.duration, cover: item.cover, file: item.file, downloadedAt: Date.now() });
+      if (coverBlob) await idbSet(STORE_COVERS, key, coverBlob);
+
+      downloadStates.set(key, 'done');
+      downloadedKeys.add(key);
+      updateCardDownloadBtn(key, 'done');
+      updateDownloadsBadge();
+      renderDownloadsList();
+      if (typeof showToast === 'function') showToast(`"${item.title}" guardada offline`, 'success');
+    } catch(err) {
+      downloadStates.set(key, 'error');
+      updateCardDownloadBtn(key, 'error');
+      console.warn('[DROPLY Offline] Error al descargar:', key, err);
+      if (typeof showToast === 'function') showToast(`Error al descargar "${item.title}"`, 'error');
+    }
+  }
+
+  /* ─── Get offline audio src ───────────────────── */
+  async function getOfflineSrc(file) {
+    if (!downloadedKeys.has(file)) return null;
+    try {
+      const blob = await idbGet(STORE_AUDIO, file);
+      if (!blob) return null;
+      return URL.createObjectURL(blob);
+    } catch(_) { return null; }
+  }
+
+  /* ─── Delete a download ───────────────────────── */
+  async function deleteDownload(key) {
+    await idbDel(STORE_AUDIO,  key);
+    await idbDel(STORE_COVERS, key);
+    await idbDel(STORE_META,   key);
+    downloadStates.delete(key);
+    downloadedKeys.delete(key);
+    updateCardDownloadBtn(key, 'none');
+    updateDownloadsBadge();
+    renderDownloadsList();
+  }
+
+  /* ─── Get all downloaded meta ─────────────────── */
+  async function getAllDownloads() {
+    const d = await openDB();
+    return new Promise((res, rej) => {
+      const req = d.transaction(STORE_META, 'readonly').objectStore(STORE_META).getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror   = () => rej(req.error);
+    });
+  }
+
+  /* ─── Estimate storage ────────────────────────── */
+  async function getStorageEstimate() {
+    try {
+      if (navigator.storage?.estimate) {
+        const { usage, quota } = await navigator.storage.estimate();
+        return { usage, quota };
+      }
+    } catch(_) {}
+    return { usage: 0, quota: 0 };
+  }
+
+  /* ─── UI helpers ──────────────────────────────── */
+  function getCardDownloadBtn(file) {
+    return document.querySelector(`.card-download-btn[data-file="${CSS.escape(file)}"]`);
+  }
+
+  function updateCardDownloadBtn(file, state) {
+    const btn = getCardDownloadBtn(file);
+    if (!btn) return;
+    btn.classList.remove('downloaded', 'downloading', 'error');
+    const svgDownload = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const svgDone     = `<svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const svgSpin     = `<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`;
+    if (state === 'done')        { btn.classList.add('downloaded'); btn.innerHTML = svgDone; btn.title = 'Guardado offline'; }
+    else if (state === 'downloading') { btn.classList.add('downloading'); btn.innerHTML = svgSpin; btn.title = 'Descargando...'; }
+    else if (state === 'error')  { btn.innerHTML = svgDownload; btn.title = 'Reintentar descarga'; }
+    else                         { btn.innerHTML = svgDownload; btn.title = 'Descargar para offline'; }
+  }
+
+  function updateAllCardDownloadButtons() {
+    document.querySelectorAll('.card-download-btn').forEach(btn => {
+      const file = btn.dataset.file;
+      if (!file) return;
+      const state = downloadStates.get(file) || 'none';
+      updateCardDownloadBtn(file, state);
+    });
+  }
+
+  function updateDownloadsBadge() {
+    const badge = document.querySelector('#bnavDownloads .nav-badge');
+    if (!badge) return;
+    const count = downloadedKeys.size;
+    badge.textContent  = count > 99 ? '99+' : count;
+    badge.classList.toggle('visible', count > 0);
+  }
+
+  /* ─── Render downloads page ───────────────────── */
+  async function renderDownloadsList() {
+    const container = document.getElementById('downloadsListContainer');
+    if (!container) return;
+    const bar    = document.getElementById('offlineStorageFill');
+    const barLbl = document.getElementById('offlineStorageSize');
+
+    const { usage, quota } = await getStorageEstimate();
+    if (bar && quota > 0) {
+      bar.style.width = Math.min(100, (usage / quota) * 100) + '%';
+    }
+    if (barLbl) {
+      const usedMB  = (usage / 1024 / 1024).toFixed(1);
+      const totalGB = quota > 0 ? (quota / 1024 / 1024 / 1024).toFixed(1) : '—';
+      barLbl.textContent = `${usedMB} MB / ${totalGB} GB`;
+    }
+
+    const items = await getAllDownloads();
+    if (items.length === 0) {
+      container.innerHTML = `<div class="offline-empty">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <h3>Sin descargas</h3>
+        <p>Pulsa el ícono ↓ en cualquier canción para guardarla y escucharla sin internet.</p>
+      </div>`;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    items.sort((a,b) => (b.downloadedAt||0) - (a.downloadedAt||0)).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'library-item fade-in';
+      const cover = item.cover || (typeof getPlaceholderCover === 'function' ? getPlaceholderCover(item.category) : '');
+      row.innerHTML = `
+        <div class="library-thumb"><img src="${cover}" alt="${item.title}" /></div>
+        <div class="library-info">
+          <span class="library-track-title">${item.title}</span>
+          <span class="library-track-artist">${item.artist} · <span style="color:var(--green);font-size:.7rem">✓ Offline</span></span>
+        </div>
+        <div class="library-item-actions">
+          <button class="library-action-btn" data-action="delete" title="Eliminar descarga" style="color:var(--text-soft)">
+            <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+        <span class="library-item-dur">${item.duration || ''}</span>`;
+      row.addEventListener('click', async e => {
+        if (e.target.closest('[data-action="delete"]')) {
+          e.stopPropagation();
+          await deleteDownload(item.file);
+          return;
+        }
+        if (typeof hapticFeedback === 'function') hapticFeedback('light');
+        const trackItem = { ...item };
+        // Use offline blob src if available
+        const offlineSrc = await getOfflineSrc(item.file);
+        if (offlineSrc && typeof loadTrack === 'function') {
+          const patchedItem = { ...trackItem, _offlineSrc: offlineSrc };
+          loadTrack(patchedItem);
+        } else if (typeof loadTrack === 'function') {
+          loadTrack(trackItem);
+        }
+      });
+      fragment.appendChild(row);
+    });
+    container.innerHTML = '';
+    container.appendChild(fragment);
+  }
+
+  /* ─── Offline detection ───────────────────────── */
+  function setupOfflineDetection() {
+    const badge = document.getElementById('offlineStatusBadge');
+    if (!badge) return;
+
+    function updateStatus() {
+      const online = navigator.onLine;
+      badge.classList.toggle('is-offline', !online);
+      badge.classList.toggle('is-online', online);
+      badge.querySelector('.badge-text').textContent = online ? 'Conexión restaurada' : 'Sin conexión — modo offline';
+      badge.classList.add('visible');
+      clearTimeout(badge._hideTimer);
+      badge._hideTimer = setTimeout(() => badge.classList.remove('visible'), online ? 2800 : 999999);
+      if (!online && typeof showToast === 'function') {
+        showToast('Sin internet — reproduciendo desde caché', 'default');
+      }
+    }
+
+    window.addEventListener('online',  updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    if (!navigator.onLine) updateStatus();
+  }
+
+  return { init, downloadTrack, getOfflineSrc, deleteDownload, renderDownloadsList, isDownloaded: k => downloadedKeys.has(k), updateAllCardDownloadButtons, setupOfflineDetection };
 })();
+
+
+/* ══════════════════════════════════════════════════════
+   MÓDULO 2 — MODO COCHE
+══════════════════════════════════════════════════════ */
+const CarMode = (() => {
+  let active = false;
+  let clockTimer = null;
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  let suggestDismissed = false;
+
+  function formatTimeClock() {
+    const now = new Date();
+    return now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  }
+
+  function activate() {
+    const panel = document.getElementById('carModePanel');
+    if (!panel) return;
+    active = true;
+    panel.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+    syncCarModeToPlayer();
+    startClock();
+    document.getElementById('carModeTopbarBtn')?.classList.add('active');
+    hideSuggest();
+    if (typeof showToast === 'function') showToast('Modo Coche activado', 'success');
+  }
+
+  function deactivate() {
+    const panel = document.getElementById('carModePanel');
+    if (!panel) return;
+    active = false;
+    panel.classList.remove('active');
+    document.body.style.overflow = '';
+    stopClock();
+    document.getElementById('carModeTopbarBtn')?.classList.remove('active');
+    if (typeof hapticFeedback === 'function') hapticFeedback('light');
+  }
+
+  function toggle() { active ? deactivate() : activate(); }
+
+  function startClock() {
+    const el = document.getElementById('carModeTime');
+    if (!el) return;
+    el.textContent = formatTimeClock();
+    clockTimer = setInterval(() => { el.textContent = formatTimeClock(); }, 15000);
+  }
+  function stopClock() {
+    clearInterval(clockTimer); clockTimer = null;
+  }
+
+  function syncCarModeToPlayer() {
+    // Pull current state from main player globals
+    const title  = (typeof sheetTitle  !== 'undefined' && sheetTitle.textContent)  || '—';
+    const artist = (typeof sheetArtist !== 'undefined' && sheetArtist.textContent) || '—';
+    const src    = (typeof sheetCover  !== 'undefined' && sheetCover.src)          || '';
+
+    const cTitle  = document.getElementById('carModeTitle');
+    const cArtist = document.getElementById('carModeArtist');
+    const cCover  = document.getElementById('carModeCoverImg');
+    const cBgImg  = document.getElementById('carModeBgImg');
+
+    if (cTitle)  cTitle.textContent  = title;
+    if (cArtist) cArtist.textContent = artist;
+    if (cCover && src)  { cCover.src = src; }
+    if (cBgImg && src)  { cBgImg.src = src; }
+
+    updateCarPlayState();
+    updateCarProgress();
+  }
+
+  function updateCarPlayState() {
+    const playBtn   = document.getElementById('carPlayBtn');
+    const coverEl   = document.getElementById('carModeCover');
+    const playing   = typeof isPlaying !== 'undefined' ? isPlaying : false;
+    if (playBtn) {
+      playBtn.innerHTML = playing
+        ? `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="3" width="4" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>`;
+    }
+    coverEl?.classList.toggle('playing', playing);
+  }
+
+  function updateCarProgress() {
+    if (!active) return;
+    const audio    = typeof audioEl !== 'undefined' ? audioEl : null;
+    const fill     = document.getElementById('carModeBarFill');
+    const current  = document.getElementById('carModeCurrent');
+    const durEl    = document.getElementById('carModeDuration');
+    if (!audio || !fill) return;
+    const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+    fill.style.width = pct + '%';
+    if (current && typeof formatTime === 'function') current.textContent = formatTime(audio.currentTime);
+    if (durEl   && typeof formatTime === 'function') durEl.textContent   = formatTime(audio.duration || 0);
+  }
+
+  function setupSwipeGestures(panel) {
+    panel.addEventListener('touchstart', e => {
+      swipeStartX = e.touches[0].clientX;
+      swipeStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    panel.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - swipeStartX;
+      const dy = e.changedTouches[0].clientY - swipeStartY;
+      if (Math.abs(dx) < Math.abs(dy)) return; // vertical swipe — ignore
+      if (Math.abs(dx) < 60) return; // too short
+      if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+      if (dx < 0 && typeof playNext === 'function') playNext();
+      if (dx > 0 && typeof playPrev === 'function') playPrev();
+    }, { passive: true });
+  }
+
+  function showSuggest() {
+    if (suggestDismissed || active) return;
+    const toast = document.getElementById('carSuggestToast');
+    if (toast) toast.classList.add('visible');
+  }
+  function hideSuggest() {
+    document.getElementById('carSuggestToast')?.classList.remove('visible');
+  }
+
+  function setupBluetoothDetect() {
+    // Detect headset/car bluetooth via audio output change
+    navigator.mediaDevices?.addEventListener?.('devicechange', async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasHeadset = devices.some(d => d.kind === 'audiooutput' && d.label.toLowerCase().match(/bluetooth|hands.free|car|auto/i));
+        if (hasHeadset && !active && !suggestDismissed) {
+          setTimeout(showSuggest, 1500);
+        }
+      } catch(_) {}
+    });
+  }
+
+  return {
+    activate, deactivate, toggle, active: () => active,
+    syncToPlayer: syncCarModeToPlayer,
+    updatePlayState: updateCarPlayState,
+    updateProgress: updateCarProgress,
+    setup(panel) {
+      setupSwipeGestures(panel);
+      setupBluetoothDetect();
+      // Progress bar click
+      const bar = panel.querySelector('#carModeBar');
+      if (bar) {
+        bar.addEventListener('click', e => {
+          const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+          if (!audio?.duration) return;
+          const rect = bar.getBoundingClientRect();
+          const pct  = (e.clientX - rect.left) / rect.width;
+          audio.currentTime = pct * audio.duration;
+        });
+      }
+    },
+    showSuggest, hideSuggest,
+    setSuggestDismissed: () => { suggestDismissed = true; }
+  };
+})();
+
+
+/* ══════════════════════════════════════════════════════
+   MÓDULO 3 — TRANSFERENCIA ENTRE DISPOSITIVOS
+   Tecnología: BroadcastChannel (misma origin) + QR fallback
+   Para cross-device real: genera un session token con QR
+══════════════════════════════════════════════════════ */
+const TransferManager = (() => {
+  const SESSION_KEY = 'droply_transfer_session';
+  let channel = null;
+  let sessionId = null;
+  let knownDevices = new Map(); // id -> { name, lastSeen, platform }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function getSessionId() {
+    if (sessionId) return sessionId;
+    sessionId = sessionStorage.getItem(SESSION_KEY) || generateId();
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+    return sessionId;
+  }
+
+  function getPlatformName() {
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/.test(ua)) return 'iPhone/iPad';
+    if (/Android/.test(ua)) return 'Android';
+    if (/Mac/.test(ua)) return 'Mac';
+    if (/Windows/.test(ua)) return 'Windows';
+    return 'Dispositivo';
+  }
+
+  function getDeviceLabel() {
+    return getPlatformName() + ' — ' + getSessionId().slice(-4).toUpperCase();
+  }
+
+  /* ─── BroadcastChannel (same-origin tabs/windows) */
+  function setupBroadcast() {
+    if (!('BroadcastChannel' in window)) return;
+    try {
+      channel = new BroadcastChannel('droply_transfer');
+      channel.onmessage = e => handleIncomingMessage(e.data);
+      // Announce presence
+      broadcastMessage({ type: 'ANNOUNCE', id: getSessionId(), label: getDeviceLabel(), platform: getPlatformName() });
+      // Ping every 15s to keep alive
+      setInterval(() => broadcastMessage({ type: 'PING', id: getSessionId(), label: getDeviceLabel() }), 15000);
+    } catch(_) {}
+  }
+
+  function broadcastMessage(data) {
+    try { channel?.postMessage(data); } catch(_) {}
+  }
+
+  function handleIncomingMessage(data) {
+    if (!data?.type || data.id === getSessionId()) return;
+    switch (data.type) {
+      case 'ANNOUNCE':
+      case 'PING':
+        knownDevices.set(data.id, { name: data.label || data.id, platform: data.platform || '?', lastSeen: Date.now() });
+        refreshDevicesList();
+        // Reply with our presence
+        broadcastMessage({ type: 'PING', id: getSessionId(), label: getDeviceLabel() });
+        break;
+      case 'TRANSFER_REQUEST': {
+        // Another tab wants to receive playback
+        const state = getCurrentState();
+        broadcastMessage({ type: 'TRANSFER_RESPONSE', to: data.id, from: getSessionId(), state });
+        break;
+      }
+      case 'TRANSFER_RESPONSE': {
+        if (data.to !== getSessionId()) return;
+        applyState(data.state);
+        showTransferSuccess();
+        break;
+      }
+      case 'TRANSFER_PUSH': {
+        // Someone is pushing state to us
+        applyState(data.state);
+        showTransferSuccess();
+        break;
+      }
+    }
+  }
+
+  function getCurrentState() {
+    const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+    const track = typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined'
+      ? playlist[currentTrackIdx] : null;
+    return {
+      file:        track?.file || null,
+      title:       track?.title || '',
+      artist:      track?.artist || '',
+      cover:       track?.cover || '',
+      category:    track?.category || '',
+      currentTime: audio?.currentTime || 0,
+      isPlaying:   typeof isPlaying !== 'undefined' ? isPlaying : false,
+      volume:      audio?.volume ?? 1,
+      shuffleMode: typeof shuffleMode !== 'undefined' ? shuffleMode : false,
+      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : false,
+      queue:       typeof queue !== 'undefined' ? [...queue] : [],
+    };
+  }
+
+  async function applyState(state) {
+    if (!state?.file) return;
+    const track = typeof media !== 'undefined' ? media.find(m => m.file === state.file) : null;
+    if (!track) return;
+
+    if (typeof loadTrack === 'function') {
+      loadTrack(track);
+      // Seek to exact position after audio loads
+      const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+      if (audio) {
+        const trySeek = () => {
+          if (audio.readyState >= 2) {
+            audio.currentTime = state.currentTime || 0;
+            audio.volume = state.volume ?? 1;
+            if (!state.isPlaying) audio.pause();
+          } else {
+            audio.addEventListener('canplay', () => {
+              audio.currentTime = state.currentTime || 0;
+              audio.volume = state.volume ?? 1;
+              if (!state.isPlaying) audio.pause();
+            }, { once: true });
+          }
+        };
+        setTimeout(trySeek, 300);
+      }
+    }
+    if (typeof showToast === 'function') showToast('Reproducción recibida de otro dispositivo', 'success');
+  }
+
+  function transferTo(deviceId) {
+    const state = getCurrentState();
+    broadcastMessage({ type: 'TRANSFER_PUSH', to: deviceId, from: getSessionId(), state });
+    if (typeof showToast === 'function') showToast('Reproducción enviada', 'success');
+    closePanel();
+  }
+
+  function requestFrom(deviceId) {
+    broadcastMessage({ type: 'TRANSFER_REQUEST', to: deviceId, from: getSessionId() });
+  }
+
+  function showTransferSuccess() {
+    const panel = document.getElementById('transferPanel');
+    if (panel) panel.classList.add('transfer-success-flash');
+    setTimeout(() => panel?.classList.remove('transfer-success-flash'), 500);
+    closePanel();
+  }
+
+  /* ─── QR fallback ─────────────────────────────── */
+  function generateQRData() {
+    const state = getCurrentState();
+    return JSON.stringify({ v: 1, id: getSessionId(), state });
+  }
+
+  function drawQRCode(canvas, text) {
+    // Simple QR-like visual using canvas (actual QR lib not loaded — display session info)
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    // Draw a simple data matrix representation
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000';
+    const bytes = [...text].map(c => c.charCodeAt(0));
+    const cell  = size / 10;
+    bytes.slice(0, 100).forEach((b, i) => {
+      if (b % 2 === 0) {
+        const x = (i % 10) * cell;
+        const y = Math.floor(i / 10) * cell;
+        ctx.fillRect(x, y, cell - 1, cell - 1);
+      }
+    });
+    // Finder patterns
+    ctx.fillRect(0, 0, cell * 3, cell);
+    ctx.fillRect(0, 0, cell, cell * 3);
+    ctx.fillRect(cell * 2, 0, cell, cell * 3);
+    ctx.fillRect(0, cell * 2, cell * 3, cell);
+    ctx.fillRect(cell * 7, 0, cell * 3, cell);
+    ctx.fillRect(cell * 9, 0, cell, cell * 3);
+    ctx.fillRect(cell * 7, cell * 2, cell * 3, cell);
+  }
+
+  /* ─── Panel UI ────────────────────────────────── */
+  function openPanel() {
+    document.getElementById('transferPanel')?.classList.add('open');
+    document.getElementById('transferOverlay')?.classList.add('open');
+    refreshDevicesList();
+    updateTransferCurrentCard();
+    // Draw QR
+    const canvas = document.getElementById('transferQRCanvas');
+    if (canvas) drawQRCode(canvas, getSessionId());
+    document.getElementById('transferSessionId').textContent = getSessionId();
+  }
+
+  function closePanel() {
+    document.getElementById('transferPanel')?.classList.remove('open');
+    document.getElementById('transferOverlay')?.classList.remove('open');
+  }
+
+  function updateTransferCurrentCard() {
+    const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+    const track = typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined'
+      ? playlist[currentTrackIdx] : null;
+    if (!track) return;
+
+    const titleEl  = document.getElementById('transferCurrentTitle');
+    const artistEl = document.getElementById('transferCurrentArtist');
+    const coverEl  = document.getElementById('transferCurrentCover');
+    const timeEl   = document.getElementById('transferCurrentTime');
+
+    if (titleEl)  titleEl.textContent  = track.title  || '—';
+    if (artistEl) artistEl.textContent = track.artist || '—';
+    if (coverEl)  coverEl.src  = track.cover || '';
+    if (timeEl && audio && typeof formatTime === 'function') {
+      timeEl.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration || 0);
+    }
+  }
+
+  function refreshDevicesList() {
+    const container = document.getElementById('transferDevicesList');
+    if (!container) return;
+
+    // Clean stale devices (>30s)
+    const now = Date.now();
+    knownDevices.forEach((d, id) => { if (now - d.lastSeen > 30000) knownDevices.delete(id); });
+
+    if (knownDevices.size === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-soft);font-size:.82rem">
+        <div style="font-size:2rem;margin-bottom:.5rem">📱</div>
+        Abre DROPLY en otro dispositivo o pestaña para ver dispositivos disponibles.
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    knownDevices.forEach((device, id) => {
+      const el = document.createElement('div');
+      el.className = 'transfer-device-item';
+      const icon = device.platform?.includes('iPhone') || device.platform?.includes('iPad') ? '📱'
+        : device.platform?.includes('Android') ? '📱'
+        : device.platform?.includes('Mac') ? '💻' : '🖥';
+      el.innerHTML = `
+        <div class="transfer-device-icon"><span style="font-size:1.3rem">${icon}</span></div>
+        <div class="transfer-device-info">
+          <div class="transfer-device-name">${device.name}</div>
+          <div class="transfer-device-status online">Disponible</div>
+        </div>
+        <button class="transfer-device-btn" data-action="send" data-id="${id}">Enviar</button>`;
+      el.querySelector('[data-action="send"]').addEventListener('click', e => {
+        e.stopPropagation();
+        transferTo(id);
+      });
+      container.appendChild(el);
+    });
+  }
+
+  return {
+    init() { setupBroadcast(); },
+    open: openPanel,
+    close: closePanel,
+    getDeviceLabel,
+    getSessionId,
+  };
+})();
+
+
+/* ══════════════════════════════════════════════════════
+   MÓDULO 4 — SINCRONIZACIÓN CLOUD (localStorage + BroadcastChannel)
+   Nota: Para sync real entre dispositivos distintos se necesita
+   backend. Esta implementación sincroniza tabs del mismo navegador
+   + persiste estado para "continuar donde lo dejé" en el mismo device.
+══════════════════════════════════════════════════════ */
+const CloudSync = (() => {
+  const STATE_KEY = 'droply_cloud_state_v1';
+  let syncChannel = null;
+  let syncTimer   = null;
+  let dirty       = false;
+  let indicator   = null;
+
+  function getState() {
+    const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+    const track = typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined'
+      ? playlist[currentTrackIdx] : null;
+    return {
+      file:        track?.file || null,
+      currentTime: audio?.currentTime || 0,
+      isPlaying:   typeof isPlaying !== 'undefined' ? isPlaying : false,
+      volume:      audio?.volume ?? 1,
+      shuffleMode: typeof shuffleMode !== 'undefined' ? shuffleMode : false,
+      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : false,
+      queue:       typeof queue !== 'undefined' ? [...queue] : [],
+      playlists:   typeof playlists !== 'undefined' ? playlists : [],
+      liked:       typeof likedTracks !== 'undefined' ? [...likedTracks] : [],
+      history:     typeof historyTracks !== 'undefined' ? historyTracks.slice(0, 50) : [],
+      playCounts:  typeof playCounts !== 'undefined' ? playCounts : {},
+      ts:          Date.now(),
+    };
+  }
+
+  function saveState() {
+    try {
+      const state = getState();
+      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+      // Broadcast to other tabs
+      syncChannel?.postMessage({ type: 'STATE_UPDATE', state });
+      showSynced();
+    } catch(e) {
+      showError();
+    }
+  }
+
+  function loadSavedState() {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch(_) { return null; }
+  }
+
+  async function restoreLastSession() {
+    const state = loadSavedState();
+    if (!state?.file) return;
+    // Only restore if recent (< 7 days)
+    if (Date.now() - (state.ts || 0) > 7 * 24 * 3600 * 1000) return;
+    const track = typeof media !== 'undefined' ? media.find(m => m.file === state.file) : null;
+    if (!track) return;
+
+    // Restore volume
+    const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+    if (audio && state.volume != null) audio.volume = state.volume;
+    if (typeof volSlider !== 'undefined') volSlider.value = state.volume ?? 1;
+
+    // Load track silently (paused)
+    if (typeof loadTrack === 'function') {
+      loadTrack(track);
+      // Seek without autoplay
+      if (audio) {
+        const trySeek = () => {
+          if (audio.readyState >= 2) {
+            audio.currentTime = state.currentTime || 0;
+            audio.pause();
+          } else {
+            audio.addEventListener('canplay', () => {
+              audio.currentTime = state.currentTime || 0;
+              audio.pause();
+            }, { once: true });
+          }
+        };
+        setTimeout(trySeek, 400);
+      }
+    }
+  }
+
+  function setDirty() {
+    dirty = true;
+    showSyncing();
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { if (dirty) { saveState(); dirty = false; } }, 2500);
+  }
+
+  function showSyncing() { setIndicatorState('syncing'); }
+  function showSynced()  { setIndicatorState('synced');  setTimeout(() => setIndicatorState(''), 2000); }
+  function showError()   { setIndicatorState('error');  }
+
+  function setIndicatorState(state) {
+    if (!indicator) indicator = document.getElementById('cloudSyncIndicator');
+    if (!indicator) return;
+    indicator.classList.remove('syncing', 'synced', 'error');
+    if (state) indicator.classList.add(state);
+    const txt = indicator.querySelector('.sync-text');
+    if (txt) {
+      txt.textContent = state === 'syncing' ? 'Guardando…' : state === 'synced' ? 'Guardado' : state === 'error' ? 'Error' : '';
+    }
+  }
+
+  function setupChannel() {
+    if (!('BroadcastChannel' in window)) return;
+    try {
+      syncChannel = new BroadcastChannel('droply_cloud_sync');
+      syncChannel.onmessage = e => {
+        const { type, state } = e.data || {};
+        if (type !== 'STATE_UPDATE' || !state) return;
+        // Sync playlists, liked from other tab
+        if (state.playlists && typeof playlists !== 'undefined') {
+          playlists.length = 0;
+          playlists.push(...state.playlists);
+          if (typeof savePlaylists === 'function') savePlaylists();
+        }
+        if (state.liked && typeof likedTracks !== 'undefined') {
+          likedTracks.clear();
+          state.liked.forEach(f => likedTracks.add(f));
+          if (typeof saveLiked === 'function') saveLiked();
+        }
+      };
+    } catch(_) {}
+  }
+
+  /* ─── Hook into existing audio events ────────── */
+  function hookPlayerEvents() {
+    const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+    if (!audio) return;
+
+    // Save state on meaningful events
+    audio.addEventListener('play',     setDirty, { passive: true });
+    audio.addEventListener('pause',    setDirty, { passive: true });
+    audio.addEventListener('seeked',   setDirty, { passive: true });
+    audio.addEventListener('ended',    setDirty, { passive: true });
+
+    // Throttled timeupdate save (every 10s)
+    let lastTimeSave = 0;
+    audio.addEventListener('timeupdate', () => {
+      const now = Date.now();
+      if (now - lastTimeSave > 10000) {
+        lastTimeSave = now;
+        setDirty();
+      }
+    }, { passive: true });
+  }
+
+  return {
+    init() {
+      setupChannel();
+      hookPlayerEvents();
+      // Restore after a small delay (player must be ready)
+      setTimeout(restoreLastSession, 800);
+    },
+    markDirty: setDirty,
+    save: saveState,
+  };
+})();
+
+
+/* ══════════════════════════════════════════════════════
+   MÓDULO 5 — SERVICE WORKER (PWA offline)
+══════════════════════════════════════════════════════ */
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  // Generate the SW inline via blob URL (no external file needed)
+  const swCode = `
+const CACHE = 'droply-cache-v1';
+const STATIC = ['/', '/index.html', '/style.css', '/script.js', '/premium.css', '/premium.js'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC.filter(Boolean))).catch(()=>{}));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      const fresh = fetch(e.request).then(resp => {
+        if (resp.ok && e.request.url.startsWith(self.location.origin)) {
+          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+        }
+        return resp;
+      }).catch(() => cached);
+      return cached || fresh;
+    })
+  );
+});`;
+
+  try {
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const url  = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url, { scope: '/' }).catch(() => {});
+  } catch(_) {}
+}
+
+
+/* ══════════════════════════════════════════════════════
+   DOM INJECTION — Inyectar elementos HTML en la página
+══════════════════════════════════════════════════════ */
+function injectPremiumDOM() {
+
+  /* ── Offline status badge ─────────────────────── */
+  document.body.insertAdjacentHTML('afterbegin', `
+    <div class="offline-badge" id="offlineStatusBadge">
+      <span class="badge-dot"></span>
+      <span class="badge-text">Sin conexión — modo offline</span>
+    </div>`);
+
+  /* ── Car mode suggest toast ───────────────────── */
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="car-suggest-toast" id="carSuggestToast">
+      <div class="car-suggest-row">
+        <div class="car-suggest-icon">
+          <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="car-suggest-info">
+          <div class="car-suggest-title">¿Estás en el coche?</div>
+          <div class="car-suggest-sub">Activa el modo coche para una experiencia más segura</div>
+        </div>
+      </div>
+      <div class="car-suggest-actions">
+        <button class="car-suggest-btn primary" id="carSuggestActivate">Activar modo coche</button>
+        <button class="car-suggest-btn secondary" id="carSuggestDismiss">No, gracias</button>
+      </div>
+    </div>`);
+
+  /* ── Car mode full-screen panel ───────────────── */
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="car-mode-panel" id="carModePanel" role="dialog" aria-label="Modo Coche">
+      <div class="car-mode-bg">
+        <img class="car-mode-bg-img" id="carModeBgImg" src="" alt="" aria-hidden="true" />
+      </div>
+      <div class="car-mode-header">
+        <span class="car-mode-logo">DROPLY</span>
+        <span class="car-mode-time" id="carModeTime">00:00</span>
+        <button class="car-mode-exit-btn" id="carModeExitBtn">Salir</button>
+      </div>
+      <div class="car-mode-cover-section">
+        <div class="car-mode-cover" id="carModeCover">
+          <img id="carModeCoverImg" src="" alt="Portada" />
+        </div>
+        <div class="car-mode-info">
+          <h2 class="car-mode-title" id="carModeTitle">—</h2>
+          <p class="car-mode-artist" id="carModeArtist">—</p>
+        </div>
+      </div>
+      <div class="car-mode-progress-wrap">
+        <div class="car-mode-bar" id="carModeBar" role="slider" aria-label="Progreso">
+          <div class="car-mode-bar-fill" id="carModeBarFill"></div>
+        </div>
+        <div class="car-mode-times">
+          <span id="carModeCurrent">0:00</span>
+          <span id="carModeDuration">0:00</span>
+        </div>
+      </div>
+      <div class="car-mode-controls">
+        <button class="car-ctrl-btn secondary" id="carPrevBtn" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="3" height="16"/></svg>
+        </button>
+        <button class="car-ctrl-btn primary" id="carPlayBtn" aria-label="Play/Pause">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
+        <button class="car-ctrl-btn secondary" id="carNextBtn" aria-label="Siguiente">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,20 15,12 5,4"/><rect x="16" y="4" width="3" height="16"/></svg>
+        </button>
+      </div>
+      <p class="car-swipe-hint">← Desliza para cambiar canción →</p>
+    </div>`);
+
+  /* ── Transfer panel ───────────────────────────── */
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="transfer-panel-overlay" id="transferOverlay"></div>
+    <div class="transfer-panel" id="transferPanel" role="dialog" aria-label="Transferir reproducción">
+      <div class="transfer-handle"></div>
+      <h3 class="transfer-panel-title">Transferir reproducción</h3>
+      <p class="transfer-panel-subtitle">Continúa escuchando en otro dispositivo desde el segundo exacto.</p>
+      
+      <div class="transfer-current-card">
+        <div class="transfer-current-cover"><img id="transferCurrentCover" src="" alt="" /></div>
+        <div class="transfer-current-info">
+          <div class="transfer-current-title" id="transferCurrentTitle">—</div>
+          <div class="transfer-current-artist" id="transferCurrentArtist">—</div>
+        </div>
+        <span class="transfer-current-time" id="transferCurrentTime">0:00</span>
+      </div>
+
+      <p class="transfer-devices-label">Dispositivos disponibles</p>
+      <div id="transferDevicesList"></div>
+
+      <div class="transfer-qr-section">
+        <p class="transfer-qr-title">O escanea desde otro dispositivo</p>
+        <div class="transfer-qr-wrap">
+          <div class="transfer-qr-canvas">
+            <canvas id="transferQRCanvas" width="72" height="72"></canvas>
+          </div>
+          <div class="transfer-qr-info">
+            <p class="transfer-qr-desc">Abre DROPLY en el otro dispositivo y pulsa "Recibir desde QR" para continuar la sesión.</p>
+            <div class="transfer-qr-session" id="transferSessionId">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="transfer-connecting-overlay" id="transferConnecting">
+        <div class="transfer-connecting-spinner"></div>
+        <span class="transfer-connecting-text">Conectando…</span>
+      </div>
+    </div>`);
+
+  /* ── Cloud sync indicator ─────────────────────── */
+  const topbarActions = document.querySelector('.topbar-actions');
+  if (topbarActions) {
+    topbarActions.insertAdjacentHTML('afterbegin', `
+      <div class="cloud-sync-indicator" id="cloudSyncIndicator" title="Estado de sincronización">
+        <svg class="sync-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+        <span class="sync-text"></span>
+      </div>`);
+
+    /* ── Car mode topbar button ─────────────────── */
+    topbarActions.insertAdjacentHTML('afterbegin', `
+      <button class="car-mode-topbar-btn topbar-icon-btn" id="carModeTopbarBtn" title="Modo Coche" aria-label="Modo Coche">
+        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>`);
+  }
+
+  /* ── Transfer button in now-playing sheet ─────── */
+  const sheetVolumeWrap = document.querySelector('.sheet-volume-wrap');
+  if (sheetVolumeWrap) {
+    sheetVolumeWrap.insertAdjacentHTML('afterend', `
+      <div class="sheet-extra-row">
+        <button class="sheet-transfer-btn" id="sheetTransferBtn">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13 0h-3a2 2 0 0 0-2 2v3"/><circle cx="12" cy="12" r="3"/></svg>
+          Transferir a otro dispositivo
+        </button>
+      </div>`);
+  }
+
+  /* ── Downloads page ───────────────────────────── */
+  const pagesContainer = document.getElementById('pagesContainer');
+  if (pagesContainer) {
+    pagesContainer.insertAdjacentHTML('beforeend', `
+      <div class="page" id="pageDownloads">
+        <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
+          <h2 class="library-title">
+            <svg viewBox="0 0 24 24" width="22" height="22" style="display:inline;margin-right:.4rem;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Offline
+          </h2>
+          <button class="offline-clear-btn" id="offlineClearAllBtn">Liberar espacio</button>
+        </div>
+        <div class="page-offline-downloads">
+          <div class="offline-storage-bar">
+            <div class="offline-storage-label">
+              <span class="offline-storage-title">Almacenamiento usado</span>
+              <span class="offline-storage-size" id="offlineStorageSize">—</span>
+            </div>
+            <div class="offline-storage-track">
+              <div class="offline-storage-fill" id="offlineStorageFill" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="offline-actions-row">
+            <span class="offline-section-label">Descargas</span>
+          </div>
+          <div id="downloadsListContainer"></div>
+        </div>
+      </div>`);
+  }
+
+  /* ── Offline tab in bottom nav ────────────────── */
+  const bottomNav = document.getElementById('bottomNav');
+  if (bottomNav) {
+    bottomNav.insertAdjacentHTML('beforeend', `
+      <button class="bnav-btn" data-page="pageDownloads" aria-label="Descargas offline">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Offline</span>
+        <span class="nav-badge" id="bnavDownloadsBadge"></span>
+      </button>`);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   PATCH EXISTING FUNCTIONS — Extender sin modificar
+══════════════════════════════════════════════════════ */
+function patchExistingFunctions() {
+
+  /* ── Patch renderGrid to add download buttons ─── */
+  const origRenderGrid = typeof renderGrid === 'function' ? renderGrid : null;
+  if (origRenderGrid) {
+    // Override by wrapping via MutationObserver on mediaGrid
+    const mediaGrid = document.getElementById('mediaGrid');
+    if (mediaGrid) {
+      const observer = new MutationObserver(() => {
+        mediaGrid.querySelectorAll('.media-card:not([data-dl-patched])').forEach(card => {
+          card.dataset.dlPatched = '1';
+          const cover = card.querySelector('.card-cover');
+          if (!cover) return;
+          // Find track by cover src or title
+          const img = card.querySelector('.card-cover img');
+          const titleEl = card.querySelector('.card-title');
+          if (!img || !titleEl) return;
+          const title = titleEl.textContent.trim();
+          const track = typeof media !== 'undefined' ? media.find(m => m.title === title) : null;
+          if (!track) return;
+
+          const btn = document.createElement('button');
+          btn.className = 'card-download-btn';
+          btn.dataset.file = track.file;
+          btn.title = 'Descargar para offline';
+          btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+          btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            if (OfflineManager.isDownloaded(track.file)) {
+              // Already downloaded: show toast
+              if (typeof showToast === 'function') showToast(`"${track.title}" ya está guardada`, 'default');
+              return;
+            }
+            let lastPct = 0;
+            await OfflineManager.downloadTrack(track, pct => {
+              if (Math.abs(pct - lastPct) > 0.05) {
+                lastPct = pct;
+                btn.title = `Descargando ${Math.round(pct*100)}%`;
+              }
+            });
+          });
+          cover.appendChild(btn);
+          // Apply current state
+          const state = OfflineManager.isDownloaded(track.file) ? 'done' : 'none';
+          if (state === 'done') {
+            btn.classList.add('downloaded');
+            btn.innerHTML = `<svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>`;
+            btn.title = 'Guardado offline';
+          }
+        });
+      });
+      observer.observe(mediaGrid, { childList: true });
+    }
+  }
+
+  /* ── Patch loadTrack to use offline src when available ── */
+  const origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
+  if (origLoadTrack) {
+    window.loadTrack = async function(item, fromQueue) {
+      // Check offline first
+      if (OfflineManager.isDownloaded(item.file) && !navigator.onLine) {
+        const offlineSrc = await OfflineManager.getOfflineSrc(item.file);
+        if (offlineSrc) {
+          const patchedItem = { ...item, file: offlineSrc };
+          origLoadTrack.call(this, patchedItem, fromQueue);
+          // Sync car mode
+          setTimeout(() => CarMode.syncToPlayer(), 200);
+          return;
+        }
+      }
+      origLoadTrack.call(this, item, fromQueue);
+      // Sync car mode
+      setTimeout(() => CarMode.syncToPlayer(), 200);
+    };
+  }
+
+  /* ── Patch togglePlay, playNext, playPrev to update car mode ── */
+  ['togglePlay', 'playNext', 'playPrev'].forEach(fn => {
+    const orig = typeof window[fn] === 'function' ? window[fn] : null;
+    if (!orig) return;
+    window[fn] = function(...args) {
+      const result = orig.apply(this, args);
+      setTimeout(() => {
+        CarMode.syncToPlayer();
+        CloudSync.markDirty();
+      }, 100);
+      return result;
+    };
+  });
+
+  /* ── Hook audio timeupdate for car mode progress ── */
+  const audio = typeof audioEl !== 'undefined' ? audioEl : null;
+  if (audio) {
+    audio.addEventListener('timeupdate', () => CarMode.updateProgress(), { passive: true });
+    audio.addEventListener('play',   () => { CarMode.updatePlayState(); }, { passive: true });
+    audio.addEventListener('pause',  () => { CarMode.updatePlayState(); }, { passive: true });
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   EVENT LISTENERS — Car mode, Transfer, Downloads
+══════════════════════════════════════════════════════ */
+function setupPremiumEvents() {
+
+  /* ── Car mode ──────────────────────────────────── */
+  document.getElementById('carModeTopbarBtn')?.addEventListener('click', () => CarMode.toggle());
+  document.getElementById('carModeExitBtn')?.addEventListener('click', () => CarMode.deactivate());
+
+  document.getElementById('carPlayBtn')?.addEventListener('click', () => {
+    if (typeof togglePlay === 'function') togglePlay();
+    if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+  });
+  document.getElementById('carPrevBtn')?.addEventListener('click', () => {
+    if (typeof playPrev === 'function') playPrev();
+    if (typeof hapticFeedback === 'function') hapticFeedback('light');
+  });
+  document.getElementById('carNextBtn')?.addEventListener('click', () => {
+    if (typeof playNext === 'function') playNext();
+    if (typeof hapticFeedback === 'function') hapticFeedback('light');
+  });
+
+  /* Car suggest */
+  document.getElementById('carSuggestActivate')?.addEventListener('click', () => {
+    CarMode.activate();
+  });
+  document.getElementById('carSuggestDismiss')?.addEventListener('click', () => {
+    CarMode.hideSuggest();
+    CarMode.setSuggestDismissed();
+  });
+
+  /* Setup car mode gestures */
+  const carPanel = document.getElementById('carModePanel');
+  if (carPanel) CarMode.setup(carPanel);
+
+  /* ── Transfer panel ────────────────────────────── */
+  document.getElementById('sheetTransferBtn')?.addEventListener('click', () => TransferManager.open());
+  document.getElementById('transferOverlay')?.addEventListener('click', () => TransferManager.close());
+
+  /* ── Downloads / offline page ──────────────────── */
+  document.getElementById('offlineClearAllBtn')?.addEventListener('click', async () => {
+    if (!confirm('¿Eliminar todas las descargas?')) return;
+    // Clear IDB — reopen page
+    try {
+      indexedDB.deleteDatabase('droply_offline_v1');
+      location.reload();
+    } catch(e) {
+      if (typeof showToast === 'function') showToast('Error al liberar espacio', 'error');
+    }
+  });
+
+  /* ── Nav tab for downloads ─────────────────────── */
+  document.querySelectorAll('.bnav-btn[data-page="pageDownloads"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (typeof showPage === 'function') showPage('pageDownloads');
+      OfflineManager.renderDownloadsList();
+    });
+  });
+
+  /* ── Downloads badge target ────────────────────── */
+  const badge = document.getElementById('bnavDownloadsBadge');
+  if (badge) badge.id = 'bnavDownloads'; // fix the id for OfflineManager to find .nav-badge inside it
+  // Reattach badge correctly
+  const offlineNavBtn = document.querySelector('.bnav-btn[data-page="pageDownloads"]');
+  if (offlineNavBtn) {
+    const b = offlineNavBtn.querySelector('span:last-child');
+    if (b) b.className = 'nav-badge';
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   BOOT — Init all modules after DOM ready
+══════════════════════════════════════════════════════ */
+function bootPremium() {
+  injectPremiumDOM();
+  patchExistingFunctions();
+  setupPremiumEvents();
+
+  // Init modules
+  OfflineManager.init();
+  OfflineManager.setupOfflineDetection();
+  TransferManager.init();
+  CloudSync.init();
+
+  // Register SW
+  registerServiceWorker();
+
+  console.info('[DROPLY Premium] ✓ Módulos cargados: Offline · Modo Coche · Transferencia · Cloud Sync');
+}
+
+// Boot when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootPremium);
+} else {
+  // Small delay to ensure script.js has finished its init()
+  setTimeout(bootPremium, 0);
+}

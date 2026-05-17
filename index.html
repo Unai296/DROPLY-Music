@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DROPLY" />
+  <meta name="theme-color" content="#0f0f12" />
+  <meta name="description" content="DROPLY — Streaming musical sin anuncios" />
+
   <title>DROPLY — Plataforma Multimedia</title>
   <link rel="stylesheet" href="style.css" />
+  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -61,7 +70,7 @@
         <h2 class="search-page-title">Buscar</h2>
         <div class="search-page-input-wrap">
           <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-          <input type="text" id="searchInput" placeholder="Artistas, canciones, géneros…" class="search-page-input" autocomplete="off" />
+          <input type="text" id="searchInput" placeholder="Artistas, canciones, géneros…" class="search-page-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           <button class="search-clear-btn" id="searchClear" style="display:none">✕</button>
         </div>
       </div>
@@ -159,13 +168,13 @@
   </div>
 
   <!-- ══ NOW PLAYING SHEET ══ -->
-  <div class="now-playing-sheet" id="nowPlayingSheet">
+  <div class="now-playing-sheet" id="nowPlayingSheet" role="dialog" aria-label="Reproduciendo ahora">
     <div class="sheet-bg-blur" id="sheetBgBlur"></div>
     <div class="sheet-handle-wrap">
       <div class="sheet-handle"></div>
     </div>
     <div class="sheet-top-row">
-      <button class="sheet-close-btn" id="sheetClose">
+      <button class="sheet-close-btn" id="sheetClose" aria-label="Cerrar">
         <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <span class="sheet-top-label">Reproduciendo ahora</span>
@@ -192,7 +201,7 @@
       </div>
     </div>
     <div class="sheet-progress-wrap">
-      <div class="sheet-bar" id="sheetBar">
+      <div class="sheet-bar" id="sheetBar" role="slider" aria-label="Progreso">
         <div class="sheet-fill" id="sheetFill"></div>
         <div class="sheet-thumb" id="sheetThumb"></div>
       </div>
@@ -221,20 +230,20 @@
     </div>
     <div class="sheet-volume-wrap">
       <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
-      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="1" />
+      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="1" aria-label="Volumen" />
       <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
     </div>
-    <audio id="mainAudio"></audio>
-    <audio id="preloadAudio"></audio>
+    <audio id="mainAudio" preload="metadata"></audio>
+    <audio id="preloadAudio" preload="metadata"></audio>
   </div>
 
   <!-- ══ QUEUE PANEL ══ -->
-  <div class="queue-panel" id="queuePanel">
+  <div class="queue-panel" id="queuePanel" role="complementary" aria-label="Cola de reproducción">
     <div class="queue-panel-header">
       <h3 class="queue-panel-title">Cola de reproducción</h3>
       <div class="queue-panel-actions">
         <button class="queue-clear-btn" id="queueClearBtn">Vaciar</button>
-        <button class="queue-close-btn" id="queueCloseBtn">✕</button>
+        <button class="queue-close-btn" id="queueCloseBtn" aria-label="Cerrar">✕</button>
       </div>
     </div>
     <div class="queue-now-playing" id="queueNowPlaying"></div>
@@ -246,27 +255,27 @@
   <div class="queue-overlay" id="queueOverlay"></div>
 
   <!-- ══ TRACK CONTEXT MENU ══ -->
-  <div class="context-menu" id="contextMenu">
-    <button class="ctx-item" id="ctxPlayNow">
+  <div class="context-menu" id="contextMenu" role="menu">
+    <button class="ctx-item" id="ctxPlayNow" role="menuitem">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
       Reproducir ahora
     </button>
-    <button class="ctx-item" id="ctxAddQueue">
+    <button class="ctx-item" id="ctxAddQueue" role="menuitem">
       <svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Añadir a la cola
     </button>
-    <button class="ctx-item" id="ctxAddPlaylist">
+    <button class="ctx-item" id="ctxAddPlaylist" role="menuitem">
       <svg viewBox="0 0 24 24" width="16" height="16"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
       Añadir a playlist
     </button>
-    <button class="ctx-item" id="ctxLike">
+    <button class="ctx-item" id="ctxLike" role="menuitem">
       <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       Me gusta
     </button>
   </div>
 
   <!-- ══ MINI PLAYER ══ -->
-  <div class="mini-player" id="miniPlayer">
+  <div class="mini-player" id="miniPlayer" role="region" aria-label="Reproductor">
     <div class="mini-player-inner" id="miniPlayerExpand">
       <div class="mini-cover">
         <img id="miniCover" src="" alt="" />
@@ -291,7 +300,7 @@
   </div>
 
   <!-- ══ BOTTOM NAV ══ -->
-  <nav class="bottom-nav" id="bottomNav">
+  <nav class="bottom-nav" id="bottomNav" aria-label="Navegación principal">
     <button class="bnav-btn active" data-page="pageHome" aria-label="Inicio">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>Inicio</span>
@@ -315,5 +324,6 @@
   </nav>
 
   <script src="script.js"></script>
+  
 </body>
 </html>
