@@ -1241,21 +1241,6 @@ const media = [
     category: "Dance-Pop",
     duration: "4:20"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
      {
     type:     "music",
     title:    "L'Amour Toujours",
@@ -1266,6 +1251,61 @@ const media = [
     duration: "4:01"
   },
    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       {
+    type:     "music",
+    title:    "The Riddle",
+    artist:   "Gigi D'Agostino",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273d8f8af4309c24d540b6f9128",
+    file:     "./Music/the_riddle.mp3",
+    category: "90s",
+    duration: "3:24"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+       {
+    type:     "music",
+    title:    "Another Way",
+    artist:   "Gigi D'Agostino",
+    cover:    "https://shop.blancoynegro.com/4924-large_default/gigi-d-agostino-another-way-marble-vinyl.jpg",
+    file:     "./Music/another_way.mp3",
+    category: "90s",
+    duration: "6:03"
+  },
+   
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1309,6 +1349,101 @@ const media = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ];
 
 /* ══════════════════════════════════════════════════════
@@ -1320,44 +1455,6 @@ const events = [
  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{
-  type:        "event",
-  title:       "The Weeknd: After Hours Til Dawn",
-  artist:      "The Weeknd",
-  city:        "Barcelona",
-  venue:       "Estadi Olímpic Lluís Companys",
-  date:        "2026-09-01",
-  time:        "20:00",
-  price:       "99€",
-  genre:       "R&B / Pop",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/9/95/The_Weeknd_Cannes_2023.png",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/9/95/The_Weeknd_Cannes_2023.png",
-  tickets:     "https://www.ticketmaster.es",
-  description: "The Weeknd aterriza en Barcelona con uno de los shows visuales más espectaculares del mundo junto a Playboi Carti.",
-  featured:    true
-},
 {
   type:        "event",
   title:       "Debí Tirar Más Fotos World Tour",
@@ -1368,12 +1465,14 @@ const events = [
   time:        "21:00",
   price:       "40€",
   genre:       "Reggaeton",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/7/7d/Bad_Bunny_2019_by_Glenn_Francis.jpg",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/7/7d/Bad_Bunny_2019_by_Glenn_Francis.jpg",
+  image:       "https://upload.wikimedia.org/wikipedia/en/2/25/Deb%C3%AD_Tirar_M%C3%A1s_Fotos_World_Tour.png",
+  banner:      "https://upload.wikimedia.org/wikipedia/en/2/25/Deb%C3%AD_Tirar_M%C3%A1s_Fotos_World_Tour.png",
   tickets:     "https://www.ticketmaster.es",
   description: "Bad Bunny vuelve a Barcelona con el tour latino más esperado del año.",
   featured:    true
 },
+
+
 {
   type:        "event",
   title:       "LUX World Tour",
@@ -1384,60 +1483,14 @@ const events = [
   time:        "20:30",
   price:       "50€",
   genre:       "Flamenco Pop",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rosal%C3%ADa_2019_2.png",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rosal%C3%ADa_2019_2.png",
+  image:       "https://www.indieofilo.com/wp-content/uploads/2025/12/Rosalia_Lux_World_Tour-546x683.jpg",
+  banner:      "https://www.indieofilo.com/wp-content/uploads/2025/12/Rosalia_Lux_World_Tour-546x683.jpg",
   tickets:     "https://www.ticketmaster.es",
   description: "Rosalía regresa a casa con una producción enorme y una nueva era musical.",
   featured:    true
 },
-{
-  type:        "event",
-  title:       "La 8va Maravilla World Tour",
-  artist:      "Arcángel",
-  city:        "Barcelona",
-  venue:       "Palau Sant Jordi",
-  date:        "2026-05-18",
-  time:        "21:00",
-  price:       "65€",
-  genre:       "Reggaeton / Trap",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/7/79/Arcangel_2010.jpg",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/7/79/Arcangel_2010.jpg",
-  tickets:     "https://www.ticketmaster.es",
-  description: "Arcángel celebra 20 años de carrera con un show histórico lleno de clásicos.",
-  featured:    false
-},
-{
-  type:        "event",
-  title:       "Music Bank Barcelona 2026",
-  artist:      "ATEEZ, ENHYPEN, NMIXX",
-  city:        "Barcelona",
-  venue:       "Palau Sant Jordi",
-  date:        "2026-09-12",
-  time:        "20:00",
-  price:       "89€",
-  genre:       "K-Pop",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/8/8d/Ateez_at_KCON_2019.png",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Ateez_at_KCON_2019.png",
-  tickets:     "https://www.ticketmaster.es",
-  description: "El festival de K-Pop más grande del año llega a Barcelona con artistas internacionales.",
-  featured:    true
-},
-{
-  type:        "event",
-  title:       "Hijos de la Ruina Tour",
-  artist:      "Natos y Waor",
-  city:        "Barcelona",
-  venue:       "Palau Sant Jordi",
-  date:        "2026-05-15",
-  time:        "21:30",
-  price:       "45€",
-  genre:       "Rap",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/f/f9/Natos_y_Waor.jpg",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/f/f9/Natos_y_Waor.jpg",
-  tickets:     "https://www.ticketmaster.es",
-  description: "El dúo madrileño vuelve con uno de los conciertos de rap más potentes del año.",
-  featured:    false
-},
+
+
 {
   type:        "event",
   title:       "Trueno World Tour",
@@ -1448,12 +1501,14 @@ const events = [
   time:        "20:30",
   price:       "50€",
   genre:       "Trap / Rap",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/5/5d/Trueno_2022.jpg",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/5/5d/Trueno_2022.jpg",
+  image:       "https://w2a-noticierovenevision-net.s3.amazonaws.com/public/media/images/trueno-3-1861f1.jpeg",
+  banner:      "https://w2a-noticierovenevision-net.s3.amazonaws.com/public/media/images/trueno-3-1861f1.jpeg",
   tickets:     "https://www.ticketmaster.es",
   description: "Trueno aterriza en Barcelona con un espectáculo urbano lleno de energía y visuales brutales.",
-  featured:    false
+  featured:    true
 },
+
+
 {
   type:        "event",
   title:       "Primavera Sound 2026",
@@ -1464,30 +1519,102 @@ const events = [
   time:        "18:00",
   price:       "129€",
   genre:       "Festival",
-  image:       "https://upload.wikimedia.org/wikipedia/commons/3/3c/Primavera_Sound_2019.jpg",
-  banner:      "https://upload.wikimedia.org/wikipedia/commons/3/3c/Primavera_Sound_2019.jpg",
+  image:       "https://applications-media.feverup.com/image/upload/f_auto,w_550,h_550/fever2/plan/photo/eb2261fa-9856-11f0-9431-2ab3709f7af8.jpg",
+  banner:      "https://applications-media.feverup.com/image/upload/f_auto,w_550,h_550/fever2/plan/photo/eb2261fa-9856-11f0-9431-2ab3709f7af8.jpg",
   tickets:     "https://www.primaverasound.com",
   description: "El festival más icónico de Barcelona regresa con artistas internacionales y múltiples escenarios.",
   featured:    true
 },
 
 
+{
+  type: "event",
+  title: "The Eras Tour",
+  artist: "Taylor Swift",
+  city: "Barcelona",
+  venue: "Estadi Olímpic Lluís Companys",
+  date: "2026-06-14",
+  time: "21:00",
+  price: "120€",
+  genre: "Pop",
+  image: "https://static.wikia.nocookie.net/taylorswift/images/3/33/The_Eras_Tour_poster.jpg/revision/latest?cb=20221103031243&path-prefix=es",
+  banner: "https://static.wikia.nocookie.net/taylorswift/images/3/33/The_Eras_Tour_poster.jpg/revision/latest?cb=20221103031243&path-prefix=es",
+  tickets: "https://www.ticketmaster.es",
+  description: "El fenómeno mundial de Taylor Swift llega con su gira más icónica.",
+  featured: true
+},
 
 
+{
+  type: "event",
+  title: "After Hours Til Dawn Tour",
+  artist: "The Weeknd",
+  city: "Barcelona",
+  venue: "Estadi Olímpic Lluís Companys",
+  date: "2026-07-02",
+  time: "21:30",
+  price: "110€",
+  genre: "R&B / Pop",
+  image: "https://www.universalmusic.ca/wp-content/uploads/sites/2543/2025/01/TheWeeknd-2025_All-Dates_3840x2160-scaled.jpg",
+  banner: "https://www.universalmusic.ca/wp-content/uploads/sites/2543/2025/01/TheWeeknd-2025_All-Dates_3840x2160-scaled.jpg",
+  tickets: "https://www.ticketmaster.es",
+  description: "The Weeknd trae su show oscuro y futurista a Barcelona.",
+  featured: true
+},
 
 
+{
+  type: "event",
+  title: "Dua Lipa Radical Optimism Tour",
+  artist: "Dua Lipa",
+  city: "Barcelona",
+  venue: "Palau Sant Jordi",
+  date: "2026-05-30",
+  time: "20:30",
+  price: "95€",
+  genre: "Pop",
+  image: "https://themusicuniverse.com/wp-content/uploads/2025/04/dualipa25tour.jpg",
+  banner: "https://themusicuniverse.com/wp-content/uploads/2025/04/dualipa25tour.jpg",
+  tickets: "https://www.ticketmaster.es",
+  description: "Dua Lipa presenta su nueva era con un show visual brutal.",
+  featured: true
+},
 
 
+{
+  type: "event",
+  title: "Karol G Mañana Será Bonito Tour",
+  artist: "Karol G",
+  city: "Barcelona",
+  venue: "Palau Sant Jordi",
+  date: "2026-06-10",
+  time: "20:00",
+  price: "85€",
+  genre: "Reggaeton / Pop",
+  image: "https://akamai.sscdn.co/uploadfile/letras/playlists/7/e/8/b/7e8beedca98c4c15a39ca576ba9333f4.jpg",
+  banner: "https://akamai.sscdn.co/uploadfile/letras/playlists/7/e/8/b/7e8beedca98c4c15a39ca576ba9333f4.jpg",
+  tickets: "https://www.ticketmaster.es",
+  description: "Karol G llega con su tour lleno de hits globales.",
+  featured: true
+},
 
 
-
-
-
-
-
-
-
-
+{
+  type: "event",
+  title: "Travis Scott Circus Maximus Tour",
+  artist: "Travis Scott",
+  city: "Barcelona",
+  venue: "Estadi Olímpic Lluís Companys",
+  date: "2026-07-18",
+  time: "21:30",
+  price: "130€",
+  genre: "Hip-Hop",
+  image: "https://i1.sndcdn.com/artworks-LkT5cYeegy3o6laT-eFASyw-t500x500.jpg",
+  banner: "https://i1.sndcdn.com/artworks-LkT5cYeegy3o6laT-eFASyw-t500x500.jpg",
+  tickets: "https://www.ticketmaster.es",
+  description: "Travis Scott trae un show caótico y visualmente impresionante.",
+  featured: true
+},
 
 
 
