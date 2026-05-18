@@ -1257,70 +1257,6 @@ const media = [
 
 
 
-    {
-    type:     "music",
-    title:    "Arcano (Slowed)",
-    artist:   "Flame Runner",
-    cover:    "https://i1.sndcdn.com/artworks-Oh5uNjJtq9T0P9Rr-JKhxMg-large.png",
-    file:     "./Music/arcano_slowed.mp3",
-    category: "Phonk",
-    duration: "1:34"
-  },
-    {
-    type:     "music",
-    title:    "ZAKHELO",
-    artist:   "Rushex",
-    cover:    "https://i.scdn.co/image/ab67616d00001e0224ec4a46ff0d682510087a1c",
-    file:     "./Music/zakhello.mp3",
-    category: "Phonk",
-    duration: "1:57"
-  },
-    {
-    type:     "music",
-    title:    "Amor Na Praia",
-    artist:   "Flame Runner",
-    cover:    "https://m.media-amazon.com/images/I/61xHNr5SGpL._UXNaN_FMjpg_QL85_.jpg",
-    file:     "./Music/amor_na_praia.mp3",
-    category: "phonk",
-    duration: "1:28"
-  },
-      {
-    type:     "music",
-    title:    "NATI NATI (Slowed)",
-    artist:   "TRVXER",
-    cover:    "https://i.scdn.co/image/ab67616d00001e029ae171b91e9eee6a7be5ac67",
-    file:     "./Music/nati_nati_slowed.mp3",
-    category: "Phonk",
-    duration: "1:43"
-  },
-      {
-    type:     "music",
-    title:    "ALMA MORTA (Super Slowed)",
-    artist:   "Flame Runner",
-    cover:    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNNeXs0gLPkWUoQDYJlC1Gdd11WVsgmr3S-A&s",
-    file:     "./Music/alma_morta_super_slowed.mp3",
-    category: "Phonk",
-    duration: "2:09"
-  },
-      {
-    type:     "music",
-    title:    "LUZ ROJA (Slowed)",
-    artist:   "bxkq",
-    cover:    "https://i1.sndcdn.com/artworks-kzUyeSmkBb4Kcfjm-PjoqgA-t500x500.png",
-    file:     "./Music/luz_roja_slowed.mp3",
-    category: "Phonk",
-    duration: "2:02"
-  },
-      {
-    type:     "music",
-    title:    "TIKI TIKI (Slowed)",
-    artist:   "QMIIR",
-    cover:    "https://i.scdn.co/image/ab67616d0000b27301913aba303b2a409c0cd157",
-    file:     "./Music/tiki_tiki_slowed.mp3",
-    category: "Phonk",
-    duration: "2:01"
-  },
-   
 
 
 
@@ -1329,40 +1265,6 @@ const media = [
 
 
 
-
-      {
-    type:     "music",
-    title:    "CARA MALUCO",
-    artist:   "SCHWVFTY",
-    cover:    "https://i1.sndcdn.com/artworks-q4wXY36sMfN0-0-t500x500.png",
-    file:     "./Music/cara_maluco.mp3",
-    category: "Phonk",
-    duration: "1:54"
-  },
-   
-
-
-
-
-
-
-
-
-
-
-
-  
-
-      {
-    type:     "music",
-    title:    "BAILA CONMIGO (Slowed)",
-    artist:   "MC DA$ILVA",
-    cover:    "https://i.scdn.co/image/ab67616d00001e023561d8f11599eb51e27b5831",
-    file:     "./Music/baila_conmigo_slowed.mp3",
-    category: "Phonk",
-    duration: "1:30"
-  },
-   
 
 
 
@@ -1395,16 +1297,6 @@ const media = [
 
   
 
-      {
-    type:     "music",
-    title:    "VÉRTIGO! (Super Slowed)",
-    artist:   "CRYJAXX",
-    cover:    "https://media-images.rythm.fm/252239526901403648-1A01-250.webp",
-    file:     "./Music/vertigo_super_slowed.mp3",
-    category: "Phonk",
-    duration: "1:38"
-  },
-   
 
 
 
@@ -1421,18 +1313,6 @@ const media = [
 
 
 
-  
-
-      {
-    type:     "music",
-    title:    "RECONQUISTA (Slowed)",
-    artist:   "RezaDead",
-    cover:    "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/06/92/cd/0692cded-b341-613b-aba4-b7980cfed65d/515703.jpg/486x486bb.png",
-    file:     "./Music/reconquista_slowed.mp3",
-    category: "Phonk",
-    duration: "1:01"
-  },
-   
 
 
 
@@ -1454,18 +1334,6 @@ const media = [
 
 
   
-
-      {
-    type:     "music",
-    title:    "LOUCA (Slowed)",
-    artist:   "Nulteex",
-    cover:    "https://i.scdn.co/image/ab67616d00001e02c86070d3dc19947f5b72b69a",
-    file:     "./Music/louca_slowed.mp3",
-    category: "Phonk",
-    duration: "2:07"
-  },
-   
-
 
 
 
