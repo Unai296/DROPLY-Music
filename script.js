@@ -1256,55 +1256,16 @@ const media = [
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
+     {
+    type:     "music",
+    title:    "L'Amour Toujours",
+    artist:   "Gigi D'Agostino",
+    cover:    "https://m.media-amazon.com/images/I/71a-IQRpEYL._UF894,1000_QL80_.jpg",
+    file:     "./Music/l_amour_toujours.mp3",
+    category: "90s",
+    duration: "4:01"
+  },
+   
 
 
 
@@ -1334,6 +1295,15 @@ const media = [
 
 
   
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1341,8 +1311,203 @@ const media = [
 
 ];
 
+/* ══════════════════════════════════════════════════════
+   1b. EVENTS DATA — Edita este array para gestionar eventos
+   Añade, edita o elimina eventos desde aquí.
+   Se ordenan automáticamente por fecha.
+══════════════════════════════════════════════════════ */
+const events = [
+ 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  type:        "event",
+  title:       "The Weeknd: After Hours Til Dawn",
+  artist:      "The Weeknd",
+  city:        "Barcelona",
+  venue:       "Estadi Olímpic Lluís Companys",
+  date:        "2026-09-01",
+  time:        "20:00",
+  price:       "99€",
+  genre:       "R&B / Pop",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/9/95/The_Weeknd_Cannes_2023.png",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/9/95/The_Weeknd_Cannes_2023.png",
+  tickets:     "https://www.ticketmaster.es",
+  description: "The Weeknd aterriza en Barcelona con uno de los shows visuales más espectaculares del mundo junto a Playboi Carti.",
+  featured:    true
+},
+{
+  type:        "event",
+  title:       "Debí Tirar Más Fotos World Tour",
+  artist:      "Bad Bunny",
+  city:        "Barcelona",
+  venue:       "Estadi Olímpic Lluís Companys",
+  date:        "2026-05-22",
+  time:        "21:00",
+  price:       "40€",
+  genre:       "Reggaeton",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/7/7d/Bad_Bunny_2019_by_Glenn_Francis.jpg",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/7/7d/Bad_Bunny_2019_by_Glenn_Francis.jpg",
+  tickets:     "https://www.ticketmaster.es",
+  description: "Bad Bunny vuelve a Barcelona con el tour latino más esperado del año.",
+  featured:    true
+},
+{
+  type:        "event",
+  title:       "LUX World Tour",
+  artist:      "Rosalía",
+  city:        "Barcelona",
+  venue:       "Palau Sant Jordi",
+  date:        "2026-04-17",
+  time:        "20:30",
+  price:       "50€",
+  genre:       "Flamenco Pop",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rosal%C3%ADa_2019_2.png",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rosal%C3%ADa_2019_2.png",
+  tickets:     "https://www.ticketmaster.es",
+  description: "Rosalía regresa a casa con una producción enorme y una nueva era musical.",
+  featured:    true
+},
+{
+  type:        "event",
+  title:       "La 8va Maravilla World Tour",
+  artist:      "Arcángel",
+  city:        "Barcelona",
+  venue:       "Palau Sant Jordi",
+  date:        "2026-05-18",
+  time:        "21:00",
+  price:       "65€",
+  genre:       "Reggaeton / Trap",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/7/79/Arcangel_2010.jpg",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/7/79/Arcangel_2010.jpg",
+  tickets:     "https://www.ticketmaster.es",
+  description: "Arcángel celebra 20 años de carrera con un show histórico lleno de clásicos.",
+  featured:    false
+},
+{
+  type:        "event",
+  title:       "Music Bank Barcelona 2026",
+  artist:      "ATEEZ, ENHYPEN, NMIXX",
+  city:        "Barcelona",
+  venue:       "Palau Sant Jordi",
+  date:        "2026-09-12",
+  time:        "20:00",
+  price:       "89€",
+  genre:       "K-Pop",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/8/8d/Ateez_at_KCON_2019.png",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Ateez_at_KCON_2019.png",
+  tickets:     "https://www.ticketmaster.es",
+  description: "El festival de K-Pop más grande del año llega a Barcelona con artistas internacionales.",
+  featured:    true
+},
+{
+  type:        "event",
+  title:       "Hijos de la Ruina Tour",
+  artist:      "Natos y Waor",
+  city:        "Barcelona",
+  venue:       "Palau Sant Jordi",
+  date:        "2026-05-15",
+  time:        "21:30",
+  price:       "45€",
+  genre:       "Rap",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/f/f9/Natos_y_Waor.jpg",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/f/f9/Natos_y_Waor.jpg",
+  tickets:     "https://www.ticketmaster.es",
+  description: "El dúo madrileño vuelve con uno de los conciertos de rap más potentes del año.",
+  featured:    false
+},
+{
+  type:        "event",
+  title:       "Trueno World Tour",
+  artist:      "Trueno",
+  city:        "Barcelona",
+  venue:       "Palau Sant Jordi",
+  date:        "2026-10-13",
+  time:        "20:30",
+  price:       "50€",
+  genre:       "Trap / Rap",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/5/5d/Trueno_2022.jpg",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/5/5d/Trueno_2022.jpg",
+  tickets:     "https://www.ticketmaster.es",
+  description: "Trueno aterriza en Barcelona con un espectáculo urbano lleno de energía y visuales brutales.",
+  featured:    false
+},
+{
+  type:        "event",
+  title:       "Primavera Sound 2026",
+  artist:      "Various Artists",
+  city:        "Barcelona",
+  venue:       "Parc del Fòrum",
+  date:        "2026-06-04",
+  time:        "18:00",
+  price:       "129€",
+  genre:       "Festival",
+  image:       "https://upload.wikimedia.org/wikipedia/commons/3/3c/Primavera_Sound_2019.jpg",
+  banner:      "https://upload.wikimedia.org/wikipedia/commons/3/3c/Primavera_Sound_2019.jpg",
+  tickets:     "https://www.primaverasound.com",
+  description: "El festival más icónico de Barcelona regresa con artistas internacionales y múltiples escenarios.",
+  featured:    true
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+];
 
 
 
@@ -1552,6 +1717,7 @@ function showPage(pageId) {
   if (pageId === "pageFavoritos") renderFavoritos();
   if (pageId === "pagePlaylists") renderPlaylists();
   if (pageId === "pageHistorial") renderHistorial();
+  if (pageId === "pageEventos")   EventosManager.render();
   closeContextMenu();
 }
 
@@ -4006,8 +4172,471 @@ function updateOfflineStatusBanner() {
 
 
 /* ══════════════════════════════════════════════════════
-   BOOT — Init all modules after DOM ready
+   EVENTOS MANAGER — Sistema dinámico de eventos en vivo
+   Gestiona todo desde el array `events` en script.js
 ══════════════════════════════════════════════════════ */
+const EventosManager = (() => {
+
+  /* ── State ─────────────────────────────── */
+  let evFilter      = "all";
+  let evSearch      = "";
+  let evSavedEvents = new Set(JSON.parse(localStorage.getItem("droply_saved_events") || "[]"));
+  let countdownTimers = [];
+  let rendered      = false;
+
+  /* ── Save state ────────────────────────── */
+  function saveSaved() {
+    try { localStorage.setItem("droply_saved_events", JSON.stringify([...evSavedEvents])); } catch(_) {}
+  }
+  function isSaved(ev) { return evSavedEvents.has(ev.title + ev.date); }
+  function toggleSaved(ev) {
+    const key = ev.title + ev.date;
+    if (evSavedEvents.has(key)) { evSavedEvents.delete(key); showToast("Evento eliminado de guardados", "default"); }
+    else                        { evSavedEvents.add(key);    showToast("Evento guardado ✓", "success"); }
+    saveSaved();
+    // Update bookmark icons in DOM without full re-render
+    document.querySelectorAll(`[data-evkey="${CSS.escape(key)}"] .ev-card-save`).forEach(btn => {
+      btn.classList.toggle("saved", evSavedEvents.has(key));
+      btn.setAttribute("aria-label", evSavedEvents.has(key) ? "Quitar guardado" : "Guardar evento");
+    });
+  }
+
+  /* ── Helpers ───────────────────────────── */
+  function sortedEvents() {
+    return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  function filteredEvents() {
+    const q = evSearch.toLowerCase().trim();
+    return sortedEvents().filter(ev => {
+      const matchFilter =
+        evFilter === "all"          ? true :
+        evFilter.startsWith("c:")   ? ev.city.toLowerCase()  === evFilter.slice(2) :
+        evFilter.startsWith("g:")   ? ev.genre.toLowerCase() === evFilter.slice(2) :
+        evFilter === "featured"     ? ev.featured :
+        evFilter === "saved"        ? isSaved(ev) : true;
+      const matchSearch = q === "" || [ev.title, ev.artist, ev.city, ev.venue, ev.genre].some(s => s.toLowerCase().includes(q));
+      return matchFilter && matchSearch;
+    });
+  }
+
+  function isPast(ev) {
+    return new Date(ev.date + "T" + ev.time) < new Date();
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + "T00:00:00");
+    const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    const days   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function formatCountdown(dateStr, timeStr) {
+    const target = new Date(dateStr + "T" + timeStr);
+    const now    = new Date();
+    const diff   = target - now;
+    if (diff <= 0) return { text: "Hoy", urgent: true };
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins  = Math.floor((diff % 3600000) / 60000);
+    if (days > 0)  return { text: `${days}d ${hours}h`, urgent: days < 7 };
+    if (hours > 0) return { text: `${hours}h ${mins}m`, urgent: true };
+    return { text: `${mins}m`, urgent: true };
+  }
+
+  function getCities()  { return [...new Set(events.map(e => e.city))].sort(); }
+  function getGenres()  { return [...new Set(events.map(e => e.genre))].sort(); }
+
+  /* ── Start countdown intervals ─────────── */
+  function startCountdowns() {
+    countdownTimers.forEach(clearInterval);
+    countdownTimers = [];
+    document.querySelectorAll(".ev-countdown[data-date]").forEach(el => {
+      const dateStr = el.dataset.date;
+      const timeStr = el.dataset.time || "00:00";
+      const update = () => {
+        const cd = formatCountdown(dateStr, timeStr);
+        el.textContent = cd.text;
+        el.classList.toggle("urgent", cd.urgent);
+      };
+      update();
+      countdownTimers.push(setInterval(update, 30000));
+    });
+  }
+
+  /* ── Build filter pills ────────────────── */
+  function buildFilters() {
+    const bar = document.getElementById("evDynamicPills");
+    if (!bar) return;
+    const pills = [];
+
+    // Featured pill
+    if (events.some(e => e.featured)) {
+      pills.push({ label: "⚡ Destacados", val: "featured" });
+    }
+    // Saved pill
+    pills.push({ label: "🔖 Guardados", val: "saved" });
+    // Separator cities
+    getCities().forEach(c  => pills.push({ label: `📍 ${c}`,  val: `c:${c.toLowerCase()}`  }));
+    // Separator genres
+    getGenres().forEach(g  => pills.push({ label: g,          val: `g:${g.toLowerCase()}`   }));
+
+    bar.innerHTML = pills.map(p =>
+      `<button class="ev-filter-pill${evFilter === p.val ? " active" : ""}" data-evfilter="${p.val}">${p.label}</button>`
+    ).join("");
+
+    document.querySelectorAll(".ev-filter-pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        evFilter = btn.dataset.evfilter;
+        document.querySelectorAll(".ev-filter-pill").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        renderContent();
+      });
+    });
+  }
+
+  /* ── Card HTML ─────────────────────────── */
+  function cardHTML(ev, size = "normal") {
+    const past    = isPast(ev);
+    const saved   = isSaved(ev);
+    const cd      = formatCountdown(ev.date, ev.time);
+    const dateStr = formatDate(ev.date);
+    const key     = ev.title + ev.date;
+    const imgSrc  = ev.image || ev.banner || "";
+
+    if (size === "featured") {
+      return `
+        <div class="ev-featured-card ${past ? "ev-past" : ""}" data-evkey="${key}">
+          <div class="ev-fc-banner">
+            <img class="ev-fc-img" src="${imgSrc}" alt="${ev.artist}" loading="lazy" />
+            <div class="ev-fc-overlay"></div>
+            ${ev.featured ? '<span class="ev-featured-badge">DESTACADO</span>' : ""}
+            ${past ? '<span class="ev-past-badge">FINALIZADO</span>' : ""}
+            <div class="ev-fc-bottom">
+              <div class="ev-fc-countdown-wrap">
+                <span class="ev-countdown-label">Faltan</span>
+                <span class="ev-countdown ${cd.urgent ? "urgent" : ""}" data-date="${ev.date}" data-time="${ev.time}">${cd.text}</span>
+              </div>
+            </div>
+          </div>
+          <div class="ev-fc-info">
+            <div class="ev-fc-meta-row">
+              <span class="ev-genre-pill">${ev.genre}</span>
+              <span class="ev-city-tag">📍 ${ev.city}</span>
+            </div>
+            <h3 class="ev-fc-title">${ev.title}</h3>
+            <p class="ev-fc-artist">${ev.artist}</p>
+            <div class="ev-fc-details">
+              <div class="ev-detail-item">
+                <svg viewBox="0 0 24 24" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${dateStr}
+              </div>
+              <div class="ev-detail-item">
+                <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                ${ev.time}
+              </div>
+              <div class="ev-detail-item">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${ev.venue}
+              </div>
+            </div>
+            <p class="ev-fc-desc">${ev.description}</p>
+            <div class="ev-fc-actions">
+              <a class="ev-btn-buy ${past ? "ev-btn-disabled" : ""}" href="${ev.tickets}" target="_blank" rel="noopener" ${past ? 'aria-disabled="true"' : ""}>
+                <svg viewBox="0 0 24 24" width="14" height="14"><path d="M2 9a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v2a2 2 0 0 0 0 4v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-2a2 2 0 0 0 0-4V9z"/></svg>
+                ${past ? "Finalizado" : `Comprar — ${ev.price}`}
+              </a>
+              <button class="ev-card-btn ev-card-share" data-title="${ev.title}" data-artist="${ev.artist}" data-city="${ev.city}" data-date="${dateStr}" aria-label="Compartir">
+                <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </button>
+              <button class="ev-card-btn ev-card-save ${saved ? "saved" : ""}" data-evkey="${key}" data-evindex="${events.indexOf(ev)}" aria-label="${saved ? "Quitar guardado" : "Guardar evento"}">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Normal card (compact scroll card)
+    return `
+      <div class="ev-card ${past ? "ev-past" : ""}" data-evkey="${key}">
+        <div class="ev-card-img-wrap">
+          <img class="ev-card-img" src="${imgSrc}" alt="${ev.artist}" loading="lazy" />
+          <div class="ev-card-img-overlay"></div>
+          ${ev.featured ? '<span class="ev-featured-badge ev-featured-sm">★</span>' : ""}
+          <span class="ev-card-genre">${ev.genre}</span>
+          <div class="ev-card-countdown-badge">
+            <span class="ev-countdown ${cd.urgent ? "urgent" : ""}" data-date="${ev.date}" data-time="${ev.time}">${cd.text}</span>
+          </div>
+        </div>
+        <div class="ev-card-body">
+          <p class="ev-card-artist">${ev.artist}</p>
+          <h3 class="ev-card-title">${ev.title}</h3>
+          <div class="ev-card-meta">
+            <span class="ev-card-date">${dateStr}</span>
+            <span class="ev-card-dot">·</span>
+            <span class="ev-card-city">📍 ${ev.city}</span>
+          </div>
+          <div class="ev-card-venue">${ev.venue} · ${ev.time}</div>
+          <div class="ev-card-footer">
+            <span class="ev-card-price">${ev.price}</span>
+            <div class="ev-card-actions">
+              <button class="ev-card-btn ev-card-share" data-title="${ev.title}" data-artist="${ev.artist}" data-city="${ev.city}" data-date="${dateStr}" aria-label="Compartir">
+                <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </button>
+              <button class="ev-card-btn ev-card-save ${saved ? "saved" : ""}" data-evkey="${key}" data-evindex="${events.indexOf(ev)}" aria-label="${saved ? "Quitar guardado" : "Guardar evento"}">
+                <svg viewBox="0 0 24 24" width="14" height="14"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <a class="ev-card-buy ${past ? "ev-btn-disabled" : ""}" href="${ev.tickets}" target="_blank" rel="noopener" ${past ? 'aria-disabled="true"' : ""}>
+                ${past ? "Agotado" : "Entradas"}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /* ── Attach card events ─────────────────── */
+  function attachCardEvents(container) {
+    container.querySelectorAll(".ev-card-save").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.evindex);
+        if (!isNaN(idx) && events[idx]) toggleSaved(events[idx]);
+      });
+    });
+    container.querySelectorAll(".ev-card-share").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const text = `🎤 ${btn.dataset.title} — ${btn.dataset.artist}\n📍 ${btn.dataset.city} · ${btn.dataset.date}`;
+        if (navigator.share) {
+          navigator.share({ title: btn.dataset.title, text }).catch(() => {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => showToast("Evento copiado al portapapeles", "success"));
+        } else {
+          showToast("Compartir no disponible en este dispositivo", "default");
+        }
+      });
+    });
+    // Click en tarjeta para abrir modal
+    container.querySelectorAll(".ev-card, .ev-featured-card").forEach(card => {
+      card.addEventListener("click", e => {
+        if (e.target.closest(".ev-card-btn") || e.target.closest(".ev-card-buy") || e.target.closest(".ev-fc-actions")) return;
+        const evKey = card.dataset.evkey;
+        const ev = sortedEvents().find(e => (e.title + e.date) === evKey);
+        if (ev) showEventoModal(ev);
+      });
+    });
+  }
+
+  /* ── Show Evento Modal ──────────────────– */
+  function showEventoModal(ev) {
+    const modal = document.getElementById("eventoDetailModal");
+    if (!modal) return;
+    
+    // Elementos del modal
+    const els = {
+      img:    document.getElementById("eventoDetailImg"),
+      title:  document.getElementById("eventoDetailTitle"),
+      artist: document.getElementById("eventoDetailArtist"),
+      genre:  document.getElementById("eventoDetailGenre"),
+      city:   document.getElementById("eventoDetailCity"),
+      desc:   document.getElementById("eventoDetailDesc"),
+      date:   document.getElementById("eventoDetailDate"),
+      time:   document.getElementById("eventoDetailTime"),
+      venue:  document.getElementById("eventoDetailVenue"),
+      price:  document.getElementById("eventoDetailPrice"),
+      buy:    document.getElementById("eventoDetailBuyLink"),
+      share:  document.getElementById("eventoDetailShare")
+    };
+    
+    // Validar elementos críticos
+    if (!els.title) return;
+    
+    // Rellenar datos
+    if (els.img) {
+      els.img.src = ev.image || ev.banner || "";
+      els.img.alt = ev.artist;
+    }
+    els.title.textContent = ev.title;
+    if (els.artist) els.artist.textContent = ev.artist;
+    if (els.genre) els.genre.textContent = ev.genre;
+    if (els.city) els.city.textContent = "📍 " + ev.city;
+    if (els.desc) els.desc.textContent = ev.description;
+    if (els.date) els.date.textContent = formatDate(ev.date);
+    if (els.time) els.time.textContent = ev.time;
+    if (els.venue) els.venue.textContent = ev.venue;
+    if (els.price) els.price.textContent = ev.price;
+    if (els.buy) els.buy.href = ev.tickets;
+    
+    // Evento para compartir
+    if (els.share) {
+      els.share.onclick = (e) => {
+        e.preventDefault();
+        const text = `🎤 ${ev.title} — ${ev.artist}\n📍 ${ev.city} · ${formatDate(ev.date)}\n⏰ ${ev.time}`;
+        if (navigator.share) {
+          navigator.share({ title: ev.title, text }).catch(() => {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => showToast("Evento copiado al portapapeles", "success"));
+        }
+      };
+    }
+    
+    // Abrir modal
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  /* ── Close Evento Modal ────────────────– */
+  function closeEventoModal() {
+    const modal = document.getElementById("eventoDetailModal");
+    if (modal) {
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+  }
+
+  /* ── Init Evento Modal ─────────────────– */
+  function initEventoModal() {
+    const modal = document.getElementById("eventoDetailModal");
+    const closeBtn = document.getElementById("eventoDetailClose");
+    
+    if (!modal || !closeBtn) return;
+    
+    // Cerrar con botón X
+    closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeEventoModal();
+    });
+    
+    // Cerrar al hacer click en el fondo del modal
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        closeEventoModal();
+      }
+    });
+    
+    // Cerrar con ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        closeEventoModal();
+      }
+    });
+  }
+
+  /* ── Main render ────────────────────────── */
+  function renderContent() {
+    const skeleton        = document.getElementById("evSkeleton");
+    const featSection     = document.getElementById("evFeaturedSection");
+    const featList        = document.getElementById("evFeaturedList");
+    const nearSection     = document.getElementById("evNearSection");
+    const nearList        = document.getElementById("evNearList");
+    const nearCity        = document.getElementById("evNearCity");
+    const soonSection     = document.getElementById("evSoonSection");
+    const soonList        = document.getElementById("evSoonList");
+    const allSection      = document.getElementById("evAllSection");
+    const allList         = document.getElementById("evAllList");
+    const allTitle        = document.getElementById("evAllTitle");
+    const countBadgeEl    = document.getElementById("evCountBadge");
+    const emptyState      = document.getElementById("evEmpty");
+
+    if (!featSection) return;
+
+    // Hide skeleton
+    if (skeleton) skeleton.style.display = "none";
+
+    const filtered  = filteredEvents();
+    const isDefault = (evFilter === "all" && evSearch === "");
+
+    // Reset all sections
+    [featSection, nearSection, soonSection, allSection, emptyState].forEach(el => el.style.display = "none");
+
+    if (filtered.length === 0) {
+      emptyState.style.display = "";
+      return;
+    }
+
+    if (isDefault) {
+      // DEFAULT VIEW: 3 sections
+      const featured = sortedEvents().filter(e => e.featured && !isPast(e));
+      if (featured.length > 0) {
+        featList.innerHTML = featured.map(e => cardHTML(e, "featured")).join("");
+        attachCardEvents(featList);
+        featSection.style.display = "";
+      }
+
+      // Near: use Barcelona as default city (España)
+      const nearCityName = "Barcelona";
+      const nearEvs = sortedEvents().filter(e => e.city === nearCityName && !isPast(e)).slice(0, 6);
+      if (nearEvs.length > 0) {
+        if (nearCity) nearCity.textContent = nearCityName;
+        nearList.innerHTML = nearEvs.map(e => cardHTML(e, "normal")).join("");
+        attachCardEvents(nearList);
+        nearSection.style.display = "";
+      }
+
+      // Soon: next 4 non-featured upcoming
+      const soon = sortedEvents().filter(e => !isPast(e) && !e.featured).slice(0, 4);
+      if (soon.length > 0) {
+        soonList.innerHTML = soon.map(e => cardHTML(e, "normal")).join("");
+        attachCardEvents(soonList);
+        soonSection.style.display = "";
+      }
+
+    } else {
+      // FILTERED VIEW: show all
+      const label = evFilter === "saved" ? "Guardados" : evFilter === "featured" ? "Destacados" : "Resultados";
+      if (allTitle) allTitle.textContent = label;
+      if (countBadgeEl) countBadgeEl.textContent = `${filtered.length} evento${filtered.length !== 1 ? "s" : ""}`;
+      allList.innerHTML = filtered.map(e => cardHTML(e, "normal")).join("");
+      attachCardEvents(allList);
+      allSection.style.display = "";
+    }
+
+    // Restart countdown timers
+    requestAnimationFrame(() => startCountdowns());
+  }
+
+  /* ── Public render (with skeleton on first load) ── */
+  function render() {
+    if (!rendered) {
+      rendered = true;
+      const skeleton = document.getElementById("evSkeleton");
+      if (skeleton) skeleton.style.display = "";
+      buildFilters();
+      setTimeout(renderContent, 380);
+    } else {
+      renderContent();
+    }
+  }
+
+  /* ── Search logic ─────────────────────── */
+  function initSearch() {
+    const input = document.getElementById("evSearchInput");
+    const clear = document.getElementById("evSearchClear");
+    if (!input) return;
+    input.addEventListener("input", () => {
+      evSearch = input.value;
+      clear.style.display = evSearch ? "" : "none";
+      if (evSearch) { evFilter = "all"; document.querySelectorAll(".ev-filter-pill").forEach(x => x.classList.remove("active")); document.querySelector(".ev-filter-pill[data-evfilter='all']")?.classList.add("active"); }
+      renderContent();
+    });
+    clear.addEventListener("click", () => { input.value = ""; evSearch = ""; clear.style.display = "none"; renderContent(); input.focus(); });
+  }
+
+  /* ── Init ─────────────────────────────── */
+  function init() {
+    initSearch();
+    initEventoModal();
+  }
+
+  return { render, init };
+})();
+
+
 function bootPremium() {
   injectPremiumDOM();
   patchExistingFunctions();
