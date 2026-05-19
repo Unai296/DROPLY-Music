@@ -12,6 +12,7 @@
 
   <title>DROPLY — Plataforma Multimedia</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -453,6 +454,16 @@
   </nav>
 
   <script src="script.js"></script>
+  <script src="auth.js"></script>
+  <script src="auth-ui.js"></script>
+  <script>
+    // Boot auth system after all scripts are loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(() => DroplyAuthUI.init(), 200));
+    } else {
+      setTimeout(() => DroplyAuthUI.init(), 200);
+    }
+  </script>
   
 </body>
 </html>
