@@ -37,6 +37,7 @@ const CHANGELOG = [
     title:   "Novedades Droply",
     emoji:   "🎶",
     changes: [
+      { icon: "🎵", text: "Introduccion de mas musicas estilo Reggaeton." }
       { icon: "🎵", text: "Arreglado la reproduccion de Playlists (me costo un huevo cago en to)." },
       { icon: "⚡", text: "Mejoras de rendimiento en la navegación entre páginas." },
       { icon: "🔧", text: "Varias correcciones tanto visuales como funcionales en el reproductor." }
