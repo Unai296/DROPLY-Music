@@ -30,6 +30,23 @@ const CHANGELOG = [
 
 
 
+  {
+    version: "v4.4",
+    date:    "20 de Mayo 2026",
+    title:   "Novedades Droply",
+    emoji:   "🎶",
+    changes: [
+      { icon: "🎵", text: "Introduccion de mas musicas estilo Reggaeton." },
+    ]
+  },
+
+
+
+
+
+   
+
+
 
   {
     version: "v4.3",
