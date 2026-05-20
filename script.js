@@ -1417,21 +1417,6 @@ const media = [
     category: "90s",
     duration: "4:01"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
        {
     type:     "music",
     title:    "The Riddle",
@@ -1441,19 +1426,6 @@ const media = [
     category: "90s",
     duration: "3:24"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
        {
     type:     "music",
     title:    "Another Way",
@@ -1462,6 +1434,87 @@ const media = [
     file:     "./Music/another_way.mp3",
     category: "90s",
     duration: "6:03"
+  },
+         {
+    type:     "music",
+    title:    "YO y TÚ",
+    artist:   "Ovy On The Drums, Quevedo, Beéle",
+    cover:    "https://media.motivafm.es/wp-content/uploads/2025/06/30103026/images.jpeg",
+    file:     "./Music/yo_y_tú.mp3",
+    category: "Reggaeton",
+    duration: "3:18"
+  },
+         {
+    type:     "music",
+    title:    "SHINY",
+    artist:   "EASYKID",
+    cover:    "https://images.genius.com/1995e27f519734bc292c49e7f1fcf9c6.1000x1000x1.png",
+    file:     "./Music/shiny.mp3",
+    category: "Reggaeton",
+    duration: "2:37"
+  },
+         {
+    type:     "music",
+    title:    "Santa",
+    artist:   "Rvssian x Rauw Alejandro x Ayra Starr",
+    cover:    "https://m.media-amazon.com/images/I/51Jn+yat4DL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/santa.mp3",
+    category: "Reggaeton",
+    duration: "3:13"
+  },
+         {
+    type:     "music",
+    title:    "ADIVINO",
+    artist:   "Myke Towers, Bad Bunny",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/7d4bfd96b8744fc8ca9b475c81254418/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/adivino.mp3",
+    category: "Reggaeton",
+    duration: "4:38"
+  },
+         {
+    type:     "music",
+    title:    "Ride Or Die Pt. 2",
+    artist:   "Sevdaliza, Tokischa, Villano Antillano",
+    cover:    "https://m.media-amazon.com/images/I/513DswxlqbL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/ride_or_die_pt_2.mp3",
+    category: "Reggaeton",
+    duration: "2:39"
+  },
+         {
+    type:     "music",
+    title:    "SI NO ES CONTIGO",
+    artist:   "Cris MJ",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/0bd32c8cb02372f394ca2b602bfaf2fe/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/si_no_es_contigo.mp3",
+    category: "Reggaeton",
+    duration: "2:38"
+  },
+         {
+    type:     "music",
+    title:    "BELLAKEO",
+    artist:   "Peso Pluma, Anitta",
+    cover:    "https://pics.filmaffinity.com/peso_pluma_anitta_bellakeo-952115569-mmed.jpg",
+    file:     "./Music/bellakeo.mp3",
+    category: "Reggaeton",
+    duration: "3:18"
+  },
+         {
+    type:     "music",
+    title:    "Yandel 150",
+    artist:   "Yandel, Feid",
+    cover:    "https://m.media-amazon.com/images/I/51FqssjQaLL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/yandel150.mp3",
+    category: "Reggaeton",
+    duration: "3:36"
+  },
+         {
+    type:     "music",
+    title:    "Clavaito",
+    artist:   "Chanel, Abraham Mateo",
+    cover:    "https://images.genius.com/3a494e516ff0fce415ef807ab097ed32.1000x1000x1.jpg",
+    file:     "./Music/clavaito.mp3",
+    category: "Reggaeton",
+    duration: "2:42"
   },
    
 
@@ -1475,9 +1528,16 @@ const media = [
 
 
 
-
-
-
+         {
+    type:     "music",
+    title:    "Mon Amour (Remix)",
+    artist:   "Zzoilo, Aitana",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2730317d0bdead0b5050f0c2656",
+    file:     "./Music/monamour.mp3",
+    category: "Reggaeton",
+    duration: "3:00"
+  },
+   
 
 
 
