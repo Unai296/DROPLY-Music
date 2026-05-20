@@ -4,6 +4,173 @@
               Toasts · Context Menu · Favorites · Shuffle/Repeat
 ═══════════════════════════════════════════════════════════ */
 
+
+
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   0. CHANGELOG — Edita este array para gestionar las
+      pantallas de novedades que se muestran al abrir la app.
+      Añade, edita o elimina entradas libremente.
+      Se muestra la última versión no vista por el usuario.
+   
+   Campos:
+     version  → identificador único (string)
+     date     → fecha mostrada al usuario
+     title    → título grande del modal
+     emoji    → emoji decorativo (opcional)
+     changes  → array de objetos { icon, text }
+                icon puede ser: "🎵" "🎨" "🔧" "⚡" "❤️" "📱" "🆕" etc.
+══════════════════════════════════════════════════════ */
+const CHANGELOG = [
+
+
+
+
+  {
+    version: "v4.3",
+    date:    "20 de Mayo 2026",
+    title:   "Novedades Droply",
+    emoji:   "🎶",
+    changes: [
+      { icon: "🎵", text: "Arreglado la reproduccion de Playlists (me costo un huevo cago en to)." },
+      { icon: "⚡", text: "Mejoras de rendimiento en la navegación entre páginas." },
+      { icon: "🔧", text: "Varias correcciones tanto visuales como funcionales en el reproductor." }
+    ]
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* ── Añade más versiones arriba (las más nuevas primero) ── */
+  // {
+  //   version: "v4.1",
+  //   date:    "Abril 2026",
+  //   title:   "Novedades",
+  //   emoji:   "🚀",
+  //   changes: [
+  //     { icon: "🆕", text: "Ejemplo de cambio anterior." }
+  //   ]
+  // }
+];
+
+/* ─── Mostrar changelog si hay versión no vista ─────── */
+const CHANGELOG_SEEN_KEY = "droply_changelog_seen";
+function getSeenVersion()  { return localStorage.getItem(CHANGELOG_SEEN_KEY) || ""; }
+function markVersionSeen(v){ localStorage.setItem(CHANGELOG_SEEN_KEY, v); }
+
+function initChangelog() {
+  if (!CHANGELOG || CHANGELOG.length === 0) return;
+  const latest = CHANGELOG[0];
+  if (getSeenVersion() === latest.version) return; // ya visto
+
+  const modal = document.getElementById("changelogModal");
+  if (!modal) return;
+
+  // Rellenar contenido
+  const elEmoji   = document.getElementById("clEmoji");
+  const elTitle   = document.getElementById("clTitle");
+  const elDate    = document.getElementById("clDate");
+  const elVersion = document.getElementById("clVersion");
+  const elList    = document.getElementById("clList");
+  const elClose   = document.getElementById("clClose");
+
+  if (elEmoji)   elEmoji.textContent   = latest.emoji || "✨";
+  if (elTitle)   elTitle.textContent   = latest.title || "Novedades";
+  if (elDate)    elDate.textContent    = latest.date  || "";
+  if (elVersion) elVersion.textContent = latest.version || "";
+  if (elList) {
+    elList.innerHTML = (latest.changes || []).map(c =>
+      `<li class="cl-item"><span class="cl-icon">${c.icon || "•"}</span><span class="cl-text">${c.text}</span></li>`
+    ).join("");
+  }
+
+  // Mostrar con pequeño delay para que la app cargue primero
+  setTimeout(() => { modal.classList.add("open"); }, 600);
+
+  if (elClose) {
+    elClose.addEventListener("click", () => {
+      modal.classList.remove("open");
+      markVersionSeen(latest.version);
+    });
+  }
+  modal.addEventListener("click", e => {
+    if (e.target === modal) {
+      modal.classList.remove("open");
+      markVersionSeen(latest.version);
+    }
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ══════════════════════════════════════════════════════
    1. DATA
 ══════════════════════════════════════════════════════ */
@@ -1652,7 +1819,8 @@ let currentFilter   = "all";
 let currentSearch   = "";
 let currentTrackIdx = -1;
 let isPlaying       = false;
-let playlist        = [];
+let playlist        = [];        // current PLAYBACK context (playlist, favorites, etc.)
+let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
 let shuffleMode     = false;
 let repeatMode      = false;
 
@@ -1930,7 +2098,7 @@ function shuffleArray(arr) {
 function renderGrid() {
   let items = filteredMedia();
   mediaGrid.innerHTML = "";
-  playlist = media.filter(m => m.type === "music");
+  // Do NOT overwrite playlist here — playback context is managed by loadTrack
   const labels = { all:"Destacados para ti", music:"Música" };
   sectionTitle.textContent = labels[currentFilter] || currentFilter;
 
@@ -2016,7 +2184,7 @@ function renderGrid() {
 ══════════════════════════════════════════════════════ */
 const CROSSFADE_DURATION = 0; // ms — set > 0 if you want crossfade (e.g. 1500)
 
-function loadTrack(item, fromQueue = false) {
+function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   if (item.type !== "music") return;
   const cover = item.cover || getPlaceholderCover(item.category);
 
@@ -2031,8 +2199,18 @@ function loadTrack(item, fromQueue = false) {
 
   // Update playlist context
   if (!fromQueue) {
-    playlist = media.filter(m => m.type === "music");
+    if (newPlaylistContext) {
+      // Explicit context (from playlist/favorites/historial) — use it and KEEP it
+      playlist = newPlaylistContext;
+    } else {
+      // Clicked from main grid — use full library as context
+      playlist = media.filter(m => m.type === "music");
+    }
     currentTrackIdx = playlist.findIndex(p => p.file === item.file);
+  } else {
+    // fromQueue=true: keep the current playlist context, just update index
+    const idx = playlist.findIndex(p => p.file === item.file);
+    if (idx >= 0) currentTrackIdx = idx;
   }
 
   // Mini player
@@ -2240,7 +2418,7 @@ function playPrev() {
   if (playlist.length === 0) return;
   if (audioEl.currentTime > 3) { audioEl.currentTime = 0; return; }
   currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
-  loadTrack(playlist[currentTrackIdx]);
+  loadTrack(playlist[currentTrackIdx], true);
 }
 
 function playNext() {
@@ -2259,7 +2437,7 @@ function playNext() {
   } else {
     currentTrackIdx = (currentTrackIdx + 1) % playlist.length;
   }
-  loadTrack(playlist[currentTrackIdx]);
+  loadTrack(playlist[currentTrackIdx], true);
 }
 
 sheetPrev.addEventListener("click", playPrev);
@@ -2379,7 +2557,7 @@ function renderFavoritos() {
   likedItems.forEach((item, idx) => {
     const cover = item.cover || getPlaceholderCover(item.category);
     const row = buildLibraryRow(item, idx + 1, cover, () => {
-      playlist = likedItems; currentTrackIdx = idx; loadTrack(item);
+      loadTrack(item, false, likedItems);
     }, item);
     favoritosList.appendChild(row);
   });
@@ -2541,9 +2719,7 @@ function openPlaylistDetail(id) {
       div.addEventListener("click", e => {
         if (e.target.closest(".playlist-detail-remove")) return;
         const plItems = pl.tracks.map(f => getTrackByFile(f)).filter(Boolean);
-        const idx = plItems.findIndex(t => t.file === file);
-        playlist = plItems; currentTrackIdx = idx;
-        loadTrack(item);
+        loadTrack(item, false, plItems);
         // highlight row
         playlistDetailList.querySelectorAll(".playlist-detail-item").forEach(r => r.classList.remove("playing"));
         div.classList.add("playing");
@@ -2581,8 +2757,7 @@ btnPlayPlaylist.addEventListener("click", () => {
   const pl = playlists.find(p => p.id === openPlaylistId);
   if (!pl || pl.tracks.length === 0) { showToast("La playlist está vacía"); return; }
   const plItems = pl.tracks.map(f => getTrackByFile(f)).filter(Boolean);
-  playlist = plItems; currentTrackIdx = 0;
-  loadTrack(plItems[0]);
+  loadTrack(plItems[0], false, plItems);
   // keep page open so user can browse while listening
   showToast(`Reproduciendo "${pl.name}"`, "success");
 });
@@ -2595,8 +2770,7 @@ if (btnShufflePlaylist) {
     const pl = playlists.find(p => p.id === openPlaylistId);
     if (!pl || pl.tracks.length === 0) { showToast("La playlist está vacía"); return; }
     const plItems = shuffleArray(pl.tracks.map(f => getTrackByFile(f)).filter(Boolean));
-    playlist = plItems; currentTrackIdx = 0;
-    loadTrack(plItems[0]);
+    loadTrack(plItems[0], false, plItems);
     btnShufflePlaylist.classList.add("active");
     showToast("Reproducción aleatoria activada", "success");
   });
@@ -2841,11 +3015,12 @@ window.addEventListener("scroll", () => {
 ══════════════════════════════════════════════════════ */
 (function init() {
   playlist = media.filter(m => m.type === "music");
+  playlistSource = "library";
   buildCategoryPills();
   renderGrid();
   buildGenreGrid();
-  // Restore queue panel now-playing if there's a last track (just initialize empty state)
   renderQueueList();
+  initChangelog();
 })();/* ═══════════════════════════════════════════════════════════
    DROPLY — premium.js  v1.0
    Módulos: Offline/Descargas · Modo Coche · Transferencia · Cloud Sync
@@ -3333,9 +3508,7 @@ const CarMode = (() => {
 
 
 /* ══════════════════════════════════════════════════════
-   MÓDULO 3 — TRANSFERENCIA ENTRE DISPOSITIVOS
-   Tecnología: BroadcastChannel (misma origin) + QR fallback
-   Para cross-device real: genera un session token con QR
+   MÓDULO 3 — TRANSFERENCIA ENTRE DISPOSITIVOS (desactivado)
 ══════════════════════════════════════════════════════ */
 const TransferManager = (() => {
   const SESSION_KEY = 'droply_transfer_session';
@@ -3878,43 +4051,7 @@ function injectPremiumDOM() {
       <p class="car-swipe-hint">← Desliza para cambiar canción →</p>
     </div>`);
 
-  /* ── Transfer panel ───────────────────────────── */
-  document.body.insertAdjacentHTML('beforeend', `
-    <div class="transfer-panel-overlay" id="transferOverlay"></div>
-    <div class="transfer-panel" id="transferPanel" role="dialog" aria-label="Transferir reproducción">
-      <div class="transfer-handle"></div>
-      <h3 class="transfer-panel-title">Transferir reproducción</h3>
-      <p class="transfer-panel-subtitle">Continúa escuchando en otro dispositivo desde el segundo exacto.</p>
-      
-      <div class="transfer-current-card">
-        <div class="transfer-current-cover"><img id="transferCurrentCover" src="" alt="" /></div>
-        <div class="transfer-current-info">
-          <div class="transfer-current-title" id="transferCurrentTitle">—</div>
-          <div class="transfer-current-artist" id="transferCurrentArtist">—</div>
-        </div>
-        <span class="transfer-current-time" id="transferCurrentTime">0:00</span>
-      </div>
-
-      <p class="transfer-devices-label">Dispositivos disponibles</p>
-      <div id="transferDevicesList"></div>
-
-      <div class="transfer-qr-section">
-        <p class="transfer-qr-title">O escanea desde otro dispositivo</p>
-        <div class="transfer-qr-wrap">
-          <div class="transfer-qr-canvas">
-            <canvas id="transferQRCanvas" width="72" height="72"></canvas>
-          </div>
-          <div class="transfer-qr-info">
-            <p class="transfer-qr-desc">Abre DROPLY en el otro dispositivo y pulsa "Recibir desde QR" para continuar la sesión.</p>
-            <div class="transfer-qr-session" id="transferSessionId">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="transfer-connecting-overlay" id="transferConnecting">
-        <div class="transfer-connecting-spinner"></div>
-        <span class="transfer-connecting-text">Conectando…</span>
-      </div>
-    </div>`);
+  /* ── Transfer panel (removed) ─────────────────── */
 
   /* ── Cloud sync indicator ─────────────────────── */
   const topbarActions = document.querySelector('.topbar-actions');
@@ -4084,19 +4221,19 @@ function patchExistingFunctions() {
   /* ── Patch loadTrack to use offline src when available ── */
   const origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
   if (origLoadTrack) {
-    window.loadTrack = async function(item, fromQueue) {
+    window.loadTrack = async function(item, fromQueue, newPlaylistContext) {
       // Check offline first
       if (OfflineManager.isDownloaded(item.file) && !navigator.onLine) {
         const offlineSrc = await OfflineManager.getOfflineSrc(item.file);
         if (offlineSrc) {
           const patchedItem = { ...item, file: offlineSrc };
-          origLoadTrack.call(this, patchedItem, fromQueue);
+          origLoadTrack.call(this, patchedItem, fromQueue, newPlaylistContext);
           // Sync car mode
           setTimeout(() => CarMode.syncToPlayer(), 200);
           return;
         }
       }
-      origLoadTrack.call(this, item, fromQueue);
+      origLoadTrack.call(this, item, fromQueue, newPlaylistContext);
       // Sync car mode
       setTimeout(() => CarMode.syncToPlayer(), 200);
     };
@@ -4161,9 +4298,7 @@ function setupPremiumEvents() {
   const carPanel = document.getElementById('carModePanel');
   if (carPanel) CarMode.setup(carPanel);
 
-  /* ── Transfer panel ────────────────────────────── */
-  document.getElementById('sheetTransferBtn')?.addEventListener('click', () => TransferManager.open());
-  document.getElementById('transferOverlay')?.addEventListener('click', () => TransferManager.close());
+  /* ── Transfer panel (removed) ─────────────────────── */
 
   /* ── Downloads / offline page ──────────────────── */
   document.getElementById('offlineClearAllBtn')?.addEventListener('click', async () => {
@@ -4821,7 +4956,6 @@ function bootPremium() {
   // Init modules
   OfflineManager.init();
   OfflineManager.setupOfflineDetection();
-  TransferManager.init();
   CloudSync.init();
 
   // Render offline playlist (after IDB is ready, slight delay)
@@ -4830,7 +4964,7 @@ function bootPremium() {
   // Register SW
   registerServiceWorker();
 
-  console.info('[DROPLY Premium] ✓ Módulos cargados: Offline · Modo Coche · Transferencia · Cloud Sync');
+  console.info('[DROPLY Premium] ✓ Módulos cargados: Offline · Modo Coche · Cloud Sync');
 }
 
 // Boot when DOM is ready
