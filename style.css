@@ -3074,3 +3074,17 @@ input[type=range].vol-slider::-webkit-slider-runnable-track {
   padding-top: env(safe-area-inset-top, 0px);
   height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
 }
+
+/* Compensar la altura real del topbar en PWA (topbar-h + safe-area-inset-top) */
+.is-pwa {
+  --topbar-real: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+}
+.is-pwa .pages-container {
+  padding-top: var(--topbar-real);
+}
+.is-pwa .cat-bar {
+  top: var(--topbar-real);
+}
+.is-pwa .pwa-update-toast {
+  top: calc(var(--topbar-real) + 10px);
+}
