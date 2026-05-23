@@ -4,6 +4,54 @@
               Toasts · Context Menu · Favorites · Shuffle/Repeat
 ═══════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   iOS / Safari AudioContext Unlock  ← FIX #2
+   iOS bloquea todo audio hasta el primer gesto real.
+   Este bloque lo desbloquea con el primer tap/click,
+   y también reanuda cualquier track pendiente por autoplay bloqueado.
+══════════════════════════════════════════════════════ */
+(function iosAudioUnlock() {
+  let _unlocked = false;
+
+  function _unlock() {
+    if (_unlocked) return;
+
+    // 1. Crear y resumir un AudioContext silencioso — desbloquea la pipa de audio de iOS
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        const ctx = new Ctx();
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        ctx.resume().catch(() => {});
+      }
+    } catch (e) {}
+
+    // 2. Si había un track pendiente por autoplay bloqueado, intentar reproducirlo ahora
+    const mainAudio = document.getElementById('mainAudio');
+    if (mainAudio && mainAudio.src && mainAudio.paused && window._droplyPendingTrack) {
+      mainAudio.play()
+        .then(() => { _unlocked = true; window._droplyPendingTrack = null; })
+        .catch(() => {});
+    } else {
+      _unlocked = true;
+    }
+
+    if (_unlocked) {
+      ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(ev =>
+        document.removeEventListener(ev, _unlock, true)
+      );
+    }
+  }
+
+  ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(ev =>
+    document.addEventListener(ev, _unlock, { capture: true, passive: true })
+  );
+})();
+
 
 
 
@@ -2359,21 +2407,48 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   // Update queue now-playing
   renderQueueNowPlaying(item);
 
-  // Audio
+  // Audio — FIX: no llamar .load() explícito, causa problemas en iOS/Chrome
+  window._droplyPendingTrack = item;
+  audioEl.pause();
+  audioEl.src = '';
+  audioEl.removeAttribute('src');
   audioEl.src = item.file;
-  audioEl.load();
-  audioEl.play()
-    .then(() => { isPlaying = true; updatePlayIcons(true); setupMediaSession(item); preloadNext(item); })
-    .catch(err => { isPlaying = false; updatePlayIcons(false); console.warn(`[DROPLY] No se pudo reproducir: "${item.file}"`, err); });
+  // No llamar .load() — asignar .src ya inicia la carga; .load() interrumpe la promesa
+
+  const _playPromise = audioEl.play();
+  if (_playPromise !== undefined) {
+    _playPromise
+      .then(() => {
+        isPlaying = true;
+        updatePlayIcons(true);
+        setupMediaSession(item);
+        preloadNext(item);
+        window._droplyPendingTrack = null;
+      })
+      .catch(err => {
+        isPlaying = false;
+        updatePlayIcons(false);
+        if (err.name === 'NotAllowedError') {
+          // Autoplay bloqueado por el navegador — se reproducirá al primer gesto del usuario
+          console.info('[DROPLY] Autoplay bloqueado, esperando gesto del usuario');
+        } else {
+          console.warn(`[DROPLY] Error al reproducir: "${item.file}"`, err);
+        }
+      });
+  }
 }
 
 function preloadNext(currentItem) {
-  // Preload the next track for smooth transitions
-  const nextItem = getNextItem(currentItem);
-  if (nextItem) {
-    preloadAudio.src = nextItem.file;
-    preloadAudio.load();
-  }
+  // FIX: retrasar precarga 8s para no dividir ancho de banda con el track principal
+  clearTimeout(window._droplyPreloadTimer);
+  window._droplyPreloadTimer = setTimeout(() => {
+    if (audioEl.paused) return; // si ya se pausó, no precargar
+    const nextItem = getNextItem(currentItem);
+    if (nextItem) {
+      preloadAudio.src = nextItem.file;
+      // No llamar .load() — el navegador gestiona la precarga automáticamente
+    }
+  }, 8000);
 }
 
 function getNextItem(currentItem) {
@@ -2629,8 +2704,12 @@ audioEl.addEventListener("timeupdate", () => {
 });
 
 audioEl.addEventListener("ended", () => {
-  if (repeatMode) { audioEl.currentTime = 0; audioEl.play(); }
-  else playNext();
+  if (repeatMode) {
+    audioEl.currentTime = 0;
+    audioEl.play().catch(err => console.warn('[DROPLY] Error al repetir:', err)); // FIX: sin .catch() crashea en iOS
+  } else {
+    playNext();
+  }
 });
 
 audioEl.addEventListener("play",  () => { isPlaying = true;  updatePlayIcons(true);  });

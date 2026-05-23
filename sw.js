@@ -4,7 +4,7 @@
    Versión del caché: se actualiza automáticamente
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'droply-v1';
+const CACHE_VERSION = 'droply-v2'; // bumped — fix Range requests + audio unlock
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const MUSIC_CACHE   = `${CACHE_VERSION}-music`;
 const IMG_CACHE     = `${CACHE_VERSION}-images`;
@@ -142,6 +142,16 @@ async function networkWithCacheFallback(request) {
 
 /* Estrategia para música: Cache-First + límite de entradas */
 async function musicStrategy(request) {
+  // FIX: Safari/iOS envía peticiones Range para el audio (seek, buffering parcial).
+  // Si interceptamos una Range request y devolvemos una respuesta cacheada completa (sin Range),
+  // iOS no puede reproducir el audio. Pasar siempre Range requests directamente a la red.
+  const rangeHeader = request.headers.get('range');
+  if (rangeHeader) {
+    return fetch(request).catch(() =>
+      new Response('Archivo de audio no disponible offline', { status: 503 })
+    );
+  }
+
   const cache  = await caches.open(MUSIC_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
