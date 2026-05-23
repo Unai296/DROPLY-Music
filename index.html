@@ -7,15 +7,21 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="DROPLY" />
-  <meta name="theme-color" content="#0f0f12" />
+  <meta name="theme-color" content="#080808" />
   <meta name="description" content="DROPLY — Streaming musical sin anuncios" />
 
   <title>DROPLY — Plataforma Multimedia</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="droply.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="droply.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="droply.png" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="stylesheet" href="style.css" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
 
@@ -491,6 +497,127 @@
       <button class="cl-close-btn" id="clClose">¡Entendido!</button>
     </div>
   </div>
+
+
+  <!-- ══ PWA INSTALL PROMPT ══ -->
+  <div class="pwa-install-banner" id="pwaInstallBanner" aria-live="polite">
+    <div class="pwa-install-inner">
+      <div class="pwa-install-icon">
+        <img src="icons/icon-96.png" alt="DROPLY" width="40" height="40" />
+      </div>
+      <div class="pwa-install-text">
+        <span class="pwa-install-title">Instalar DROPLY</span>
+        <span class="pwa-install-sub">Añade la app a tu pantalla de inicio</span>
+      </div>
+      <div class="pwa-install-actions">
+        <button class="pwa-install-dismiss" id="pwaInstallDismiss" aria-label="Cerrar">✕</button>
+        <button class="pwa-install-btn" id="pwaInstallBtn">Instalar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PWA UPDATE TOAST ══ -->
+  <div class="pwa-update-toast" id="pwaUpdateToast">
+    <span class="pwa-update-text">Nueva versión disponible</span>
+    <button class="pwa-update-btn" id="pwaUpdateBtn">Actualizar</button>
+  </div>
+
+  <!-- ══ PWA REGISTER SW ══ -->
+  <script>
+  (function() {
+    /* ── Service Worker registration ── */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .then(reg => {
+            console.info('[DROPLY PWA] SW registrado:', reg.scope);
+
+            /* Detectar actualización disponible */
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  showUpdateToast(newWorker);
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('[DROPLY PWA] SW error:', err));
+
+        /* Manejar actualización cuando se activa */
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) { refreshing = true; location.reload(); }
+        });
+      });
+    }
+
+    /* ── Install Prompt ── */
+    let deferredPrompt = null;
+    const banner    = document.getElementById('pwaInstallBanner');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const dismissBtn = document.getElementById('pwaInstallDismiss');
+    const DISMISSED_KEY = 'droply_pwa_dismissed';
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      /* No mostrar si ya fue descartado hace menos de 7 días */
+      const dismissed = localStorage.getItem(DISMISSED_KEY);
+      if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
+      /* Mostrar con delay para que la app cargue */
+      setTimeout(() => banner && banner.classList.add('visible'), 2500);
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        banner.classList.remove('visible');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.info('[DROPLY PWA] Install outcome:', outcome);
+        deferredPrompt = null;
+      });
+    }
+
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        banner && banner.classList.remove('visible');
+        localStorage.setItem(DISMISSED_KEY, Date.now().toString());
+      });
+    }
+
+    /* Ocultar banner si ya está instalada */
+    window.addEventListener('appinstalled', () => {
+      banner && banner.classList.remove('visible');
+      deferredPrompt = null;
+      console.info('[DROPLY PWA] App instalada!');
+    });
+
+    /* ── Update Toast ── */
+    const updateToast = document.getElementById('pwaUpdateToast');
+    const updateBtn   = document.getElementById('pwaUpdateBtn');
+    let pendingWorker = null;
+
+    function showUpdateToast(worker) {
+      pendingWorker = worker;
+      updateToast && updateToast.classList.add('visible');
+    }
+
+    if (updateBtn) {
+      updateBtn.addEventListener('click', () => {
+        if (pendingWorker) pendingWorker.postMessage({ type: 'SKIP_WAITING' });
+        updateToast && updateToast.classList.remove('visible');
+      });
+    }
+
+    /* ── Standalone detection ── */
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      document.documentElement.classList.add('is-pwa');
+      console.info('[DROPLY PWA] Running as installed PWA');
+    }
+  })();
+  </script>
 
   <script src="script.js"></script>
   

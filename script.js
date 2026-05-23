@@ -31,6 +31,66 @@ const CHANGELOG = [
 
 
 
+
+
+
+
+
+{
+  version: "v5.0",
+  date:    "23 de Mayo 2026",
+  title:   "Droply Redesign",
+  emoji:   "✨",
+  changes: [
+    { 
+      icon: "🎨", 
+      text: "Rediseño completo de la interfaz con estilo mucho más limpio, moderno y premium." 
+    },
+
+    { 
+      icon: "🫧", 
+      text: "Añadido nuevo efecto glassmorphism en botones, menús y reproductor." 
+    },
+
+    { 
+      icon: "📱", 
+      text: "Droply ahora puede instalarse como app gracias al nuevo soporte PWA." 
+    },
+
+    { 
+      icon: "⚡", 
+      text: "Animaciones y transiciones rehechas para que todo se sienta más fluido." 
+    },
+
+    { 
+      icon: "🎵", 
+      text: "Nuevo reproductor con visuales mejorados y controles más modernos." 
+    },
+
+    { 
+      icon: "🌌", 
+      text: "Mejorado el fondo dinámico y la iluminación ambiental de toda la app." 
+    },
+
+    { 
+      icon: "🛠️", 
+      text: "Corregidos múltiples bugs visuales y pequeños errores del reproductor." 
+    }
+  ]
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
   {
     version: "v4.3",
     date:    "20 de Mayo 2026",
