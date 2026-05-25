@@ -1820,6 +1820,27 @@ const media = [
 
 
 
+         {
+    type:     "music",
+    title:    "All The Stars",
+    artist:   "Kendrick Lamar, SZA",
+    cover:    "https://external-preview.redd.it/kendrick-lamar-sza-all-the-stars-1425x1425-v0-sg2vjFNVymrGj6SBX2YAqGRS4DpfReI4rHG4ZkO9kiQ.jpg?auto=webp&s=6f7f26782817e77656af393352807edcf6a98d19",
+    file:     "./Music/allthestars.mp3",
+    category: "Dance-Pop",
+    duration: "3:54"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2497,6 +2518,7 @@ function renderGrid() {
     const cover = item.cover || getPlaceholderCover(item.category);
     const card = document.createElement("div");
     card.className = "media-card fade-in";
+    card.dataset.file = item.file;
     if (item.file === currentFile) card.classList.add("is-playing");
     const liked = likedTracks.has(item.file);
 
@@ -2605,11 +2627,12 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   const liked = likedTracks.has(item.file);
   sheetHeart.classList.toggle("liked", liked);
 
-  // Highlight playing card
+  // Highlight playing card — match by file identity, not by DOM position
   document.querySelectorAll(".media-card").forEach(c => c.classList.remove("is-playing"));
-  const cards = document.querySelectorAll(".media-card");
-  const items = Array.from(filteredMedia());
-  cards.forEach((card, i) => { if (items[i]?.file === item.file) card.classList.add("is-playing"); });
+  if (item?.file) {
+    document.querySelectorAll(`.media-card[data-file="${CSS.escape(item.file)}"]`)
+      .forEach(c => c.classList.add("is-playing"));
+  }
 
   // Update queue now-playing
   renderQueueNowPlaying(item);

@@ -1119,13 +1119,28 @@ input { font-family: inherit; }
 .media-card:nth-child(10) { animation-delay: .30s; }
 
 /* Playing card highlight */
+/* ── is-playing: Spotify-style highlight ── */
+.media-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.media-card.is-playing {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25);
+}
 .media-card.is-playing .card-cover::after {
-  content: ''; position: absolute; inset: 0;
-  background: rgba(139,92,246,.15);
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139,92,246,.22), rgba(109,40,217,.12));
   border-radius: var(--r-xs);
   pointer-events: none;
+  animation: playing-pulse 2.4s ease-in-out infinite;
 }
-.media-card.is-playing .card-title { color: var(--accent); }
+@keyframes playing-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.media-card.is-playing .card-title { color: var(--accent); transition: color 0.25s ease; }
 
 /* Skeleton loading */
 .skeleton {
@@ -2808,11 +2823,12 @@ body::before {
 .car-suggest-btn.primary:hover { background: var(--accent-lt); }
 .car-suggest-icon { background: rgba(139,92,246,.1); color: var(--accent-lt); }
 
-/* Playing card highlight */
+/* Playing card highlight — override (redesign section) */
 .media-card.is-playing .card-cover::after {
-  background: rgba(139,92,246,.12);
+  background: linear-gradient(135deg, rgba(139,92,246,.22), rgba(109,40,217,.12));
+  animation: playing-pulse 2.4s ease-in-out infinite;
 }
-.media-card.is-playing .card-title { color: var(--accent-lt); }
+.media-card.is-playing .card-title { color: var(--accent-lt); transition: color 0.25s ease; }
 
 /* Changelog modal */
 .changelog-card {
