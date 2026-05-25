@@ -4141,39 +4141,12 @@ const CloudSync = (() => {
    MÓDULO 5 — SERVICE WORKER (PWA offline)
 ══════════════════════════════════════════════════════ */
 function registerServiceWorker() {
+  // El SW ya está registrado en index.html con /sw.js
+  // Esta función solo verifica que está activo y no hace nada más
   if (!('serviceWorker' in navigator)) return;
-  // Generate the SW inline via blob URL (no external file needed)
-  const swCode = `
-const CACHE = 'droply-cache-v1';
-const STATIC = ['/', '/index.html', '/style.css', '/script.js', '/premium.css', '/premium.js'];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC.filter(Boolean))).catch(()=>{}));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fresh = fetch(e.request).then(resp => {
-        if (resp.ok && e.request.url.startsWith(self.location.origin)) {
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
-        }
-        return resp;
-      }).catch(() => cached);
-      return cached || fresh;
-    })
-  );
-});`;
-
-  try {
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const url  = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(url, { scope: '/' }).catch(() => {});
-  } catch(_) {}
+  navigator.serviceWorker.ready.then(reg => {
+    console.info('[DROPLY Premium] SW activo:', reg.scope);
+  }).catch(() => {});
 }
 
 

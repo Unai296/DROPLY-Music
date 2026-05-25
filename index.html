@@ -13,10 +13,12 @@
   <title>DROPLY — Plataforma Multimedia</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="droply.png" />
-  <link rel="apple-touch-icon" sizes="144x144" href="droply.png" />
-  <link rel="apple-touch-icon" sizes="128x128" href="droply.png" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png" />
+  <link rel="apple-touch-icon" sizes="96x96" href="icons/icon-96.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="stylesheet" href="style.css" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -528,19 +530,25 @@
     /* ── Service Worker registration ── */
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
+        navigator.serviceWorker.register('sw.js')
           .then(reg => {
             console.info('[DROPLY PWA] SW registrado:', reg.scope);
 
             /* Detectar actualización disponible */
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
+              if (!newWorker) return;
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   showUpdateToast(newWorker);
                 }
               });
             });
+
+            /* Forzar activación inmediata si hay un SW en espera */
+            if (reg.waiting) {
+              showUpdateToast(reg.waiting);
+            }
           })
           .catch(err => console.warn('[DROPLY PWA] SW error:', err));
 
@@ -559,12 +567,21 @@
     const dismissBtn = document.getElementById('pwaInstallDismiss');
     const DISMISSED_KEY = 'droply_pwa_dismissed';
 
+    /* Exponer para uso desde bootPremium si es necesario */
+    window._droplyInstallPrompt = null;
+
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
+      window._droplyInstallPrompt = e;
+      console.info('[DROPLY PWA] beforeinstallprompt capturado');
+
       /* No mostrar si ya fue descartado hace menos de 7 días */
-      const dismissed = localStorage.getItem(DISMISSED_KEY);
-      if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
+      try {
+        const dismissed = localStorage.getItem(DISMISSED_KEY);
+        if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
+      } catch(e) {}
+
       /* Mostrar con delay para que la app cargue */
       setTimeout(() => banner && banner.classList.add('visible'), 2500);
     });
@@ -572,18 +589,23 @@
     if (installBtn) {
       installBtn.addEventListener('click', async () => {
         if (!deferredPrompt) return;
-        banner.classList.remove('visible');
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.info('[DROPLY PWA] Install outcome:', outcome);
+        banner && banner.classList.remove('visible');
+        try {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.info('[DROPLY PWA] Install outcome:', outcome);
+        } catch(err) {
+          console.warn('[DROPLY PWA] prompt error:', err);
+        }
         deferredPrompt = null;
+        window._droplyInstallPrompt = null;
       });
     }
 
     if (dismissBtn) {
       dismissBtn.addEventListener('click', () => {
         banner && banner.classList.remove('visible');
-        localStorage.setItem(DISMISSED_KEY, Date.now().toString());
+        try { localStorage.setItem(DISMISSED_KEY, Date.now().toString()); } catch(e) {}
       });
     }
 
@@ -591,6 +613,7 @@
     window.addEventListener('appinstalled', () => {
       banner && banner.classList.remove('visible');
       deferredPrompt = null;
+      window._droplyInstallPrompt = null;
       console.info('[DROPLY PWA] App instalada!');
     });
 

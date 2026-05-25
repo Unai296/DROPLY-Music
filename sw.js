@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    DROPLY — sw.js  (Service Worker)
    Estrategia: Cache-First para assets · Network-First para datos
-   Versión del caché: se actualiza automáticamente
+   v3 — Rutas absolutas, scope raíz, compatibilidad Android Chrome
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'droply-v2'; // bumped — fix Range requests + audio unlock
+const CACHE_VERSION = 'droply-v3';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const MUSIC_CACHE   = `${CACHE_VERSION}-music`;
 const IMG_CACHE     = `${CACHE_VERSION}-images`;
@@ -15,12 +15,14 @@ const STATIC_ASSETS = [
   './index.html',
   './style.css',
   './script.js',
-  './manifest.json'
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 /* Límites de caché */
-const MAX_IMG_CACHE   = 120;   // máx. imágenes cacheadas
-const MAX_MUSIC_CACHE = 50;    // máx. tracks en caché
+const MAX_IMG_CACHE   = 120;
+const MAX_MUSIC_CACHE = 50;
 const IMG_MAX_AGE     = 7 * 24 * 60 * 60;  // 7 días (segundos)
 
 /* ── INSTALL ──────────────────────────────────────────────── */
@@ -53,6 +55,8 @@ self.addEventListener('fetch', event => {
   /* Ignorar peticiones no-GET y chrome-extension */
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
+  /* Ignorar requests de extensiones o devtools */
+  if (!url.protocol.startsWith('http')) return;
 
   /* ── Archivos de música (.mp3) → Cache-First con límite ── */
   if (url.pathname.endsWith('.mp3') || url.pathname.includes('/Music/')) {
@@ -142,9 +146,7 @@ async function networkWithCacheFallback(request) {
 
 /* Estrategia para música: Cache-First + límite de entradas */
 async function musicStrategy(request) {
-  // FIX: Safari/iOS envía peticiones Range para el audio (seek, buffering parcial).
-  // Si interceptamos una Range request y devolvemos una respuesta cacheada completa (sin Range),
-  // iOS no puede reproducir el audio. Pasar siempre Range requests directamente a la red.
+  // Safari/iOS envía peticiones Range para el audio — pasarlas directamente a la red
   const rangeHeader = request.headers.get('range');
   if (rangeHeader) {
     return fetch(request).catch(() =>
@@ -172,12 +174,10 @@ async function imageStrategy(request) {
   const cache  = await caches.open(IMG_CACHE);
   const cached = await cache.match(request);
   if (cached) {
-    /* Comprobar expiración en background */
     const dateHeader = cached.headers.get('date');
     if (dateHeader) {
       const age = (Date.now() - new Date(dateHeader).getTime()) / 1000;
       if (age > IMG_MAX_AGE) {
-        /* Revalidar en background */
         fetch(request).then(r => { if (r.ok) cache.put(request, r); }).catch(() => {});
       }
     }
@@ -191,7 +191,6 @@ async function imageStrategy(request) {
     }
     return response;
   } catch {
-    /* Devolver SVG placeholder si la imagen no está en caché */
     return new Response(
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect fill="#18181d"/></svg>`,
       { headers: { 'Content-Type': 'image/svg+xml' } }
@@ -204,7 +203,6 @@ async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const keys  = await cache.keys();
   if (keys.length > maxEntries) {
-    /* Eliminar las más antiguas */
     const toDelete = keys.slice(0, keys.length - maxEntries);
     await Promise.all(toDelete.map(k => cache.delete(k)));
   }
@@ -253,17 +251,14 @@ function offlineFallback() {
 
 /* ═══════════════════════════════════════════════════════════
    MENSAJES DESDE LA APP
-   Permite a script.js comunicarse con el SW
 ═══════════════════════════════════════════════════════════ */
 self.addEventListener('message', event => {
   const { type, payload } = event.data || {};
 
-  /* Forzar actualización del SW */
   if (type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 
-  /* Pre-cachear una canción específica */
   if (type === 'CACHE_TRACK' && payload?.url) {
     caches.open(MUSIC_CACHE).then(cache => {
       cache.match(payload.url).then(hit => {
@@ -276,19 +271,16 @@ self.addEventListener('message', event => {
     });
   }
 
-  /* Eliminar una canción del caché */
   if (type === 'REMOVE_TRACK' && payload?.url) {
     caches.open(MUSIC_CACHE).then(cache => cache.delete(payload.url));
   }
 
-  /* Comprobar si una URL está en caché */
   if (type === 'CHECK_CACHED' && payload?.url) {
     caches.match(payload.url).then(hit => {
       event.source?.postMessage({ type: 'CACHED_STATUS', url: payload.url, cached: !!hit });
     });
   }
 
-  /* Devolver estadísticas de caché */
   if (type === 'GET_CACHE_STATS') {
     Promise.all([
       caches.open(MUSIC_CACHE).then(c => c.keys()),
