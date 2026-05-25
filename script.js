@@ -2190,43 +2190,118 @@ bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
 topbarSearchBtn.addEventListener("click", () => showPage("pageSearch"));
 
 /* ══════════════════════════════════════════════════════
-   7. CONTEXT MENU
+   7. CONTEXT MENU — Bottom Sheet (mobile-first)
 ══════════════════════════════════════════════════════ */
-function openContextMenu(item, x, y) {
+const ctxSheet        = document.getElementById("ctxSheet");
+const ctxSheetOverlay = document.getElementById("ctxSheetOverlay");
+const ctxSheetCover   = document.getElementById("ctxSheetCover");
+const ctxSheetTitle   = document.getElementById("ctxSheetTitle");
+const ctxSheetArtist  = document.getElementById("ctxSheetArtist");
+const ctxSheetPlayNow = document.getElementById("ctxSheetPlayNow");
+const ctxSheetAddQueue   = document.getElementById("ctxSheetAddQueue");
+const ctxSheetAddPlaylist= document.getElementById("ctxSheetAddPlaylist");
+const ctxSheetLike    = document.getElementById("ctxSheetLike");
+const ctxSheetLikeIcon = document.getElementById("ctxSheetLikeIcon");
+const ctxSheetLikeLabel= document.getElementById("ctxSheetLikeLabel");
+const ctxSheetCancel  = document.getElementById("ctxSheetCancel");
+
+// Touch-drag-to-dismiss state
+let _ctxDragStartY = 0;
+let _ctxDragCurrentY = 0;
+let _ctxDragging = false;
+
+function openContextMenu(item) {
   contextTarget = item;
   const liked = likedTracks.has(item.file);
-  ctxLike.innerHTML = `
-    <svg viewBox="0 0 24 24" width="16" height="16" ${liked ? 'style="fill:#e94f4f;stroke:#e94f4f"' : ''}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-    ${liked ? "Quitar de likes" : "Me gusta"}`;
+  const cover = item.cover || getPlaceholderCover(item.category);
 
-  const cw = contextMenu.offsetWidth || 190;
-  const ch = contextMenu.offsetHeight || 160;
-  let cx = Math.min(x, window.innerWidth - cw - 8);
-  let cy = Math.min(y, window.innerHeight - ch - 8);
-  contextMenu.style.left = cx + "px";
-  contextMenu.style.top  = cy + "px";
-  contextMenu.classList.add("open");
+  // Fill track info
+  ctxSheetCover.src = cover;
+  ctxSheetCover.onerror = () => { ctxSheetCover.src = getPlaceholderCover(item.category); };
+  ctxSheetTitle.textContent  = item.title;
+  ctxSheetArtist.textContent = item.artist;
+
+  // Like state
+  _updateCtxLikeState(liked);
+
+  // Open
+  ctxSheet.classList.add("open");
+  ctxSheetOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  // Reset drag
+  ctxSheet.style.transform = "";
+  ctxSheet.style.transition = "";
 }
+
+function _updateCtxLikeState(liked) {
+  ctxSheetLike.classList.toggle("liked", liked);
+  ctxSheetLikeLabel.textContent = liked ? "Quitar de likes" : "Me gusta";
+  ctxSheetLikeIcon.innerHTML = liked
+    ? `<svg viewBox="0 0 24 24" width="20" height="20" style="fill:#e94f4f;stroke:#e94f4f"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
+    : `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+}
+
 function closeContextMenu() {
-  contextMenu.classList.remove("open");
+  ctxSheet.classList.remove("open");
+  ctxSheetOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+  ctxSheet.style.transform = "";
+  ctxSheet.style.transition = "";
   contextTarget = null;
 }
-document.addEventListener("click", e => {
-  if (!contextMenu.contains(e.target)) closeContextMenu();
-});
+
+// Close on overlay tap
+ctxSheetOverlay.addEventListener("click", closeContextMenu);
+ctxSheetCancel.addEventListener("click",  closeContextMenu);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeContextMenu(); });
 
-ctxPlayNow.addEventListener("click", () => {
+// ── Swipe-down to dismiss ──────────────────────────
+const _ctxHandle = ctxSheet.querySelector(".ctx-sheet-handle-wrap");
+_ctxHandle.addEventListener("touchstart", e => {
+  _ctxDragStartY = e.touches[0].clientY;
+  _ctxDragging = true;
+  ctxSheet.style.transition = "none";
+}, { passive: true });
+
+document.addEventListener("touchmove", e => {
+  if (!_ctxDragging) return;
+  const dy = Math.max(0, e.touches[0].clientY - _ctxDragStartY);
+  _ctxDragCurrentY = dy;
+  ctxSheet.style.transform = `translateY(${dy}px)`;
+}, { passive: true });
+
+document.addEventListener("touchend", () => {
+  if (!_ctxDragging) return;
+  _ctxDragging = false;
+  ctxSheet.style.transition = "";
+  if (_ctxDragCurrentY > 100) {
+    closeContextMenu();
+  } else {
+    ctxSheet.style.transform = "";
+  }
+  _ctxDragCurrentY = 0;
+}, { passive: true });
+
+// ── Sheet action handlers ──────────────────────────
+ctxSheetPlayNow.addEventListener("click", () => {
   if (contextTarget) { loadTrack(contextTarget); closeContextMenu(); }
 });
-ctxAddQueue.addEventListener("click", () => {
+ctxSheetAddQueue.addEventListener("click", () => {
   if (contextTarget) { addToQueue(contextTarget); closeContextMenu(); }
 });
-ctxAddPlaylist.addEventListener("click", () => {
+ctxSheetAddPlaylist.addEventListener("click", () => {
   if (contextTarget) { openAddToPlaylist(contextTarget); closeContextMenu(); }
 });
-ctxLike.addEventListener("click", () => {
-  if (contextTarget) { toggleLike(contextTarget); closeContextMenu(); }
+ctxSheetLike.addEventListener("click", () => {
+  if (contextTarget) {
+    toggleLike(contextTarget);
+    // Update like state in sheet without closing
+    const nowLiked = likedTracks.has(contextTarget.file);
+    _updateCtxLikeState(nowLiked);
+    // Small delay then close
+    setTimeout(closeContextMenu, 280);
+  }
 });
 
 /* ══════════════════════════════════════════════════════
@@ -2329,7 +2404,8 @@ function renderGrid() {
     card.addEventListener("click", e => { if (!e.target.closest(".card-more-btn") && !e.target.closest(".card-download-btn")) loadTrack(item); });
     card.querySelector(".card-more-btn").addEventListener("click", e => {
       e.stopPropagation();
-      openContextMenu(item, e.clientX, e.clientY);
+      e.preventDefault();
+      openContextMenu(item);
     });
     card.querySelector(".card-download-btn").addEventListener("click", e => {
       e.stopPropagation();
@@ -2785,7 +2861,7 @@ function buildLibraryRow(item, num, cover, onClick, itemForCtx) {
     <span class="library-item-dur">${item.duration || ""}</span>`;
   row.addEventListener("click", e => { if (!e.target.closest(".library-item-actions")) onClick(); });
   row.querySelector('[data-action="queue"]').addEventListener("click", e => { e.stopPropagation(); addToQueue(item); });
-  row.querySelector('[data-action="more"]').addEventListener("click", e => { e.stopPropagation(); openContextMenu(itemForCtx || item, e.clientX, e.clientY); });
+  row.querySelector('[data-action="more"]').addEventListener("click", e => { e.stopPropagation(); openContextMenu(itemForCtx || item); });
   return row;
 }
 

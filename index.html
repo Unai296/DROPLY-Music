@@ -518,6 +518,53 @@
     </div>
   </div>
 
+  <!-- ══ TRACK CONTEXT BOTTOM SHEET ══ -->
+  <div class="ctx-sheet-overlay" id="ctxSheetOverlay"></div>
+  <div class="ctx-sheet" id="ctxSheet" role="dialog" aria-modal="true" aria-label="Opciones de canción">
+    <div class="ctx-sheet-handle-wrap">
+      <div class="ctx-sheet-handle"></div>
+    </div>
+    <div class="ctx-sheet-track-info" id="ctxSheetTrackInfo">
+      <div class="ctx-sheet-cover-wrap">
+        <img class="ctx-sheet-cover" id="ctxSheetCover" src="" alt="" />
+      </div>
+      <div class="ctx-sheet-meta">
+        <div class="ctx-sheet-title" id="ctxSheetTitle"></div>
+        <div class="ctx-sheet-artist" id="ctxSheetArtist"></div>
+      </div>
+    </div>
+    <div class="ctx-sheet-divider"></div>
+    <div class="ctx-sheet-actions">
+      <button class="ctx-sheet-item" id="ctxSheetPlayNow">
+        <span class="ctx-sheet-item-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" style="fill:currentColor;stroke:none"><polygon points="5,3 19,12 5,21"/></svg>
+        </span>
+        <span class="ctx-sheet-item-label">Reproducir ahora</span>
+      </button>
+      <button class="ctx-sheet-item" id="ctxSheetAddQueue">
+        <span class="ctx-sheet-item-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3.5" y1="18" x2="3.5" y2="18" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="12" x2="3.5" y2="12" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="6" x2="3.5" y2="6" stroke-width="2.5" stroke-linecap="round"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>
+        </span>
+        <span class="ctx-sheet-item-label">Añadir a la cola</span>
+      </button>
+      <button class="ctx-sheet-item" id="ctxSheetAddPlaylist">
+        <span class="ctx-sheet-item-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15.9A5 5 0 1 0 15 21"/><path d="M21 8H9M21 12H9M14 16H9"/><circle cx="18" cy="18" r="3"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>
+        </span>
+        <span class="ctx-sheet-item-label">Añadir a playlist</span>
+      </button>
+      <button class="ctx-sheet-item" id="ctxSheetLike">
+        <span class="ctx-sheet-item-icon" id="ctxSheetLikeIcon">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </span>
+        <span class="ctx-sheet-item-label" id="ctxSheetLikeLabel">Me gusta</span>
+      </button>
+    </div>
+    <div class="ctx-sheet-cancel-wrap">
+      <button class="ctx-sheet-cancel" id="ctxSheetCancel">Cancelar</button>
+    </div>
+  </div>
+
   <!-- ══ PWA UPDATE TOAST ══ -->
   <div class="pwa-update-toast" id="pwaUpdateToast">
     <span class="pwa-update-text">Nueva versión disponible</span>
