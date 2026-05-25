@@ -84,6 +84,88 @@ const CHANGELOG = [
 
 
 
+
+
+
+
+
+{
+  version: "v5.2",
+  date:    "25 de Mayo 2026",
+  title:   "Droply Redesign",
+  emoji:   "✨",
+  changes: [
+    { 
+      icon: "🎨", 
+      text: "Rediseño completo de la interfaz con estilo mucho más limpio, moderno y premium." 
+    },
+
+    { 
+      icon: "🫧", 
+      text: "Añadido nuevo efecto glassmorphism en botones, menús y reproductor." 
+    },
+
+    { 
+      icon: "📱", 
+      text: "Mejorado el soporte PWA para instalación como app en móvil y escritorio." 
+    },
+
+    { 
+      icon: "⚡", 
+      text: "Animaciones y transiciones rehechas para una experiencia más fluida y natural." 
+    },
+
+    { 
+      icon: "🎵", 
+      text: "Nuevo reproductor con controles modernizados y mejor integración visual del audio." 
+    },
+
+    { 
+      icon: "📚", 
+      text: "Añadido sistema de biblioteca con música propia cargada por el usuario." 
+    },
+
+    { 
+      icon: "💾", 
+      text: "Mejorado el guardado local para que la música añadida no se pierda al recargar la app." 
+    },
+
+    { 
+      icon: "🌌", 
+      text: "Mejorado el fondo dinámico y la iluminación ambiental de toda la app." 
+    },
+
+    { 
+      icon: "🛠️", 
+      text: "Corregidos múltiples bugs visuales y problemas de reproducción en dispositivos móviles." 
+    }
+  ]
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {
   version: "v5.0",
   date:    "23 de Mayo 2026",
@@ -1624,18 +1706,6 @@ const media = [
     category: "Reggaeton",
     duration: "2:42"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
          {
     type:     "music",
     title:    "Mon Amour (Remix)",
@@ -1645,31 +1715,97 @@ const media = [
     category: "Reggaeton",
     duration: "3:00"
   },
+         {
+    type:     "music",
+    title:    "Blah Blah Blah",
+    artist:   "Armin van Buuren",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/9da9fd102b5ecbaece028b725d9da59c/1900x1900-000000-80-0-0.jpg",
+    file:     "./Music/blahblahblah.mp3",
+    category: "Electronic",
+    duration: "3:13"
+  },
+         {
+    type:     "music",
+    title:    "Turn It Up",
+    artist:   "Armin van Buuren",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273adb479942159dea093c86fa5",
+    file:     "./Music/turnitup.mp3",
+    category: "Electronic",
+    duration: "3:03"
+  },
+         {
+    type:     "music",
+    title:    "Animals",
+    artist:   "Martin Garrix",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273c4a03dba6c420bda982b3f62",
+    file:     "./Music/animals.mp3",
+    category: "Electronic",
+    duration: "3:06"
+  },
+         {
+    type:     "music",
+    title:    " Titanium [Live Edit]",
+    artist:   "Sia, David Guetta, MORTEN",
+    cover:    "https://i.ytimg.com/vi/7ErChO0PTbA/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCaJPlyf9z3Q1hxlp5rwjVkvH_R7g",
+    file:     "./Music/titanium(liveedit).mp3",
+    category: "Electronic",
+    duration: "3:16"
+  },
+         {
+    type:     "music",
+    title:    "Outside",
+    artist:   "Calvin Harris, Ellie Goulding",
+    cover:    "https://www.alexurbanpop.com/wp-content/uploads/2014/11/Calvin-Harris-ft.-Ellie-Goulding-Outside.jpg",
+    file:     "./Music/outside.mp3",
+    category: "Electronic",
+    duration: "3:45"
+  },
+         {
+    type:     "music",
+    title:    "Bad",
+    artist:   "David Guetta, Showtek, Vassy",
+    cover:    "https://i1.sndcdn.com/artworks-000100525488-ou5n5t-t500x500.jpg",
+    file:     "./Music/bad.mp3",
+    category: "Electronic",
+    duration: "2:50"
+  },
+          {
+    type:     "music",
+    title:    "Jamaican (Bam Bam)",
+    artist:   "HUGEL, SOLTO",
+    cover:    "https://m.media-amazon.com/images/I/51kkslWHRkL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/jamaicanbambam.mp3",
+    category: "Electronic",
+    duration: "4:45"
+  },
+          {
+    type:     "music",
+    title:    "Move Your Body",
+    artist:   "Dimitri Vegas, Like Mike, Timmy Trumpet, Sub Zero Project",
+    cover:    "https://i1.sndcdn.com/artworks-hyUDQ5WzQFmetzAy-hYHSwA-t500x500.jpg",
+    file:     "./Music/moveyourbodytimmyytumpet.mp3",
+    category: "Electronic",
+    duration: "2:50"
+  },
+          {
+    type:     "music",
+    title:    "Thank You (Not So Bad)",
+    artist:   "Dimitri Vegas, Like Mike, Tiësto, Dido, W&W",
+    cover:    "https://i1.sndcdn.com/artworks-SzvymHnuSjCZ20aN-zjjm3Q-t500x500.jpg",
+    file:     "./Music/thankyounotsobad.mp3",
+    category: "Electronic",
+    duration: "2:19"
+  },
+          {
+    type:     "music",
+    title:    "The Spectre",
+    artist:   "Alan Walker",
+    cover:    "https://i1.sndcdn.com/artworks-000375722355-fxlohc-t500x500.jpg",
+    file:     "./Music/thespectre.mp3",
+    category: "Electronic",
+    duration: "3:26"
+  },
    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 
 
 
