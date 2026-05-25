@@ -1962,13 +1962,20 @@ input { font-family: inherit; }
 .offline-track-artist { font-size: .73rem; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .offline-track-meta { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
 .offline-track-dur { font-size: .72rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
-.offline-dot-saved {
-  width: 7px; height: 7px;
+.offline-track-delete-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: none; background: transparent;
+  color: var(--text-soft);
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 5px var(--green-glow);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .18s, color .18s, background .18s;
   flex-shrink: 0;
 }
+.offline-track-row:hover .offline-track-delete-btn { opacity: 1; }
+.offline-track-delete-btn:hover { color: #e94f4f; background: rgba(233,79,79,.1); }
+.offline-track-delete-btn svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .offline-empty-playlist {
   text-align: center;

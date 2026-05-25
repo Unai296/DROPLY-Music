@@ -2026,7 +2026,6 @@ let playCounts = loadPlayCounts();
 
 // ── Context target ──
 let contextTarget = null;
-let activeHistoricalTab = "recent";
 
 /* ══════════════════════════════════════════════════════
    3. DOM REFS
@@ -2107,9 +2106,6 @@ const playlistDetailCount= document.getElementById("playlistDetailCount");
 const playlistDetailList= document.getElementById("playlistDetailList");
 const btnPlayPlaylist  = document.getElementById("btnPlayPlaylist");
 const btnDeletePlaylist= document.getElementById("btnDeletePlaylist");
-const historialList    = document.getElementById("historialList");
-const tabRecent        = document.getElementById("tabRecent");
-const tabTop           = document.getElementById("tabTop");
 
 let openPlaylistId = null;
 
@@ -2179,7 +2175,6 @@ function showPage(pageId) {
   });
   if (pageId === "pageFavoritos") renderFavoritos();
   if (pageId === "pagePlaylists") renderPlaylists();
-  if (pageId === "pageHistorial") renderHistorial();
   if (pageId === "pageEventos")   EventosManager.render();
   closeContextMenu();
 }
@@ -3127,59 +3122,6 @@ addNewPlaylistBtn.addEventListener("click", () => {
 /* ══════════════════════════════════════════════════════
    16. HISTORIAL
 ══════════════════════════════════════════════════════ */
-function renderHistorial() {
-  historialList.innerHTML = "";
-  let items;
-  if (activeHistoricalTab === "recent") {
-    items = historyTracks.slice(0, 50).map(h => getTrackByFile(h.file)).filter(Boolean);
-  } else {
-    // Top tracks sorted by play count
-    items = Object.entries(playCounts)
-      .sort(([,a],[,b]) => b - a)
-      .slice(0, 50)
-      .map(([file]) => getTrackByFile(file))
-      .filter(Boolean);
-  }
-  if (items.length === 0) {
-    historialList.innerHTML = `<div class="fav-empty" style="text-align:center;padding:3rem 1rem"><p style="color:var(--text-mid);font-size:.9rem">${activeHistoricalTab === "recent" ? "Aún no has reproducido ninguna canción." : "Sin datos de reproducción aún."}</p></div>`;
-    return;
-  }
-  items.forEach((item, idx) => {
-    const cover = item.cover || getPlaceholderCover(item.category);
-    let subtitle = item.artist;
-    if (activeHistoricalTab === "top") subtitle += ` · ${playCounts[item.file] || 0} reproducciones`;
-    const row = document.createElement("div");
-    row.className = "library-item fade-in";
-    row.innerHTML = `
-      <span class="library-item-num">${idx + 1}</span>
-      <div class="library-thumb"><img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'" /></div>
-      <div class="library-info">
-        <span class="library-track-title">${item.title}</span>
-        <span class="library-track-artist">${subtitle}</span>
-      </div>
-      <div class="library-item-actions">
-        <button class="library-action-btn" data-action="queue" title="Añadir a cola">
-          <svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-      </div>
-      <span class="library-item-dur">${item.duration || ""}</span>`;
-    row.addEventListener("click", e => { if (!e.target.closest(".library-item-actions")) { playlist = items; currentTrackIdx = idx; loadTrack(item); } });
-    row.querySelector('[data-action="queue"]').addEventListener("click", e => { e.stopPropagation(); addToQueue(item); });
-    historialList.appendChild(row);
-  });
-}
-
-tabRecent.addEventListener("click", () => {
-  activeHistoricalTab = "recent";
-  tabRecent.classList.add("active"); tabTop.classList.remove("active");
-  renderHistorial();
-});
-tabTop.addEventListener("click", () => {
-  activeHistoricalTab = "top";
-  tabTop.classList.add("active"); tabRecent.classList.remove("active");
-  renderHistorial();
-});
-
 /* ══════════════════════════════════════════════════════
    17. SEARCH PAGE
 ══════════════════════════════════════════════════════ */
@@ -4374,9 +4316,7 @@ function injectPremiumDOM() {
           </div>
         </div>
 
-        <hr class="offline-section-divider" />
-
-        <!-- ── Storage + raw downloads list (existing) ── -->
+        <!-- ── Storage ── -->
         <div class="page-offline-downloads">
           <div class="offline-storage-bar">
             <div class="offline-storage-label">
@@ -4387,10 +4327,6 @@ function injectPremiumDOM() {
               <div class="offline-storage-fill" id="offlineStorageFill" style="width:0%"></div>
             </div>
           </div>
-          <div class="offline-actions-row">
-            <span class="offline-section-label">Detalle de descargas</span>
-          </div>
-          <div id="downloadsListContainer"></div>
         </div>
       </div>`);
   }
@@ -4647,7 +4583,9 @@ function renderOfflinePlaylist() {
         </div>
         <div class="offline-track-meta">
           <span class="offline-track-dur">${track.duration || ''}</span>
-          <div class="offline-dot-saved" title="Guardada offline"></div>
+          <button class="offline-track-delete-btn" data-file="${track.file}" title="Eliminar descarga" aria-label="Eliminar descarga">
+            <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
         </div>
       </div>`;
   }).join('');
@@ -4671,8 +4609,22 @@ function renderOfflinePlaylist() {
       // Re-render to update highlight
       setTimeout(() => renderOfflinePlaylist(), 300);
     };
-    row.addEventListener('click', play);
+    row.addEventListener('click', e => {
+      if (e.target.closest('.offline-track-delete-btn')) return;
+      play();
+    });
     row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); play(); } });
+
+    // Delete button
+    const delBtn = row.querySelector('.offline-track-delete-btn');
+    if (delBtn) {
+      delBtn.addEventListener('click', async e => {
+        e.stopPropagation();
+        const file = delBtn.dataset.file;
+        await OfflineManager.deleteDownload(file);
+        // renderOfflinePlaylist is called inside deleteDownload already
+      });
+    }
   });
 
   // Play all button
