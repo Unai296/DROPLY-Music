@@ -2076,6 +2076,7 @@ const media = [
 
 
 
+  
 
 
 
@@ -2085,6 +2086,16 @@ const media = [
 
 
 
+             {
+    type:     "music",
+    title:    "Como Camaron",
+    artist:   "Estopa",
+    cover:    "https://m.media-amazon.com/images/I/41-8AcQWaIL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/comocamaron.mp3",
+    category: "Pop",
+    duration: "3:27"
+  },
+   
 
 
 
@@ -2099,6 +2110,7 @@ const media = [
 
 
 
+  
 
 
 
@@ -2108,6 +2120,16 @@ const media = [
 
 
 
+             {
+    type:     "music",
+    title:    "Sé lo que hicisteis",
+    artist:   "Melendi",
+    cover:    "https://e.snmc.io/i/1200/s/b1ff1312b37ec497e4e81a4ecc6fa75f/3536693",
+    file:     "./Music/seloquehicisteis.mp3",
+    category: "Pop",
+    duration: "3:45"
+  },
+   
 
 
 
@@ -2129,6 +2151,7 @@ const media = [
 
 
 
+  
 
 
 
@@ -2138,6 +2161,16 @@ const media = [
 
 
 
+             {
+    type:     "music",
+    title:    "La casa por el tejado",
+    artist:   "Fito & Fitipaldis",
+    cover:    "https://i1.sndcdn.com/artworks-mRlMQWq12FtD-0-t500x500.jpg",
+    file:     "./Music/lacasaporeltejado.mp3",
+    category: "Pop",
+    duration: "4:03"
+  },
+   
 
 
 
@@ -2161,12 +2194,313 @@ const media = [
 
 
 
+  
 
 
 
 
 
 
+
+
+
+             {
+    type:     "music",
+    title:    "La Raja de Tu Falda",
+    artist:   "Estopa",
+    cover:    "https://m.media-amazon.com/images/M/MV5BOGM1MzdhODAtYTkxZS00NDE5LWJhZDktNmIyNGQ4MzQxMDEwXkEyXkFqcGc@._V1_QL75_UY190_CR29,0,190,190_.jpg",
+    file:     "./Music/larajadetufalda.mp3",
+    category: "Pop",
+    duration: "3:22"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Partiendo la Pana",
+    artist:   "Estopa",
+    cover:    "https://i.discogs.com/6EE8aWqwWRkMioZqnY_3FQUp8WpdO45EQKCYRnKbQh4/rs:fit/g:sm/q:90/h:378/w:378/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjQ2/MzctMTM2NTE3ODY1/NC03MDk5LmpwZWc.jpeg",
+    file:     "./Music/partiendolapana.mp3",
+    category: "Pop",
+    duration: "4:12"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Paseo",
+    artist:   "Estopa",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/a0d6b3649f9abcd41e1822bbaf446c11/1900x1900-000000-80-0-0.jpg",
+    file:     "./Music/paseo.mp3",
+    category: "Pop",
+    duration: "3:39"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Ojitos Rojos",
+    artist:   "Estopa",
+    cover:    "https://lastfm.freetls.fastly.net/i/u/300x300/3f64a85667484270bbe936153ab9dbe8.jpg",
+    file:     "./Music/ojitosrojos.mp3",
+    category: "Pop",
+    duration: "4:25"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Me Quedaré",
+    artist:   "Estopa",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273769d0cf8ba5af48a1a84e6f0",
+    file:     "./Music/mequedare.mp3",
+    category: "Pop",
+    duration: "3:17"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "El del Medio de los Chichos",
+    artist:   "Estopa",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273b3e5a036a7c5875c5d7a92e6",
+    file:     "./Music/eldelmediodeloschichos.mp3",
+    category: "Pop",
+    duration: "3:47"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Soldadito marinero",
+    artist:   "Fito & Fitipaldis",
+    cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
+    file:     "./Music/soldaditomarinero.mp3",
+    category: "Pop",
+    duration: "3:59"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "Por la boca vive el pez",
+    artist:   "Fito & Fitipaldis",
+    cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
+    file:     "./Music/porlabocaviveelpez.mp3",
+    category: "Pop",
+    duration: "4:30"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+ 
+
+             {
+    type:     "music",
+    title:    "Antes de que cuente diez",
+    artist:   "Fito & Fitipaldis",
+    cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
+    file:     "./Music/antesdequecuente10.mp3",
+    category: "Pop",
+    duration: "4:41"
+  },
+   
 
 
 
@@ -2879,19 +3213,28 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   audioEl.src = item.file;
   // No llamar .load() — asignar .src ya inicia la carga; .load() interrumpe la promesa
 
+  // Registrar Media Session antes del play para que la pantalla bloqueada
+  // muestre la info del track inmediatamente (sin esperar que la promesa resuelva)
+  setupMediaSession(item);
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+  }
+
   const _playPromise = audioEl.play();
   if (_playPromise !== undefined) {
     _playPromise
       .then(() => {
         isPlaying = true;
         updatePlayIcons(true);
-        setupMediaSession(item);
         preloadNext(item);
         window._droplyPendingTrack = null;
       })
       .catch(err => {
         isPlaying = false;
         updatePlayIcons(false);
+        if ("mediaSession" in navigator) {
+          try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+        }
         if (err.name === 'NotAllowedError') {
           // Autoplay bloqueado por el navegador — se reproducirá al primer gesto del usuario
           console.info('[DROPLY] Autoplay bloqueado, esperando gesto del usuario');
@@ -3067,9 +3410,20 @@ miniPlay.addEventListener("click", togglePlay);
 function togglePlay() {
   if (!audioEl.src) return;
   if (audioEl.paused) {
-    audioEl.play().then(() => { isPlaying = true; updatePlayIcons(true); });
+    audioEl.play().then(() => {
+      isPlaying = true;
+      updatePlayIcons(true);
+      if ("mediaSession" in navigator) {
+        try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+      }
+    }).catch(() => {});
   } else {
-    audioEl.pause(); isPlaying = false; updatePlayIcons(false);
+    audioEl.pause();
+    isPlaying = false;
+    updatePlayIcons(false);
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+    }
   }
 }
 
@@ -3162,9 +3516,7 @@ audioEl.addEventListener("timeupdate", () => {
   sheetCurrent.textContent  = formatTime(cur);
   sheetDuration.textContent = formatTime(dur);
   miniProgressFill.style.width = pct + "%";
-  if ("mediaSession" in navigator) {
-    try { navigator.mediaSession.setPositionState({ duration: dur, playbackRate: audioEl.playbackRate || 1, position: Math.min(cur, dur) }); } catch(_) {}
-  }
+  _updateMediaSessionPosition();
 });
 
 audioEl.addEventListener("ended", () => {
@@ -3176,8 +3528,20 @@ audioEl.addEventListener("ended", () => {
   }
 });
 
-audioEl.addEventListener("play",  () => { isPlaying = true;  updatePlayIcons(true);  });
-audioEl.addEventListener("pause", () => { isPlaying = false; updatePlayIcons(false); });
+audioEl.addEventListener("play",  () => {
+  isPlaying = true;
+  updatePlayIcons(true);
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+  }
+});
+audioEl.addEventListener("pause", () => {
+  isPlaying = false;
+  updatePlayIcons(false);
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+  }
+});
 
 /* ══════════════════════════════════════════════════════
    13. LIKES
@@ -3587,20 +3951,90 @@ searchClear.addEventListener("click", () => {
 ══════════════════════════════════════════════════════ */
 function setupMediaSession(item) {
   if (!("mediaSession" in navigator)) return;
+
   const cover = item.cover || getPlaceholderCover(item.category);
+
+  // Determinar el tipo MIME real de la imagen para mayor compatibilidad
+  const imgType = cover.startsWith("data:image/svg") ? "image/svg+xml" : "image/jpeg";
+
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: item.title, artist: item.artist, album: item.category,
-    artwork: [96, 128, 192, 256, 384, 512].map(s => ({ src: cover, sizes: `${s}x${s}`, type: "image/jpeg" }))
+    title:  item.title,
+    artist: item.artist,
+    album:  item.category,
+    artwork: [
+      { src: cover, sizes: "96x96",   type: imgType },
+      { src: cover, sizes: "128x128", type: imgType },
+      { src: cover, sizes: "192x192", type: imgType },
+      { src: cover, sizes: "256x256", type: imgType },
+      { src: cover, sizes: "384x384", type: imgType },
+      { src: cover, sizes: "512x512", type: imgType },
+    ]
   });
-  navigator.mediaSession.setActionHandler("play",          () => { audioEl.play(); });
-  navigator.mediaSession.setActionHandler("pause",         () => { audioEl.pause(); });
+
+  // play — también actualiza la UI para que los iconos sean coherentes
+  navigator.mediaSession.setActionHandler("play", () => {
+    audioEl.play()
+      .then(() => { isPlaying = true; updatePlayIcons(true); })
+      .catch(() => {});
+  });
+
+  // pause — también actualiza la UI
+  navigator.mediaSession.setActionHandler("pause", () => {
+    audioEl.pause();
+    isPlaying = false;
+    updatePlayIcons(false);
+  });
+
+  // Controles de pista
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
-  try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
-  try { navigator.mediaSession.setActionHandler("seekforward",  null); } catch(_) {}
-  try { navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
-    if (audioEl.duration) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration, seekTime));
-  }); } catch(_) {}
+
+  // seekbackward / seekforward (10 s) — algunos Android los muestran en la notificación
+  try {
+    navigator.mediaSession.setActionHandler("seekbackward", ({ seekOffset }) => {
+      audioEl.currentTime = Math.max(0, audioEl.currentTime - (seekOffset || 10));
+    });
+  } catch(_) {}
+
+  try {
+    navigator.mediaSession.setActionHandler("seekforward", ({ seekOffset }) => {
+      const dur = audioEl.duration;
+      if (dur && isFinite(dur))
+        audioEl.currentTime = Math.min(dur, audioEl.currentTime + (seekOffset || 10));
+    });
+  } catch(_) {}
+
+  // seekto — barra de progreso en pantalla bloqueada
+  try {
+    navigator.mediaSession.setActionHandler("seekto", ({ seekTime, fastSeek }) => {
+      const dur = audioEl.duration;
+      if (!dur || !isFinite(dur)) return;
+      const t = Math.max(0, Math.min(dur, seekTime));
+      if (fastSeek && audioEl.fastSeek) {
+        audioEl.fastSeek(t);
+      } else {
+        audioEl.currentTime = t;
+      }
+    });
+  } catch(_) {}
+
+  // Sincronizar posición inicial para la barra de la pantalla bloqueada
+  _updateMediaSessionPosition();
+}
+
+/* Actualiza el estado de posición en la Media Session de forma segura */
+function _updateMediaSessionPosition() {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    const dur = audioEl.duration;
+    const cur = audioEl.currentTime;
+    if (!dur || !isFinite(dur) || dur <= 0) return;
+    navigator.mediaSession.setPositionState({
+      duration:     dur,
+      playbackRate: audioEl.playbackRate || 1,
+      position:     Math.max(0, Math.min(cur, dur))
+    });
+  } catch(_) {}
 }
 
 /* ══════════════════════════════════════════════════════
