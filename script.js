@@ -1746,7 +1746,7 @@ const media = [
     type:     "music",
     title:    " Titanium [Live Edit]",
     artist:   "Sia, David Guetta, MORTEN",
-    cover:    "https://i.ytimg.com/vi/7ErChO0PTbA/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCaJPlyf9z3Q1hxlp5rwjVkvH_R7g",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/b1da2dd795492946f90722f6fa871adb/0x1900-000000-80-0-0.jpg",
     file:     "./Music/titanium(liveedit).mp3",
     category: "Electronic",
     duration: "3:16"
@@ -1805,21 +1805,6 @@ const media = [
     category: "Electronic",
     duration: "3:26"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
          {
     type:     "music",
     title:    "All The Stars",
@@ -1829,9 +1814,258 @@ const media = [
     category: "Dance-Pop",
     duration: "3:54"
   },
+           {
+    type:     "music",
+    title:    "LA INOCENTE",
+    artist:   "Mora, Feid",
+    cover:    "https://images.genius.com/a4af721758b67745a66042a5dcf45c83.1000x1000x1.png",
+    file:     "./Music/lainocente.mp3",
+    category: "Reggaeton",
+    duration: "3:20"
+  },
+           {
+    type:     "music",
+    title:    "A Solas (Remix)",
+    artist:   "Lunay, Lyanno, Anuel AA, Brytiago, Alex Rose",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273fddcbb546dd3440b1897c4c7",
+    file:     "./Music/asolasremix.mp3",
+    category: "Reggaeton",
+    duration: "4:33"
+  },
+           {
+    type:     "music",
+    title:    "Luna",
+    artist:   "Feid, ATL Jacob",
+    cover:    "https://media.motivafm.es/wp-content/uploads/2023/12/14111441/a6817a29955bc26af0ed704b2e705bee.1000x1000x1.png",
+    file:     "./Music/luna.mp3",
+    category: "Reggaeton",
+    duration: "3:16"
+  },
+           {
+    type:     "music",
+    title:    "Columbia",
+    artist:   "Quevedo",
+    cover:    "https://m.media-amazon.com/images/I/417eQyJPmHL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/columbia.mp3",
+    category: "Reggaeton",
+    duration: "3:25"
+  },
+           {
+    type:     "music",
+    title:    "DEGENERE",
+    artist:   "Myke Towers & benny blanco",
+    cover:    "https://i1.sndcdn.com/artworks-GH2OElzFEMUrAg9L-mWrQzw-t500x500.png",
+    file:     "./Music/degenere.mp3",
+    category: "Reggaeton",
+    duration: "2:12"
+  },
+           {
+    type:     "music",
+    title:    "Desesperados",
+    artist:   "Rauw Alejandro, Chencho Corleone",
+    cover:    "https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Rauw_Alejandro%2C_Chencho_Corleone_-_Desesperados.jpeg/250px-Rauw_Alejandro%2C_Chencho_Corleone_-_Desesperados.jpeg",
+    file:     "./Music/desesperados.mp3",
+    category: "Reggaeton",
+    duration: "3:45"
+  },
+           {
+    type:     "music",
+    title:    "CABELO LOIRINHO",
+    artist:   "KEVIN DO RECIFE, MC MORENA, THIAGUINHO DO RECIFE",
+    cover:    "https://images.genius.com/da50480499543acea79f42969b3225d7.640x640x1.jpg",
+    file:     "./Music/cabelolorinho.mp3",
+    category: "Reggaeton",
+    duration: "3:20"
+  },
+           {
+    type:     "music",
+    title:    "Punto G",
+    artist:   "Quevedo",
+    cover:    "https://m.media-amazon.com/images/I/41uLLdflAIL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/puntog.mp3",
+    category: "Reggaeton",
+    duration: "2:35"
+  },
    
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "LALA",
+    artist:   "Myke Towers",
+    cover:    "https://i1.sndcdn.com/artworks-fMPBciEwqIpuMI49-Cfk5Dg-t500x500.jpg",
+    file:     "./Music/lala.mp3",
+    category: "Reggaeton",
+    duration: "3:17"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "SEYA",
+    artist:   "Morad, GIMS, Sativa Music",
+    cover:    "https://m.media-amazon.com/images/I/41Wz9YI5AnL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/seya.mp3",
+    category: "Reggaeton",
+    duration: "3:06"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "LOS DEL ESPACIO",
+    artist:   "LIT killah, Tiago PZK, Maria Becerra, Duki, Emilia, Big One, FMK",
+    cover:    "https://fotografias.flooxernow.com/clipping/cmsimages01/2023/06/02/82B9AC5F-DA27-4258-B928-FDD97CAB556D/espacio_103.jpg?crop=960,720,x161,y0&width=1200&height=900&optimize=low&format=webply",
+    file:     "./Music/losdelespacio.mp3",
+    category: "Reggaeton",
+    duration: "5:38"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  {
+    type:     "music",
+    title:    "Diosa",
+    artist:   "Myke Towers",
+    cover:    "https://images.genius.com/83f8d7b3e75f152bbc6889c11a9348bd.1000x1000x1.png",
+    file:     "./Music/diosa.mp3",
+    category: "Reggaeton",
+    duration: "3:35"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "El Efecto",
+    artist:   "Rauw Alejandro, Chencho Corleone",
+    cover:    "https://upload.wikimedia.org/wikipedia/en/0/02/Rauw_Alejandro%2C_Chencho_Corleone_-_El_Efecto.jpeg",
+    file:     "./Music/elefecto.mp3",
+    category: "Reggaeton",
+    duration: "3:27"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "SUPERESTRELLA",
+    artist:   "Aitana",
+    cover:    "https://ih1.redbubble.net/image.6030595463.8549/fposter,small,wall_texture,square_product,600x600.jpg",
+    file:     "./Music/superestrella.mp3",
+    category: "Reggaeton",
+    duration: "3:03"
+  },
+   
 
 
 
