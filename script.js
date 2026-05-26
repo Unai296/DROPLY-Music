@@ -88,6 +88,48 @@ const CHANGELOG = [
 
 
 
+  {
+    version: "v5.4",
+    date:    "26 de Mayo 2026",
+    title:   "Novedades Droply",
+    emoji:   "🎶",
+    changes: [
+      { icon: "🎵", text: "Introducido canciones de Fito y Estopa." },
+      { icon: "⚡", text: "Mejoras de rendimiento en la navegación entre páginas." },
+      { icon: "🔧", text: "Varias correcciones tanto visuales como funcionales en el reproductor." }
+    ]
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 {
   version: "v5.2",
@@ -3989,14 +4031,9 @@ function setupMediaSession(item) {
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
 
-  // seekbackward / seekforward — canción anterior / siguiente
-  try {
-    navigator.mediaSession.setActionHandler("seekbackward", () => playPrev());
-  } catch(_) {}
-
-  try {
-    navigator.mediaSession.setActionHandler("seekforward", () => playNext());
-  } catch(_) {}
+  // Desregistrar seekbackward/seekforward para que Android muestre flechas prev/next
+  try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
+  try { navigator.mediaSession.setActionHandler("seekforward",  null); } catch(_) {}
 
   // seekto — barra de progreso en pantalla bloqueada
   try {
