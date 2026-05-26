@@ -1928,22 +1928,6 @@ const media = [
     category: "Reggaeton",
     duration: "2:35"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "LALA",
@@ -1953,21 +1937,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:17"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "SEYA",
@@ -1977,31 +1946,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:06"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "LOS DEL ESPACIO",
@@ -2011,34 +1955,6 @@ const media = [
     category: "Reggaeton",
     duration: "5:38"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   {
     type:     "music",
     title:    "Diosa",
@@ -2048,26 +1964,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:35"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "El Efecto",
@@ -2077,27 +1973,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:27"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "SUPERESTRELLA",
@@ -2107,27 +1982,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:03"
   },
-   
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Como Camaron",
@@ -2137,31 +1991,6 @@ const media = [
     category: "Pop",
     duration: "3:27"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Sé lo que hicisteis",
@@ -2171,38 +2000,6 @@ const media = [
     category: "Pop",
     duration: "3:45"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "La casa por el tejado",
@@ -2212,40 +2009,6 @@ const media = [
     category: "Pop",
     duration: "4:03"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "La Raja de Tu Falda",
@@ -2255,28 +2018,6 @@ const media = [
     category: "Pop",
     duration: "3:22"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Partiendo la Pana",
@@ -2286,45 +2027,6 @@ const media = [
     category: "Pop",
     duration: "4:12"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Paseo",
@@ -2334,43 +2036,6 @@ const media = [
     category: "Pop",
     duration: "3:39"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Ojitos Rojos",
@@ -2380,34 +2045,6 @@ const media = [
     category: "Pop",
     duration: "4:25"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Me Quedaré",
@@ -2417,38 +2054,6 @@ const media = [
     category: "Pop",
     duration: "3:17"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "El del Medio de los Chichos",
@@ -2458,26 +2063,6 @@ const media = [
     category: "Pop",
     duration: "3:47"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Soldadito marinero",
@@ -2487,30 +2072,6 @@ const media = [
     category: "Pop",
     duration: "3:59"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "Por la boca vive el pez",
@@ -2520,19 +2081,6 @@ const media = [
     category: "Pop",
     duration: "4:30"
   },
-   
-
-
-
-
-
-
-
-
-
-
- 
-
              {
     type:     "music",
     title:    "Antes de que cuente diez",
@@ -2543,6 +2091,411 @@ const media = [
     duration: "4:41"
   },
    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Barbie de extrarradio",
+    artist:   "Melendi",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2735399dac2e1d87d8dd29a41c9",
+    file:     "./Music/barbiedeextraradio.mp3",
+    category: "Pop",
+    duration: "3:44"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Caminando Por La Vida",
+    artist:   "Melendi",
+    cover:    "https://akamai.sscdn.co/uploadfile/letras/albuns/6/6/2/c/836641579176509.jpg",
+    file:     "./Music/caminandoporlavida.mp3",
+    category: "Pop",
+    duration: "3:23"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Tu Jardín Con Enanitos",
+    artist:   "Melendi",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273420c7ba982f6f92351fc0a2b",
+    file:     "./Music/tujardinconenanitos.mp3",
+    category: "Pop",
+    duration: "4:27"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Déjala Que Baile",
+    artist:   "Melendi, Alejandro Sanz, Arkano",
+    cover:    "https://i1.sndcdn.com/artworks-000360404208-vbxpsk-t500x500.jpg",
+    file:     "./Music/dejalaquebaile.mp3",
+    category: "Pop",
+    duration: "4:17"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Californication",
+    artist:   "Red Hot Chili Peppers",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273a9249ebb15ca7a5b75f16a90",
+    file:     "./Music/californication.mp3",
+    category: "Pop",
+    duration: "5:21"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Otherside",
+    artist:   "Red Hot Chili Peppers",
+    cover:    "https://akamai.sscdn.co/uploadfile/letras/fotos/f/0/4/4/f044e2cbeca7631d98e3c6a3f2319e3f-tb4.jpg",
+    file:     "./Music/otherside.mp3",
+    category: "Pop",
+    duration: "4:17"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Scar Tissue",
+    artist:   "Red Hot Chili Peppers",
+    cover:    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQ-_w19IgDWMtDqJoIyvggszgtUsw3R0xbYA&s",
+    file:     "./Music/scartissue.mp3",
+    category: "Pop",
+    duration: "3:40"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Smells Like Teen Spirit",
+    artist:   "Nirvana",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273e175a19e530c898d167d39bf",
+    file:     "./Music/smellsliketeenspirit.mp3",
+    category: "Pop",
+    duration: "4:38"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Seven Nation Army",
+    artist:   "The White Stripes",
+    cover:    "https://m.media-amazon.com/images/I/61sAc-wMnlL._UF894,1000_QL80_.jpg",
+    file:     "./Music/sevennationarmy.mp3",
+    category: "Pop",
+    duration: "3:58"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Snow",
+    artist:   "Red Hot Chili Peppers",
+    cover:    "https://m.media-amazon.com/images/M/MV5BMjE4NzA0MzY2M15BMl5BanBnXkFtZTgwODMzODI5NTE@._V1_FMjpg_UX1000_.jpg",
+    file:     "./Music/snow.mp3",
+    category: "Pop",
+    duration: "5:49"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "Dani California",
+    artist:   "Red Hot Chili Peppers",
+    cover:    "https://upload.wikimedia.org/wikipedia/en/d/d6/Dani_california.gif",
+    file:     "./Music/danicalifornia.mp3",
+    category: "Pop",
+    duration: "4:47"
+  },
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
