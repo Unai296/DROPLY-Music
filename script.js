@@ -3989,19 +3989,13 @@ function setupMediaSession(item) {
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
 
-  // seekbackward / seekforward (10 s) — algunos Android los muestran en la notificación
+  // seekbackward / seekforward — canción anterior / siguiente
   try {
-    navigator.mediaSession.setActionHandler("seekbackward", ({ seekOffset }) => {
-      audioEl.currentTime = Math.max(0, audioEl.currentTime - (seekOffset || 10));
-    });
+    navigator.mediaSession.setActionHandler("seekbackward", () => playPrev());
   } catch(_) {}
 
   try {
-    navigator.mediaSession.setActionHandler("seekforward", ({ seekOffset }) => {
-      const dur = audioEl.duration;
-      if (dur && isFinite(dur))
-        audioEl.currentTime = Math.min(dur, audioEl.currentTime + (seekOffset || 10));
-    });
+    navigator.mediaSession.setActionHandler("seekforward", () => playNext());
   } catch(_) {}
 
   // seekto — barra de progreso en pantalla bloqueada
