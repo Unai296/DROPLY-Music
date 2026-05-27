@@ -404,6 +404,342 @@ function initChangelog() {
 
 
 /* ══════════════════════════════════════════════════════
+   0. VERIFICATION SYSTEM
+══════════════════════════════════════════════════════ */
+
+// Códigos de verificación válidos (cada uno de un solo uso)
+const VALID_VERIFICATION_CODES = [
+"MUSICVIP",
+"ACCESS2024",
+"PREMIUM24",
+"STREAM24",
+
+"DROPLYVIP",
+"DROPLYPLUS",
+"DROPLYACCESS",
+"DROPLYPRO",
+"DROPLYMAX",
+"DROPLYMUSIC",
+"DROPLYPREMIUM",
+"DROPLYULTRA",
+"DROPLYPLAYER",
+
+"MUSICVIP",
+"MUSICACCESS",
+"MUSICPRO",
+"MUSICMAX",
+"MUSICPLUS",
+"MUSICPREMIUM",
+"MUSICUNLOCK",
+"MUSICSTREAM",
+"MUSICZONE",
+"MUSICHUB",
+
+"ACCESS2024",
+"ACCESSVIP",
+"ACCESSPRO",
+"ACCESSMAX",
+"ACCESSPLUS",
+"ACCESSPREMIUM",
+"ACCESSMUSIC",
+"ACCESSKEY",
+"ACCESSNOW",
+"ACCESSZONE",
+
+"PREMIUM24",
+"PREMIUMVIP",
+"PREMIUMMAX",
+"PREMIUMPLUS",
+"PREMIUMACCESS",
+"PREMIUMMUSIC",
+"PREMIUMPRO",
+"PREMIUMSTREAM",
+"PREMIUMZONE",
+"PREMIUMKEY",
+
+"STREAM24",
+"STREAMVIP",
+"STREAMPLUS",
+"STREAMMAX",
+"STREAMPRO",
+"STREAMMUSIC",
+"STREAMACCESS",
+"STREAMNOW",
+"STREAMZONE",
+"STREAMWAVE",
+
+"DROPIFY",
+"DROPIFYVIP",
+"DROPIFYPLUS",
+"DROPIFYMAX",
+"DROPIFYACCESS",
+"DROPIFYPRO",
+
+"MEULIFY",
+"MEULIFYVIP",
+"MEULIFYPRO",
+"MEULIFYPLUS",
+"MEULIFYMAX",
+"MEULIFYACCESS",
+
+"SONICVIP",
+"SONICPLUS",
+"SONICPRO",
+"SONICMAX",
+"SONICSTREAM",
+"SONICACCESS",
+
+"WAVEVIP",
+"WAVEPLUS",
+"WAVEPRO",
+"WAVEMAX",
+"WAVESTREAM",
+"WAVEACCESS",
+
+"BEATVIP",
+"BEATPRO",
+"BEATPLUS",
+"BEATMAX",
+"BEATSTREAM",
+"BEATACCESS",
+
+"AUDIOVIP",
+"AUDIOPRO",
+"AUDIOPLUS",
+"AUDIOMAX",
+"AUDIOSTREAM",
+"AUDIOACCESS",
+
+"UNLOCKVIP",
+"UNLOCKPRO",
+"UNLOCKPLUS",
+"UNLOCKMAX",
+"UNLOCKSTREAM",
+"UNLOCKACCESS",
+
+"BLACKVIP",
+"BLACKACCESS",
+"BLACKPREMIUM",
+"BLACKPRO",
+"BLACKMAX",
+"BLACKSTREAM",
+
+"NEONVIP",
+"NEONPLUS",
+"NEONPRO",
+"NEONMAX",
+"NEONSTREAM",
+"NEONACCESS",
+
+"VELVETVIP",
+"VELVETPRO",
+"VELVETMAX",
+"VELVETSTREAM",
+"VELVETACCESS",
+
+"LUXEVIP",
+"LUXEACCESS",
+"LUXEMAX",
+"LUXEPRO",
+"LUXESTREAM",
+
+"ELITEVIP",
+"ELITEPLUS",
+"ELITEMAX",
+"ELITEPRO",
+"ELITESTREAM",
+
+"INFINITEVIP",
+"INFINITEPRO",
+"INFINITEMAX",
+"INFINITEPLUS",
+"INFINITEACCESS",
+
+"NOVA24",
+"NOVAACCESS",
+"NOVAPREMIUM",
+"NOVAPRO",
+"NOVAMAX",
+
+"VOIDVIP",
+"VOIDPRO",
+"VOIDPLUS",
+"VOIDMAX",
+"VOIDSTREAM",
+
+"VORTEXVIP",
+"VORTEXPRO",
+"VORTEXPLUS",
+"VORTEXMAX",
+"VORTEXSTREAM",
+
+"PULSEVIP",
+"PULSEPLUS",
+"PULSEPRO",
+"PULSEMAX",
+"PULSESTREAM",
+
+"HORIZONVIP",
+"HORIZONPLUS",
+"HORIZONPRO",
+"HORIZONMAX",
+"HORIZONSTREAM"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+];
+
+// Sistema de verificación
+const VerificationSystem = {
+  verified: false,
+
+  init() {
+    // Verificar si ya está verificado en localStorage
+    const isVerified = localStorage.getItem('droply_verified');
+    if (isVerified === 'true') {
+      this.verified = true;
+      this.hideVerificationScreen();
+    } else {
+      this.showVerificationScreen();
+    }
+    this.setupEventListeners();
+  },
+
+  setupEventListeners() {
+    const verifyBtn = document.getElementById('verifyBtn');
+    const verificationInput = document.getElementById('verificationCode');
+
+    if (verifyBtn && verificationInput) {
+      verifyBtn.addEventListener('click', () => this.verifyCode());
+      verificationInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.verifyCode();
+      });
+    }
+  },
+
+  verifyCode() {
+    const input = document.getElementById('verificationCode');
+    const errorDisplay = document.getElementById('verificationError');
+    const code = input.value.trim().toUpperCase();
+
+    if (!code) {
+      this.showError('Por favor, introduce un código');
+      return;
+    }
+
+    // Verificar si el código ya fue usado
+    const usedCodes = JSON.parse(localStorage.getItem('droply_used_codes') || '[]');
+    if (usedCodes.includes(code)) {
+      this.showError('Este código ya ha sido usado');
+      input.value = '';
+      return;
+    }
+
+    // Verificar si el código es válido
+    if (VALID_VERIFICATION_CODES.includes(code)) {
+      // Marcar código como usado
+      usedCodes.push(code);
+      localStorage.setItem('droply_used_codes', JSON.stringify(usedCodes));
+
+      // Marcar usuario como verificado
+      localStorage.setItem('droply_verified', 'true');
+      this.verified = true;
+
+      // Ocultar pantalla de verificación
+      this.hideVerificationScreen();
+
+      // Inicializar la app después de verificar
+      this.initializeApp();
+    } else {
+      this.showError('Código inválido');
+      input.value = '';
+    }
+  },
+
+  initializeApp() {
+    playlist = media.filter(m => m.type === "music");
+    playlistSource = "library";
+    buildCategoryPills();
+    renderGrid();
+    buildGenreGrid();
+    renderQueueList();
+    initChangelog();
+  },
+
+  showError(message) {
+    const errorDisplay = document.getElementById('verificationError');
+    if (errorDisplay) {
+      errorDisplay.textContent = message;
+      errorDisplay.style.display = 'block';
+      setTimeout(() => {
+        errorDisplay.style.display = 'none';
+      }, 3000);
+    }
+  },
+
+  showVerificationScreen() {
+    const screen = document.getElementById('verificationScreen');
+    if (screen) {
+      screen.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  },
+
+  hideVerificationScreen() {
+    const screen = document.getElementById('verificationScreen');
+    if (screen) {
+      screen.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+};
+
+/* ══════════════════════════════════════════════════════
    1. DATA
 ══════════════════════════════════════════════════════ */
 const media = [
@@ -4042,6 +4378,12 @@ window.addEventListener("scroll", () => {
    20. INIT
 ══════════════════════════════════════════════════════ */
 (function init() {
+  // Inicializar sistema de verificación primero
+  VerificationSystem.init();
+
+  // Solo continuar si está verificado
+  if (!VerificationSystem.verified) return;
+
   playlist = media.filter(m => m.type === "music");
   playlistSource = "library";
   buildCategoryPills();

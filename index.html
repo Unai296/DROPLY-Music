@@ -27,6 +27,20 @@
 </head>
 <body>
 
+  <!-- ══ VERIFICATION SCREEN ══ -->
+  <div class="verification-screen" id="verificationScreen">
+    <div class="verification-card">
+      <div class="verification-icon">🔒</div>
+      <h1 class="verification-title">Verificación Requerida</h1>
+      <p class="verification-subtitle">Introduce el código de acceso para continuar</p>
+      <div class="verification-input-wrapper">
+        <input type="text" id="verificationCode" class="verification-input" placeholder="Código de verificación" maxlength="20" autocomplete="off" />
+        <button class="verification-btn" id="verifyBtn">Verificar</button>
+      </div>
+      <p class="verification-error" id="verificationError"></p>
+    </div>
+  </div>
+
   <!-- ══ TOP BAR ══ -->
   <header class="topbar" id="topbar">
     <div class="topbar-inner">
