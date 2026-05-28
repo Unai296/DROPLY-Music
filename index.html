@@ -47,30 +47,150 @@
 
     <!-- PAGE: HOME -->
     <div class="page active" id="pageHome">
-      <section class="hero-compact">
-        <div class="hero-compact-bg"></div>
-        <div class="hero-compact-content">
-          <p class="hero-eyebrow">Streaming sin anuncios</p>
-          <h1 class="hero-title">Implementacion de música <em>en desarrollo</em></h1>
-          <p class="hero-sub">Descubre y escucha tu colección sin anuncios y sin conexion</p>
-          <button class="btn-hero" id="heroExplore">Explorar ahora</button>
-        </div>
+
+      <!-- ══ HOME CONTENT ══ -->
+      <div class="home-scroll" id="homeScroll">
+
+        <!-- 1. CONTINUE LISTENING -->
+        <section class="home-continue-section" id="homeContinueSection" style="display:none">
+          <div class="home-continue-card" id="homeContinueCard">
+            <div class="hcc-cover-wrap">
+              <img class="hcc-cover" id="hccCover" src="" alt="" />
+              <div class="hcc-cover-glow" id="hccGlow"></div>
+            </div>
+            <div class="hcc-info">
+              <p class="hcc-label">Continuar escuchando</p>
+              <h2 class="hcc-title" id="hccTitle">—</h2>
+              <p class="hcc-artist" id="hccArtist">—</p>
+              <div class="hcc-progress-wrap">
+                <div class="hcc-progress-bar">
+                  <div class="hcc-progress-fill" id="hccProgressFill" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+            <button class="hcc-play-btn" id="hccPlayBtn" aria-label="Reproducir">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="22" height="22"><polygon points="5,3 19,12 5,21"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. QUICK ACCESS -->
+        <section class="home-section">
+          <div class="home-quick-grid">
+            <button class="home-quick-item" id="quickFavoritos" data-page="pageFavoritos">
+              <div class="home-quick-icon home-quick-icon--heart">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <span>Likes</span>
+            </button>
+            <button class="home-quick-item" id="quickPlaylists" data-page="pagePlaylists">
+              <div class="home-quick-icon home-quick-icon--list">
+                <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </div>
+              <span>Playlists</span>
+            </button>
+            <button class="home-quick-item" id="quickDownloads">
+              <div class="home-quick-icon home-quick-icon--dl">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <span>Descargas</span>
+            </button>
+            <button class="home-quick-item" id="quickHistory">
+              <div class="home-quick-icon home-quick-icon--hist">
+                <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+              </div>
+              <span>Buscar</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. YOUR PLAYLISTS -->
+        <section class="home-section" id="homePlSection" style="display:none">
+          <div class="home-section-header">
+            <h2 class="home-section-title">Tus playlists</h2>
+            <button class="home-section-link" data-page="pagePlaylists">Ver todo</button>
+          </div>
+          <div class="home-hscroll-wrap">
+            <div class="home-hscroll" id="homePlGrid"></div>
+          </div>
+        </section>
+
+        <!-- 4. RECENTLY PLAYED -->
+        <section class="home-section" id="homeRecentSection" style="display:none">
+          <div class="home-section-header">
+            <h2 class="home-section-title">Escuchado recientemente</h2>
+          </div>
+          <div class="home-hscroll-wrap">
+            <div class="home-hscroll" id="homeRecentGrid"></div>
+          </div>
+        </section>
+
+        <!-- 5. TOP ARTISTS -->
+        <section class="home-section" id="homeArtistsSection" style="display:none">
+          <div class="home-section-header">
+            <h2 class="home-section-title">Artistas frecuentes</h2>
+          </div>
+          <div class="home-hscroll-wrap">
+            <div class="home-hscroll home-artists-row" id="homeArtistsGrid"></div>
+          </div>
+        </section>
+
+        <!-- 6. FEATURED — always visible -->
+        <section class="home-section" id="homeFeaturedSection">
+          <div class="home-section-header">
+            <h2 class="home-section-title">Destacados para ti</h2>
+          </div>
+          <div class="home-hscroll-wrap">
+            <div class="home-hscroll" id="homeFeaturedGrid"></div>
+          </div>
+        </section>
+
+        <!-- 7. GENRES — hidden in home, visible in search -->
+        <section class="home-section" id="homeGenresSection" style="display:none" aria-hidden="true">
+          <div class="home-section-header">
+            <h2 class="home-section-title">Explorar géneros</h2>
+          </div>
+          <div class="genre-grid" id="homeGenreGrid"></div>
+        </section>
+
+        <!-- 8. EXPLORE (hidden grid section for category filtering, kept for JS compatibility) -->
+        <section class="home-section" id="homeExploreSection" style="display:none">
+          <div class="home-section-header">
+            <h2 class="home-section-title" id="sectionTitle">Destacados</h2>
+            <span class="count-badge" id="countBadge"></span>
+          </div>
+          <!-- Cat bar pills injected here when explore is active -->
+          <div class="cat-bar-inline" id="catBarInline">
+            <div class="cat-inner" id="catInner">
+              <button class="cat-pill active" data-cat="all">Todas</button>
+            </div>
+          </div>
+          <div class="media-grid" id="mediaGrid" style="padding:0"></div>
+        </section>
+
+        <!-- Bottom padding -->
+        <div style="height:1.5rem"></div>
+
+      </div><!-- /home-scroll -->
+
+      <!-- Hidden cat-bar (kept for JS refs) -->
+      <section class="cat-bar" id="catBar" style="display:none" aria-hidden="true">
+        <div class="cat-inner" id="catInnerLegacy"></div>
       </section>
 
-      <section class="cat-bar" id="catBar">
-        <div class="cat-inner" id="catInner">
-          <button class="cat-pill active" data-cat="all">Recomendadas</button>
-        </div>
-      </section>
+      <!-- Hidden grid section wrapper (kept for JS refs) -->
+      <main class="grid-section" id="gridSection" style="display:none" aria-hidden="true"></main>
 
-      <main class="grid-section" id="gridSection">
-        <div class="grid-header">
-          <h2 class="section-title" id="sectionTitle">Todo el contenido</h2>
-          <span class="count-badge" id="countBadge">0 items</span>
-        </div>
-        <div class="media-grid" id="mediaGrid"></div>
-      </main>
     </div>
+
+
+
+
+
+
+
+
+
 
     <!-- PAGE: SEARCH -->
     <div class="page" id="pageSearch">
@@ -91,6 +211,15 @@
       </div>
     </div>
 
+
+
+
+
+
+
+
+
+
     <!-- PAGE: FAVORITOS -->
     <div class="page" id="pageFavoritos">
       <div class="library-header">
@@ -98,6 +227,16 @@
       </div>
       <div class="library-list" id="favoritosList"></div>
     </div>
+
+
+
+
+
+
+
+
+
+
 
     <!-- PAGE: PLAYLISTS -->
     <div class="page" id="pagePlaylists">
@@ -111,90 +250,18 @@
       <div id="playlistsGrid" class="playlists-grid"></div>
     </div>
 
-    <!-- PAGE: EVENTOS -->
-    <div class="page" id="pageEventos">
 
-      <!-- Hero eventos -->
-      <div class="ev-hero">
-        <div class="ev-hero-bg"></div>
-        <div class="ev-hero-content">
-          <p class="ev-hero-eyebrow">Conciertos &amp; Festivales</p>
-          <h1 class="ev-hero-title">Eventos <em>en vivo</em></h1>
-          <div class="ev-search-wrap">
-            <svg viewBox="0 0 24 24" class="ev-search-icon"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-            <input type="text" id="evSearchInput" class="ev-search-input" placeholder="Artista, ciudad, género…" autocomplete="off" autocorrect="off" spellcheck="false" />
-            <button class="ev-search-clear" id="evSearchClear" style="display:none">✕</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Filtros -->
-      <div class="ev-filters-bar" id="evFiltersBar">
-        <div class="ev-filters-inner">
-          <button class="ev-filter-pill active" data-evfilter="all">Todos</button>
-          <div class="ev-filter-sep"></div>
-          <!-- Pills dinámicas por ciudad, género, etc. se inyectan aquí -->
-          <div id="evDynamicPills" style="display:contents"></div>
-        </div>
-      </div>
 
-      <!-- Contenido principal -->
-      <div class="ev-content" id="evContent">
-        <!-- Skeleton inicial -->
-        <div class="ev-skeleton-wrap" id="evSkeleton">
-          <div class="ev-section-label">Cargando eventos…</div>
-          <div class="ev-skeleton-cards">
-            <div class="ev-skeleton-card"><div class="ev-sk-img"></div><div class="ev-sk-lines"><div class="ev-sk-line ev-sk-lg"></div><div class="ev-sk-line ev-sk-md"></div><div class="ev-sk-line ev-sk-sm"></div></div></div>
-            <div class="ev-skeleton-card"><div class="ev-sk-img"></div><div class="ev-sk-lines"><div class="ev-sk-line ev-sk-lg"></div><div class="ev-sk-line ev-sk-md"></div><div class="ev-sk-line ev-sk-sm"></div></div></div>
-            <div class="ev-skeleton-card"><div class="ev-sk-img"></div><div class="ev-sk-lines"><div class="ev-sk-line ev-sk-lg"></div><div class="ev-sk-line ev-sk-md"></div><div class="ev-sk-line ev-sk-sm"></div></div></div>
-          </div>
-        </div>
 
-        <!-- Sección Featured -->
-        <div class="ev-section" id="evFeaturedSection" style="display:none">
-          <div class="ev-section-header">
-            <h2 class="ev-section-title">⚡ Destacados</h2>
-          </div>
-          <div class="ev-featured-list" id="evFeaturedList"></div>
-        </div>
 
-        <!-- Sección Cerca de ti -->
-        <div class="ev-section" id="evNearSection" style="display:none">
-          <div class="ev-section-header">
-            <h2 class="ev-section-title">📍 Cerca de ti</h2>
-            <span class="ev-section-sub" id="evNearCity">Barcelona</span>
-          </div>
-          <div class="ev-cards-scroll" id="evNearList"></div>
-        </div>
 
-        <!-- Sección Próximamente -->
-        <div class="ev-section" id="evSoonSection" style="display:none">
-          <div class="ev-section-header">
-            <h2 class="ev-section-title">🗓 Próximamente</h2>
-          </div>
-          <div class="ev-cards-list" id="evSoonList"></div>
-        </div>
 
-        <!-- Sección Todos -->
-        <div class="ev-section" id="evAllSection" style="display:none">
-          <div class="ev-section-header">
-            <h2 class="ev-section-title" id="evAllTitle">Todos los eventos</h2>
-            <span class="ev-count-badge" id="evCountBadge">0 eventos</span>
-          </div>
-          <div class="ev-cards-list" id="evAllList"></div>
-        </div>
 
-        <!-- Empty state -->
-        <div class="ev-empty" id="evEmpty" style="display:none">
-          <div class="ev-empty-icon">🎤</div>
-          <p class="ev-empty-title">Sin resultados</p>
-          <p class="ev-empty-sub">Prueba con otro filtro o búsqueda</p>
-        </div>
-      </div>
 
-    </div>
 
-  </div>
+
+
 
   <!-- ══ PLAYLIST DETAIL PAGE (full-screen) ══ -->
   <div class="playlist-page" id="playlistDetailModal">
@@ -239,6 +306,47 @@
     </div>
   </div>
 
+  <!-- ══ GENRE DETAIL PAGE (full-screen, same style as playlist-page) ══ -->
+  <div class="playlist-page" id="genreDetailModal">
+    <!-- Blurred bg -->
+    <div class="playlist-page-bg" id="genrePageBg"></div>
+
+    <!-- Top bar -->
+    <div class="playlist-page-topbar">
+      <button class="playlist-page-back" id="genreDetailClose" aria-label="Volver">
+        <svg viewBox="0 0 24 24" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="playlist-page-topbar-title" id="genrePageTopTitle"></span>
+      <div style="width:36px"></div><!-- spacer to balance flex -->
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="playlist-page-scroll">
+      <!-- Hero -->
+      <div class="playlist-page-hero">
+        <div class="playlist-detail-cover" id="genreDetailCover"></div>
+        <div class="playlist-page-meta">
+          <p class="playlist-detail-label">CATEGORÍA</p>
+          <h1 class="playlist-detail-name" id="genreDetailName">—</h1>
+          <p class="playlist-detail-count" id="genreDetailCount">0 canciones</p>
+        </div>
+      </div>
+
+      <!-- Actions row -->
+      <div class="playlist-page-actions">
+        <button class="playlist-page-shuffle-btn" id="btnShuffleGenre" aria-label="Aleatorio">
+          <svg viewBox="0 0 24 24" width="20" height="20"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+        </button>
+        <button class="playlist-page-play-btn" id="btnPlayGenre" aria-label="Reproducir">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
+      </div>
+
+      <!-- Track list -->
+      <div class="playlist-detail-list" id="genreDetailList"></div>
+    </div>
+  </div>
+
   <!-- ══ CREATE PLAYLIST MODAL ══ -->
   <div class="modal-overlay" id="createPlaylistModal">
     <div class="modal-card" style="max-width:380px">
@@ -266,46 +374,17 @@
     </div>
   </div>
 
-  <!-- ══ EVENTO DETAIL MODAL ══ -->
-  <div class="modal-overlay" id="eventoDetailModal">
-    <div class="modal-card evento-detail-card">
-      <div class="evento-detail-header">
-        <h2 class="evento-detail-header-title" id="eventoDetailTitle">—</h2>
-        <button class="modal-close" id="eventoDetailClose" onclick="document.getElementById('eventoDetailModal').classList.remove('open'); document.body.style.overflow = '';">✕</button>
-      </div>
-      <div class="evento-detail-content">
-        <img class="evento-detail-img" id="eventoDetailImg" src="" alt="" />
-        <div class="evento-detail-meta">
-          <span class="evento-detail-genre" id="eventoDetailGenre">—</span>
-          <span class="evento-detail-city" id="eventoDetailCity">—</span>
-        </div>
-        <p class="evento-detail-artist" id="eventoDetailArtist">—</p>
-        <p class="evento-detail-desc" id="eventoDetailDesc">—</p>
-        <div class="evento-detail-info">
-          <div class="evento-info-block">
-            <p class="evento-info-label">Fecha</p>
-            <p class="evento-info-value" id="eventoDetailDate">—</p>
-          </div>
-          <div class="evento-info-block">
-            <p class="evento-info-label">Hora</p>
-            <p class="evento-info-value" id="eventoDetailTime">—</p>
-          </div>
-          <div class="evento-info-block">
-            <p class="evento-info-label">Ubicación</p>
-            <p class="evento-info-value" id="eventoDetailVenue">—</p>
-          </div>
-          <div class="evento-info-block">
-            <p class="evento-info-label">Precio</p>
-            <p class="evento-info-value" id="eventoDetailPrice">—</p>
-          </div>
-        </div>
-        <div class="evento-detail-actions">
-          <a class="evento-btn-buy" id="eventoDetailBuyLink" href="#" target="_blank" rel="noopener">Comprar entradas</a>
-          <button class="evento-btn-share" id="eventoDetailShare">Compartir</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  
+
+
+
+
+
+
+
+
+
+
 
   <!-- ══ NOW PLAYING SHEET ══ -->
   <div class="now-playing-sheet" id="nowPlayingSheet" role="dialog" aria-label="Reproduciendo ahora">
@@ -375,7 +454,7 @@
       <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
     </div>
     <audio id="mainAudio" preload="metadata"></audio>
-    <audio id="preloadAudio" preload="metadata"></audio>
+    <audio id="preloadAudio" preload="auto"></audio>
   </div>
 
   <!-- ══ QUEUE PANEL ══ -->
@@ -458,10 +537,6 @@
       <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       <span>Playlists</span>
     </button>
-    <button class="bnav-btn" data-page="pageEventos" aria-label="Eventos">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2" fill="currentColor" stroke="none"/></svg>
-      <span>Eventos</span>
-    </button>
   </nav>
 
 
@@ -493,7 +568,7 @@
       </div>
       <div class="pwa-install-text">
         <span class="pwa-install-title">Instalar DROPLY</span>
-        <span class="pwa-install-sub">Añade la app a tu pantalla de inicio</span>
+        <span class="pwa-install-sub">Disponemos de una App. Añadenos a tu pantalla de inicio</span>
       </div>
       <div class="pwa-install-actions">
         <button class="pwa-install-dismiss" id="pwaInstallDismiss" aria-label="Cerrar">✕</button>
@@ -551,7 +626,7 @@
 
   <!-- ══ PWA UPDATE TOAST ══ -->
   <div class="pwa-update-toast" id="pwaUpdateToast">
-    <span class="pwa-update-text">Nueva versión disponible</span>
+    <span class="pwa-update-text">Hay una nueva versión disponible, desea actualizar?</span>
     <button class="pwa-update-btn" id="pwaUpdateBtn">Actualizar</button>
   </div>
 
@@ -559,7 +634,8 @@
   <script>
   (function() {
     /* ── Service Worker registration ── */
-    if ('serviceWorker' in navigator) {
+    /* Skip SW registration when opened locally via file:// (no HTTPS origin) */
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
           .then(reg => {
