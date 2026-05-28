@@ -364,6 +364,28 @@ function initChangelog() {
    1. DATA
 ══════════════════════════════════════════════════════ */
 const media = [
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   {
     type:     "music",
     title:    "In Da Getto",
@@ -2047,27 +2069,6 @@ const media = [
     category: "Pop",
     duration: "4:41"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Barbie de extrarradio",
@@ -2077,25 +2078,6 @@ const media = [
     category: "Pop",
     duration: "3:44"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Caminando Por La Vida",
@@ -2105,29 +2087,6 @@ const media = [
     category: "Pop",
     duration: "3:23"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Tu Jardín Con Enanitos",
@@ -2137,29 +2096,6 @@ const media = [
     category: "Pop",
     duration: "4:27"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Déjala Que Baile",
@@ -2169,32 +2105,6 @@ const media = [
     category: "Pop",
     duration: "4:17"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Californication",
@@ -2204,35 +2114,6 @@ const media = [
     category: "Pop",
     duration: "5:21"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Otherside",
@@ -2242,34 +2123,6 @@ const media = [
     category: "Pop",
     duration: "4:17"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Scar Tissue",
@@ -2279,35 +2132,6 @@ const media = [
     category: "Pop",
     duration: "3:40"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Smells Like Teen Spirit",
@@ -2317,38 +2141,6 @@ const media = [
     category: "Pop",
     duration: "4:38"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Seven Nation Army",
@@ -2358,25 +2150,6 @@ const media = [
     category: "Pop",
     duration: "3:58"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Snow",
@@ -2386,37 +2159,6 @@ const media = [
     category: "Pop",
     duration: "5:49"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "Dani California",
@@ -2426,7 +2168,225 @@ const media = [
     category: "Pop",
     duration: "4:47"
   },
+              {
+    type:     "music",
+    title:    "CONEXIÓN",
+    artist:   "Kemzz",
+    cover:    "https://i.postimg.cc/jjjz7PpG/Chat-GPT-Image-28-may-2026-18-57-07.png",
+    file:     "./Music/conexionvila.mp3",
+    category: "Reggaeton",
+    duration: "2:32"
+  },
+              {
+    type:     "music",
+    title:    "KIÉN E?",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/quiene.mp3",
+    category: "No se",
+    duration: "3:41"
+  },
+              {
+    type:     "music",
+    title:    "PAYAS",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/payas.mp3",
+    category: "No se",
+    duration: "4:35"
+  },
+              {
+    type:     "music",
+    title:    "MARDOSA",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/mardosa.mp3",
+    category: "No se",
+    duration: "2:09"
+  },
+              {
+    type:     "music",
+    title:    "KIKE Y WANILLO",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/kikeywanillo.mp3",
+    category: "No se",
+    duration: "2:25"
+  },
+              {
+    type:     "music",
+    title:    "FELA",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/fela.mp3",
+    category: "No se",
+    duration: "2:18"
+  },
+              {
+    type:     "music",
+    title:    "POR ALGO SERÁ",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/poralgosera.mp3",
+    category: "No se",
+    duration: "2:39"
+  },
+              {
+    type:     "music",
+    title:    "MALDITA FARLOPA",
+    artist:   "LOS DIOZES",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
+    file:     "./Music/malafarlopa.mp3",
+    category: "No se",
+    duration: "2:58"
+  },
+              {
+    type:     "music",
+    title:    "La Bandite",
+    artist:   "JuL",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2734a073de113a960b895bf838e",
+    file:     "./Music/labandite.mp3",
+    category: "Reggaeton",
+    duration: "2:46"
+  },
    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "LA GRACIOSA",
+    artist:   "Quevedo, Elvis Crespo",
+    cover:    "https://images.genius.com/a90f642ebbf88596e4b9773614cab132.1000x1000x1.png",
+    file:     "./Music/lagraciosa.mp3",
+    category: "Reggaeton",
+    duration: "4:17"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "AL GOLPITO",
+    artist:   "Quevedo, Nueva Línea",
+    cover:    "https://images.genius.com/a90f642ebbf88596e4b9773614cab132.1000x1000x1.png",
+    file:     "./Music/algolpito.mp3",
+    category: "Reggaeton",
+    duration: "3:27"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "NI BORRACHO",
+    artist:   "Quevedo",
+    cover:    "https://i1.sndcdn.com/artworks-vuqTqo6xOIKR-0-t500x500.jpg",
+    file:     "./Music/niborracho.mp3",
+    category: "Reggaeton",
+    duration: "4:08"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
