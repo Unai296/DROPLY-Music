@@ -446,10 +446,78 @@ input { font-family: inherit; }
 .search-result-title { display: block; font-size: .9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-result-artist { display: block; font-size: .78rem; color: var(--text-mid); }
 .search-result-cat { font-size: .68rem; color: var(--accent); background: var(--accent-glow); padding: .2rem .5rem; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+
+/* ── Search artist header ──────────────────────────── */
+.search-artist-header {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: .9rem .4rem 1rem;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background var(--t);
+  margin-bottom: .2rem;
+}
+.search-artist-header:hover { background: var(--bg3); }
+.search-artist-photo-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg3);
+  border: 2px solid rgba(255,255,255,.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,.45);
+}
+.search-artist-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.search-artist-meta {
+  display: flex;
+  flex-direction: column;
+  gap: .18rem;
+  min-width: 0;
+}
+.search-artist-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.search-artist-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-artist-count {
+  font-size: .75rem;
+  color: var(--text-mid);
+}
+.search-section-label {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: .3rem .4rem .5rem;
+  margin: 0;
+}
+/* ─────────────────────────────────────────────────── */
 .search-result-actions { display: flex; gap: .3rem; flex-shrink: 0; }
 .search-result-queue-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--text-mid); transition: all var(--t); }
 .search-result-queue-btn:hover { background: var(--accent); color: #fff; }
 .search-result-queue-btn svg { width: 13px; height: 13px; }
+.search-result-more-btn { width: 30px; height: 30px; border-radius: 50%; background: transparent; border: none; display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all var(--t); flex-shrink: 0; }
+.search-result-more-btn:hover { background: var(--bg4); color: var(--text); }
+.search-result-more-btn svg { pointer-events: none; }
 
 /* ══════════════════════════════════════════════════════
    LIBRARY / FAVORITOS
@@ -468,9 +536,13 @@ input { font-family: inherit; }
 .library-track-title { font-size: .85rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .library-track-artist { font-size: .73rem; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .library-item-dur { font-size: .72rem; color: var(--text-soft); flex-shrink: 0; font-variant-numeric: tabular-nums; }
-.library-item-actions { display: flex; gap: .2rem; flex-shrink: 0; opacity: 0; transition: opacity var(--t); }
+.library-item-actions { display: flex; gap: .2rem; flex-shrink: 0; }
 .library-item:hover .library-item-actions { opacity: 1; }
 @media (hover: none) { .library-action-btn { opacity: 1 !important; } .library-item-actions { opacity: 1 !important; } }
+/* ⋯ always-visible more button */
+.library-action-more { width: 32px; height: 32px; border-radius: 50%; background: transparent; border: none; display: flex; align-items: center; justify-content: center; color: var(--text-soft); cursor: pointer; transition: all var(--t); flex-shrink: 0; opacity: 1 !important; }
+.library-action-more:hover { background: var(--bg4); color: var(--text); }
+.library-action-more svg { pointer-events: none; }
 .library-action-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-soft); transition: all var(--t); }
 .library-action-btn:hover { color: var(--text); background: var(--bg4); }
 .library-action-btn svg { width: 14px; height: 14px; }

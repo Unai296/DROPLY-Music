@@ -363,6 +363,282 @@ function initChangelog() {
 /* ══════════════════════════════════════════════════════
    1. DATA
 ══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────
+   FOTOS DE ARTISTAS
+   Añade aquí la URL de la foto de cada artista.
+   La clave es el nombre del artista TAL COMO aparece
+   en el campo "artist" de las canciones (o la parte
+   principal antes de la coma si tiene varios artistas).
+   Si un artista no tiene foto aquí se usará la portada
+   de una de sus canciones como hasta ahora.
+
+   Ejemplos:
+     "J Balvin":     "https://...",
+     "Bad Bunny":    "https://...",
+     "Morad":        "https://...",
+─────────────────────────────────────────────────────── */
+const ARTIST_PHOTOS = {
+  // ── Añade aquí las fotos de los artistas ──────────
+  // "Nombre del artista": "https://url-de-la-foto.jpg",
+
+  "Coldplay":    "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Coldplay_-_Rock_in_Rio_2022.jpg/400px-Coldplay_-_Rock_in_Rio_2022.jpg",
+
+
+
+
+"A Touch Of Class":     "https://cdn-images.dzcdn.net/images/cover/1cbc3fe3abdbcbb88ca5cc50f6845b0d/1900x1900-000000-81-0-0.jpg",
+
+"ABBA":     "https://cdn-images.dzcdn.net/images/cover/065db5953bf46f833dc6b3ca5dba2a51/1900x1900-000000-80-0-0.jpg",
+
+"Ace of Base":     "https://cdn-images.dzcdn.net/images/artist/038b073fec58dc1783f64f96ba2ef14d/1900x1900-000000-80-0-0.jpg",
+
+"Afrojack":     "https://i.scdn.co/image/ab6761610000517456591d5d8219e6e506096c41",
+
+"AKDO":     "https://i.scdn.co/image/ab67616100005174e4c142124c270d224eea148f",
+
+"Alex Gaudino":     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvPuV507QliAcax0C2jj6OTc0Z9-VFemNnQQ&s",
+
+
+"Alesso":     "https://i.scdn.co/image/ab6761610000e5eb42b3fb34e3451c79c55cbe73",
+
+"Alice Deejay":     "https://artist99.cdn107.com/420/42012b0680c71a11d9c30584a5185f78_xl.jpg",
+
+"Anitta":     "https://cdn0.celebritax.com/sites/default/files/styles/square_700x700/public/1648142414-anitta-celebra-exito-su-hit-envolver-spotify-haciendo-su-popular-paso-baile-palabras.jpg",
+
+
+
+"Anuel AA":     "https://cdn-images.dzcdn.net/images/artist/d128822eb60817b362b9d6e8c696e933/1900x1900-000000-81-0-0.jpg",
+
+
+"Aqua":     "https://egebotiga.com/wp-content/uploads/2024/02/aqua-aquarium-25-annuversary-COMPRAR-VINILO.jpg",
+
+
+"Arcángel":     "https://i.scdn.co/image/ffaac96035a6cba4a0d19cab070bd3cd4f5fe287",
+
+
+"AISSA":     "https://conciertos.club/doc/a/2023/a_aissa.jpg",
+
+
+"Bad Bunny":     "https://i.scdn.co/image/ab6761610000517481f47f44084e0a09b5f0fa13",
+
+
+"Bebe Rexha":     "https://bi.org/wp-content/uploads/2021/10/featured-famous-bi-bebe-rexha-1-1024x1024.jpg",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"Becky G":           "https://cdn-images.dzcdn.net/images/cover/b6d13738038b285630370f5be059380f/0x1900-000000-80-0-0.jpg",
+  "Bee Gees":          "https://m.media-amazon.com/images/M/MV5BZmU5M2E3M2MtM2M5My00YTI2LThkNDktNjk5MGE2NzAxNTZlXkEyXkFqcGc@._V1_.jpg",
+  "Beny Jr":           "https://i.scdn.co/image/ab67616d0000b27345e6bba1ac0c5b54a9ee8121",
+  "Black Eyed Peas":   "https://i.ytimg.com/vi/C9xrAJ_rmBw/maxresdefault.jpg",
+  "Blessd":            "https://m.media-amazon.com/images/I/31P5CYOaluL._UXNaN_FMjpg_QL85_.jpg",
+  "Cardi B":           "https://e00-elmundo.uecdn.es/assets/multimedia/imagenes/2018/09/28/15381371183299.jpg",
+  "Carlos Vives":      "https://i.scdn.co/image/ab67616d0000b273e588b4129b0afd8595ac55b0",
+  "Chencho Corleone":  "https://i.scdn.co/image/ab67616d0000b273c32233e3541a756a90880fb1",
+  "Chris Brown":       "https://i.ytimg.com/vi/OLqaMYc9LFE/maxresdefault.jpg",
+  "Christina Aguilera": "https://m.media-amazon.com/images/I/9197wAEPZcL._UF894,1000_QL80_.jpg",
+  "Clarent":           "https://i.scdn.co/image/ab67616d0000b27386b1784848d2cc7ccd58e05e",
+  "Corona":            "https://cdn-images.dzcdn.net/images/cover/b3442cde5c53baa308dd569b5dbd46c1/1900x1900-000000-81-0-0.jpg",
+  "Cris MJ":           "https://i.scdn.co/image/ab67616d0000b273c4583f3ad76630879a75450a",
+  "Crystal Waters":    "https://cdn-images.dzcdn.net/images/cover/3cd44e7420b88ced60beb8daea52b11a/0x1900-000000-80-0-0.jpg",
+  "Cyril Kamer":       "https://i.scdn.co/image/ab67616d0000b2733e242bdd9632c6a49a693b1b",
+  "Daddy Yankee":      "https://i.ytimg.com/vi/mGN3kfEk_P4/maxresdefault.jpg",
+  "Danny Ocean":       "https://cdn-images.dzcdn.net/images/cover/2312f5f5d53b0fb5238a4bc58d2f6cf6/1900x1900-000000-81-0-0.jpg",
+  "Darell":            "https://m.media-amazon.com/images/I/41H6GkRuYiL._UXNaN_FMjpg_QL85_.jpg",
+  "David Guetta":      "https://m.media-amazon.com/images/I/51R8fS3ESYL._UXNaN_FMjpg_QL85_.jpg",
+  "De La Rose":        "https://images.genius.com/9b4acd648c12aa172b1b4ec9f8eaf4da.1000x1000x1.png",
+  "Dei V":             "https://i1.sndcdn.com/artworks-by0H8XlmcCvzkf5u-6bxytg-t1080x1080.jpg",
+  "DELLAFUENTE":       "https://i.scdn.co/image/ab67616d0000b2731a176de75067ededc26ad96d",
+  "Dennis DJ":         "https://s.mxmcdn.net/images-storage/albums2/4/7/9/3/2/5/87523974_500_500.jpg",
+  "DJ Snake":          "https://e00-elmundo.uecdn.es/assets/multimedia/imagenes/2018/09/28/15381371183299.jpg",
+  "Don Miguelo":       "https://i.ytimg.com/vi/16nZ6K7sim4/hq720.jpg?sqp=-oaymwE7CK4FEIIDSFryq4qpAy0IARUAAAAAGAElAADIQj0AgKJD8AEB-AH-CYAC0AWKAgwIABABGGUgWyhLMA8=&rs=AOn4CLAm5BKIjd4rwtUHQHFpRU5wZArpbA",
+  "Edward Maya":       "https://i.scdn.co/image/ab67616d0000b273edd7dc7bf5f7c39d3e132490",
+  "El Alfa":           "https://i.scdn.co/image/ab67616d0000b2739380d5f0cd2e17fdb7c1109c",
+  "El Bobe":           "https://i.scdn.co/image/ab67616d0000b273412a45f6d65252ae3d1fac4c",
+  "El Bogueto":        "https://cdn-images.dzcdn.net/images/cover/e62f70e7b366e618da1cbf0eed47de8c/0x1900-000000-80-0-0.jpg",
+  "El Guincho":        "https://images.genius.com/a8b0efd41e6a43091837da78850cf312.1000x1000x1.png",
+  "Eloy":              "https://i.scdn.co/image/ab67616d0000b273da7076e371c7859fbb2e18fd",
+  "Elton John":        "https://i.scdn.co/image/ab67616d0000b27373fd9802ec887972ecdacac2",
+  "Emilia":            "https://s.mxmcdn.net/images-storage/albums2/4/7/9/3/2/5/87523974_500_500.jpg",
+  "Farruko":           "https://i1.sndcdn.com/artworks-000083532431-1yokz6-t1080x1080.jpg",
+  "FEID":              "https://m.media-amazon.com/images/I/61vTly9zD+L._UXNaN_FMjpg_QL85_.jpg",
+  "FloyyMenor":        "https://i.scdn.co/image/ab67616d0000b273c4583f3ad76630879a75450a",
+  "Fuerza Regida":     "https://cdn-images.dzcdn.net/images/cover/e62f70e7b366e618da1cbf0eed47de8c/0x1900-000000-80-0-0.jpg",
+  "Fronti":            "https://akamai.sscdn.co/uploadfile/letras/albuns/b/3/4/0/4332821765558369.jpg",
+  "GALA":              "https://cdn-images.dzcdn.net/images/cover/ba8311a74318c401fb64d7594018f44d/0x1900-000000-80-0-0.jpg",
+  "Gente De Zona":     "https://images.genius.com/cf43fd45336758c065537970f6a79f96.1000x1000x1.jpg",
+  "GIMS":              "https://m.media-amazon.com/images/M/MV5BZDI1NzIxMTctZTUxMi00NmY4LWEzODAtYWQ1NWEwMGE0MWFhXkEyXkFqcGc@._V1_QL75_UY190_CR31,0,190,190_.jpg",
+  "GONZY":             "https://i.scdn.co/image/ab67616d0000b2735327757614a832374e491778",
+  "Gote":              "https://i.scdn.co/image/ab67616d00001e02fb1041333d9a712a182acfa0",
+  "Haddaway":          "https://upload.wikimedia.org/wikipedia/en/a/a8/HaddawayWhatIsLoveMaxiCDCover.jpg",
+  "Hades66":           "https://i.scdn.co/image/ab67616d0000b2735cc8552f86ba4cc528968d2d",
+  "Hanzel La H":       "https://akamai.sscdn.co/uploadfile/letras/albuns/b/3/4/0/4332821765558369.jpg",
+  "Heuss L'enfoiré":   "https://m.media-amazon.com/images/I/51QolFGPe7L._UXNaN_FMjpg_QL85_.jpg",
+  "JC Reyes":          "https://i1.sndcdn.com/artworks-by0H8XlmcCvzkf5u-6bxytg-t1080x1080.jpg",
+  "Jedis":             "https://i.scdn.co/image/ab67616d00001e02fb1041333d9a712a182acfa0",
+  "Jennifer Lopez":    "https://i.scdn.co/image/ab67616d0000b2735c7fdd07d99c156401073aaa",
+  "Jhay Cortez":       "https://i.scdn.co/image/ab67616d00001e02005ee342f4eef2cc6e8436ab",
+  "John Ryan":         "https://m.media-amazon.com/images/I/71aqqhM+cFL._UF894,1000_QL80_.jpg",
+  "Jowell & Randy":    "https://i.scdn.co/image/ab67616d0000b273da7076e371c7859fbb2e18fd",
+  "JuL":               "https://m.media-amazon.com/images/I/51QolFGPe7L._UXNaN_FMjpg_QL85_.jpg",
+  "Justin Quiles":     "https://i.scdn.co/image/ab67616d0000b273c32233e3541a756a90880fb1",
+  "Karol G":           "https://i.scdn.co/image/ab67616d0000b2735fa6dc9fc261344044c301a9",
+  "Kate Ryan":         "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Kate_Ryan_-_2007.jpg/400px-Kate_Ryan_-_2007.jpg",
+  "Kidd Voodoo":       "https://m.media-amazon.com/images/I/511UiqJjmZL._UXNaN_FMjpg_QL85_.jpg",
+  "Kiss":              "https://i.discogs.com/ZDR0sVMA4m0HNMH-M1w8qfzxOX_9HL_t76I8QjohXcQ/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Njg0/NzEtMTMzOTYwMDc2/MS0zNDU2LmpwZWc.jpeg",
+  "Kreamly":           "https://m.media-amazon.com/images/I/51qThLr9dIL._SX354_SY354_BL0_QL100__UXNaN_FMjpg_QL85_.jpg",
+  "Kris R":            "https://m.media-amazon.com/images/I/31P5CYOaluL._UXNaN_FMjpg_QL85_.jpg",
+  "La Bouche":         "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/La_Bouche_at_Rave_2011.jpg/400px-La_Bouche_at_Rave_2011.jpg",
+  "Lady Gaga":         "https://i.scdn.co/image/ab67616d0000b2739ff8dea75219ec13530d97f1",
+  "Las Ketchup":       "https://cdn-images.dzcdn.net/images/cover/be45674dc35c8f974a934dc3779c7b59/0x1900-000000-80-0-0.jpg",
+  "Lenny Tavarez":     "https://i1.sndcdn.com/artworks-000384998541-nkcy6u-t500x500.jpg",
+  "Luar La L":         "https://i.ytimg.com/vi/awbt4MRXuck/maxresdefault.jpg",
+  "Luísa Sonza":       "https://s.mxmcdn.net/images-storage/albums2/4/7/9/3/2/5/87523974_500_500.jpg",
+  "LVBEL C5":          "https://i.scdn.co/image/ab67616d0000b2738e675f63b19c17334f7d62d9",
+  "Lunay":             "https://i.scdn.co/image/ab67616d0000b27358e34ee7bc215e1b03ff78d4",
+  "Madonna":           "https://m.media-amazon.com/images/I/81Iv8WsxUwL._UF894,1000_QL80_.jpg",
+  "Major Lazer":       "https://i.scdn.co/image/ab67616d0000b2739380d5f0cd2e17fdb7c1109c",
+  "Maluma":            "https://i.scdn.co/image/ab67616d0000b2738e17b8d0bf76a205bba297bd",
+  "Marc Anthony":      "https://images.genius.com/cf43fd45336758c065537970f6a79f96.1000x1000x1.jpg",
+  "Mau":               "https://i.scdn.co/image/ab67616d0000b273f89d8cc59e29c9d2f846e903",
+  "MC Menor JP":       "https://images.genius.com/60b39231e971719e4c609413d5bcc851.1000x1000x1.png",
+  "Moncho Chavea":     "https://i.scdn.co/image/ab67616d0000b273c7b6b68108ab221bb07f5aa6",
+  "Mora":              "https://images.genius.com/9b4acd648c12aa172b1b4ec9f8eaf4da.1000x1000x1.png",
+  "Myke Towers":       "https://media.emisorasmusicales.net/wp-content/uploads/2023/02/11013844/nnn.jpg",
+  "Natti Natasha":     "https://i.scdn.co/image/ab67616d0000b273d7ce6f9b0a15181635a933d9",
+  "Nayer":             "https://i1.sndcdn.com/artworks-haGUy7OWdKcoRgMH-Zglw6A-t1080x1080.jpg",
+  "Netherworld":       "https://m.media-amazon.com/images/I/51R59lHZtYL._UXNaN_FMjpg_QL85_.jpg",
+  "Ne-Yo":             "https://i1.sndcdn.com/artworks-haGUy7OWdKcoRgMH-Zglw6A-t1080x1080.jpg",
+  "Nicky Jam":         "https://i.scdn.co/image/ab67616d0000b2738e17b8d0bf76a205bba297bd",
+  "Nolep":             "https://i.scdn.co/image/ab67616d00001e02fb1041333d9a712a182acfa0",
+  "Noriel":            "https://m.media-amazon.com/images/I/41H6GkRuYiL._UXNaN_FMjpg_QL85_.jpg",
+  "Ñengo Flow":        "https://i.scdn.co/image/ab67616d0000b2735cc8552f86ba4cc528968d2d",
+  "Omar Courtz":       "https://cdn-images.dzcdn.net/images/cover/1ef9489b58a25622c2e3d2aa0473dde0/0x1900-000000-80-0-0.jpg",
+  "Omar Montes":       "https://i.scdn.co/image/ab67616d0000b273412a45f6d65252ae3d1fac4c",
+  "Ozuna":             "https://e00-elmundo.uecdn.es/assets/multimedia/imagenes/2018/09/28/15381371183299.jpg",
+  "Pendulum":          "https://i.scdn.co/image/ab67616d0000b273dcbb69d4be6c29c0be851f32",
+  "Pitbull":           "https://i.ytimg.com/vi/OLqaMYc9LFE/maxresdefault.jpg",
+  "Play-N-Skillz & Elvis Crespo": "https://i.ytimg.com/vi/mGN3kfEk_P4/maxresdefault.jpg",
+  "Polimá Westcoast":  "https://i.scdn.co/image/ab67616d0000b2733e242bdd9632c6a49a693b1b",
+  "Quevedo":           "https://media.emisorasmusicales.net/wp-content/uploads/2023/02/11013844/nnn.jpg",
+  "Rafa Pabon":        "https://i1.sndcdn.com/artworks-000384998541-nkcy6u-t500x500.jpg",
+  "Rauw Alejandro":    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMVwbetQqCv73bf6t9mP31J9CucAlGW_k8YA&s",
+  "Ricky":             "https://i.scdn.co/image/ab67616d0000b273f89d8cc59e29c9d2f846e903",
+  "Rihanna":           "https://i.scdn.co/image/ab67616d0000b273f9f27162ab1ed45b8d7a7e98",
+  "Roa":               "https://i.ytimg.com/vi/awbt4MRXuck/maxresdefault.jpg",
+  "ROSALÍA":           "https://images.genius.com/a8b0efd41e6a43091837da78850cf312.1000x1000x1.png",
+  "Rvfv":              "https://i.scdn.co/image/ab67616d0000b273bf3151af9c5e4d7c1de59ae9",
+  "SAIKO":             "https://i1.sndcdn.com/artworks-by0H8XlmcCvzkf5u-6bxytg-t1080x1080.jpg",
+  "Sammy":             "https://i1.sndcdn.com/artworks-000384998541-nkcy6u-t500x500.jpg",
+  "SASH":              "https://m.media-amazon.com/images/I/71Vx2arL6vL._UF894,1000_QL80_.jpg",
+  "Sebastián Yatra":   "https://i.scdn.co/image/ab67616d0000b273f89d8cc59e29c9d2f846e903",
+  "Sech":              "https://images.genius.com/eb6adbb6247e85fca2cc94fb9388fd3a.1000x1000x1.png",
+  "Shakira":           "https://i.scdn.co/image/ab67616d0000b273e588b4129b0afd8595ac55b0",
+  "Skrillex":          "https://i.ytimg.com/vi/7aPzYlc2RY4/maxresdefault.jpg",
+  "SLAYTER":           "https://m.media-amazon.com/images/I/61KjgepxdwL._UXNaN_FMjpg_QL85_.jpg",
+  "Steve Aoki":        "https://i.ytimg.com/vi/mGN3kfEk_P4/maxresdefault.jpg",
+  "Super Yei":         "https://i1.sndcdn.com/artworks-000384998541-nkcy6u-t500x500.jpg",
+  "T-Pain":            "https://i1.sndcdn.com/artworks-00033071708-e6mxid-t500x500.jpg",
+  "Tempo":             "https://i.scdn.co/image/ab67616d0000b2736e3e2d32da74925922b4976f",
+  "Tito El Bambino":   "https://akamai.sscdn.co/uploadfile/letras/albuns/b/3/4/0/4332821765558369.jpg",
+  "Vika Jigulina":     "https://i.scdn.co/image/ab67616d0000b273edd7dc7bf5f7c39d3e132490",
+  "Willy William":     "https://i1.sndcdn.com/artworks-000283629944-3i7bfp-t500x500.jpg",
+  "Wisin":             "https://akamai.sscdn.co/uploadfile/letras/albuns/b/3/4/0/4332821765558369.jpg",
+  "Yan Block":         "https://i.scdn.co/image/ab67616d0000b2735cc8552f86ba4cc528968d2d",
+  "Yandel":            "https://i.scdn.co/image/ab67616d0000b273c4e2ae0d7a6ba307bdd3cc0d",
+  "Young Cister":      "https://m.media-amazon.com/images/I/51qThLr9dIL._SX354_SY354_BL0_QL100__UXNaN_FMjpg_QL85_.jpg",
+  "YOUNG MIKO":        "https://m.media-amazon.com/images/I/61vTly9zD+L._UXNaN_FMjpg_QL85_.jpg",
+  "YOVNGCHIMI":        "https://i.scdn.co/image/ab67616d0000b2732a5c6164e8743597f44b645e",
+  "Yung Beef":         "https://cdn-images.dzcdn.net/images/cover/e62f70e7b366e618da1cbf0eed47de8c/0x1900-000000-80-0-0.jpg",
+  "Zion":              "https://i.scdn.co/image/ab67616d0000b273da7076e371c7859fbb2e18fd"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+};
+
+/* Helper: devuelve la foto del artista o null */
+function getArtistPhoto(artistName) {
+  if (!artistName) return null;
+  // Buscar coincidencia exacta primero
+  if (ARTIST_PHOTOS[artistName]) return ARTIST_PHOTOS[artistName];
+  // Buscar por primer nombre (antes de la coma/barra)
+  const firstName = artistName.split(/[,&\/]/)[0].trim();
+  if (ARTIST_PHOTOS[firstName]) return ARTIST_PHOTOS[firstName];
+  // Búsqueda parcial (el nombre del artista empieza igual)
+  const found = Object.keys(ARTIST_PHOTOS).find(k =>
+    artistName.toLowerCase().includes(k.toLowerCase()) ||
+    k.toLowerCase().includes(artistName.toLowerCase().split(/[,&\/]/)[0].trim())
+  );
+  return found ? ARTIST_PHOTOS[found] : null;
+}
+
+/* Cache de fotos cargadas desde Wikipedia para no repetir peticiones */
+const _wikiPhotoCache = {};
+
+/**
+ * Intenta obtener la foto del artista desde la Wikipedia API.
+ * Actualiza el elemento <img> directamente cuando la obtiene.
+ */
+async function fetchArtistPhotoFromWiki(artistName, imgElement, fallbackSrc) {
+  const key = artistName.split(/[,&\/]/)[0].trim();
+  if (_wikiPhotoCache[key] !== undefined) {
+    imgElement.src = _wikiPhotoCache[key] || fallbackSrc;
+    return;
+  }
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(key)}&prop=pageimages&format=json&pithumbsize=400&origin=*`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const pages = data?.query?.pages || {};
+    const page = Object.values(pages)[0];
+    const thumb = page?.thumbnail?.source;
+    if (thumb) {
+      _wikiPhotoCache[key] = thumb;
+      imgElement.src = thumb;
+    } else {
+      _wikiPhotoCache[key] = null;
+      imgElement.src = fallbackSrc;
+    }
+  } catch {
+    _wikiPhotoCache[key] = null;
+    imgElement.src = fallbackSrc;
+  }
+}
+
 const media = [
   {
     type:     "music",
@@ -2478,7 +2754,6 @@ let contextTarget = null;
    3. DOM REFS
 ══════════════════════════════════════════════════════ */
 const audioEl          = document.getElementById("mainAudio");
-const preloadAudio     = document.getElementById("preloadAudio");
 const mediaGrid        = document.getElementById("mediaGrid");
 const catInner         = document.getElementById("catInner");
 const sectionTitle     = document.getElementById("sectionTitle");
@@ -2592,6 +2867,15 @@ function updatePlayIcons(playing) {
     btn.querySelector(".icon-pause").style.display = playing ? "" : "none";
   });
   sheetCover.classList.toggle("playing", playing);
+
+  // Sync "Continuar escuchando" button
+  const hccBtn = document.getElementById("hccPlayBtn");
+  if (hccBtn) {
+    const hccIconPlay  = hccBtn.querySelector(".hcc-icon-play");
+    const hccIconPause = hccBtn.querySelector(".hcc-icon-pause");
+    if (hccIconPlay)  hccIconPlay.style.display  = playing ? "none" : "";
+    if (hccIconPause) hccIconPause.style.display = playing ? "" : "none";
+  }
 }
 
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
@@ -2886,158 +3170,78 @@ function renderGrid() {
 
 
 /* ══════════════════════════════════════════════════════
-   DROPLY AUDIO ENGINE v3 — CLEAN CROSSFADE
-   · Dual-audio (A/B) con eventos siempre en el activo
-   · Sin saltos en barra de progreso durante el fade
-   · setInterval cancelado si llega otro loadTrack
-   · seekToPercent y volSlider siempre sobre el activo
+   DROPLY AUDIO ENGINE v4 — HARD SWITCH (sin crossfade)
+   · Un solo elemento de audio (mainAudio del DOM)
+   · Hard switch limpio: pause → src → play
+   · Sin AbortError: se cancela la promise pendiente
+     antes de cambiar de src
 ══════════════════════════════════════════════════════ */
 
-// Dos elementos de audio — A es el del HTML, B dinámico
-const audioA = audioEl;                // mainAudio del DOM
-const audioB = document.getElementById("preloadAudio") || (() => {
-  const a = new Audio(); a.preload = "auto"; return a;
-})();
-audioB.preload = "auto";
+const activeAudio = audioEl;   // mainAudio del DOM — único elemento
+window.audioEl = activeAudio;
 
-let activeAudio = audioA;
-let inactiveAudio = audioB;
-window.audioEl = activeAudio;  // siempre apunta al activo
-
-// Token para cancelar fades en curso
-let _fadeToken = 0;
-
-/* ── Reatach events to whichever element is active ─── */
-function _bindAudioEvents(audio) {
-  // Cleanup old listeners via cloning trick isn't needed —
-  // we use the token to ignore stale callbacks instead.
-  audio.addEventListener("timeupdate", _onTimeUpdate, { passive: true });
-  audio.addEventListener("ended",      _onEnded,      { passive: true });
-  audio.addEventListener("play",       _onPlay,       { passive: true });
-  audio.addEventListener("pause",      _onPause,      { passive: true });
-}
-_bindAudioEvents(audioA);
-_bindAudioEvents(audioB);
-
-/* ── Event handlers (ignore if not the active element) ── */
-function _onTimeUpdate() {
-  const audio = this;
-  if (audio !== activeAudio) return;   // stale — ignore
-  const dur = audio.duration, cur = audio.currentTime;
+/* ── Audio events ────────────────────────────────────── */
+activeAudio.addEventListener("timeupdate", function () {
+  const dur = this.duration, cur = this.currentTime;
   if (!dur || isNaN(dur) || !isFinite(dur) || dur <= 0) return;
   const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
-  sheetFill.style.width          = pct + "%";
-  sheetThumb.style.left          = pct + "%";
-  sheetCurrent.textContent       = formatTime(cur);
-  sheetDuration.textContent      = formatTime(dur);
-  miniProgressFill.style.width   = pct + "%";
+  sheetFill.style.width        = pct + "%";
+  sheetThumb.style.left        = pct + "%";
+  sheetCurrent.textContent     = formatTime(cur);
+  sheetDuration.textContent    = formatTime(dur);
+  miniProgressFill.style.width = pct + "%";
   _updateMediaSessionPosition();
-}
+}, { passive: true });
 
-function _onEnded() {
-  if (this !== activeAudio) return;
+activeAudio.addEventListener("ended", function () {
+  isPlaying = false;
   if (repeatMode) {
     this.currentTime = 0;
-    this.play().catch(err => console.warn("[DROPLY] repeat error:", err));
+    this.play()
+      .then(() => { isPlaying = true; updatePlayIcons(true); })
+      .catch(err => { updatePlayIcons(false); console.warn("[DROPLY] repeat:", err); });
   } else {
+    updatePlayIcons(false);
     playNext();
   }
-}
+}, { passive: true });
 
-function _onPlay() {
-  if (this !== activeAudio) return;
+activeAudio.addEventListener("play", function () {
   isPlaying = true;
   updatePlayIcons(true);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
   }
-}
+}, { passive: true });
 
-function _onPause() {
-  if (this !== activeAudio) return;
-  if (_crossfading) return;  // ignore pause events during crossfade
+activeAudio.addEventListener("pause", function () {
+  // Solo actualiza si el audio está realmente pausado
+  // (evita falsos positivos por cambio de src)
+  if (!this.paused) return;
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
   }
-}
+}, { passive: true });
 
-/* ── Background blur transition ─────────────────────── */
+/* ── Background blur transition (visual only) ─────── */
 function animateBackgroundTransition(newCover) {
-  const oldBg = sheetBgBlur;
-  const newBg = oldBg.cloneNode(true);
-  newBg.style.cssText += ";position:absolute;inset:0;background-image:url(" + newCover + ");background-size:cover;background-position:center;filter:blur(22px);opacity:0;transform:scale(1.08);transition:opacity 1.2s ease,transform 1.2s ease";
-  oldBg.parentElement.appendChild(newBg);
-  requestAnimationFrame(() => { newBg.style.opacity = "1"; newBg.style.transform = "scale(1)"; });
-  setTimeout(() => { oldBg.style.opacity = "0"; }, 300);
+  const bg = sheetBgBlur;
+  bg.style.transition = "opacity .4s ease";
+  bg.style.opacity = "0";
   setTimeout(() => {
-    sheetBgBlur.style.backgroundImage = "url(" + newCover + ")";
-    sheetBgBlur.style.opacity = "1";
-    newBg.remove();
-  }, 1400);
-}
-
-/* ── Crossfade ───────────────────────────────────────── */
-const CROSSFADE_MS = 3000;   // 3 segundos — suave pero no eterno
-
-let _crossfading = false;
-
-function crossfadeTo(item, onReady) {
-  // Cancel any existing fade
-  _fadeToken++;
-  const myToken = _fadeToken;
-  _crossfading = true;
-
-  const outgoing = activeAudio;
-  const incoming = inactiveAudio;
-
-  // Reset incoming cleanly before loading
-  incoming.volume = 0;
-  incoming.src    = item._offlineSrc || item.file;
-  incoming.currentTime = 0;
-
-  // Swap references BEFORE play() so _onPlay/_onPause track the right element
-  activeAudio   = incoming;
-  inactiveAudio = outgoing;
-  window.audioEl = activeAudio;
-
-  incoming.play().catch(err => {
-    console.warn("[CROSSFADE] play error:", err);
-  });
-
-  // Animate the UI background
-  const cover = item.cover || getPlaceholderCover(item.category);
-  animateBackgroundTransition(cover);
-
-  // Volume ramp with rAF
-  const startTime = performance.now();
-
-  function tick(now) {
-    if (myToken !== _fadeToken) { _crossfading = false; return; }  // superseded
-    const t = Math.min(1, (now - startTime) / CROSSFADE_MS);
-
-    incoming.volume = t;
-    outgoing.volume = 1 - t;
-
-    if (t < 1) {
-      requestAnimationFrame(tick);
-    } else {
-      // Fade complete — silence and stop outgoing
-      _crossfading = false;
-      outgoing.pause();
-      outgoing.volume = 1;   // reset for next use
-      outgoing.src    = "";  // free memory
-      outgoing.currentTime = 0;
-      if (onReady) onReady();
-    }
-  }
-  requestAnimationFrame(tick);
+    bg.style.backgroundImage = "url(" + newCover + ")";
+    bg.style.opacity = "1";
+  }, 200);
 }
 
 /* ══════════════════════════════════════════════════════
    LOAD TRACK
 ══════════════════════════════════════════════════════ */
+// Token para cancelar plays pendientes si llega otro loadTrack antes
+let _playToken = 0;
+
 function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   if (item.type !== "music") return;
 
@@ -3071,10 +3275,10 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   miniPlayer.classList.add("visible");
 
   sheetCover.src = cover;
-  sheetBgBlur.style.backgroundImage = `url(${cover})`;
   sheetCategory.textContent = item.category;
   sheetTitle.textContent    = item.title;
   sheetArtist.textContent   = item.artist;
+  animateBackgroundTransition(cover);
 
   const liked = likedTracks.has(item.file);
   sheetHeart.classList.toggle("liked", liked);
@@ -3099,64 +3303,50 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
     if (hccGlowEl)   hccGlowEl.style.backgroundImage = `url(${cover})`;
     if (contSec)     contSec.style.display = "";
     const hccBtn = document.getElementById("hccPlayBtn");
-    if (hccBtn) hccBtn.onclick = () => togglePlay();
+    if (hccBtn) hccBtn.onclick = () => {
+      const currentFile = playlist[currentTrackIdx]?.file;
+      if (currentFile === item.file) {
+        togglePlay();
+      } else {
+        loadTrack(item);
+      }
+    };
   }
 
-  /* -- Audio -- */
-  const isPlayingNow = !activeAudio.paused && !activeAudio.ended;
+  /* -- Audio: hard switch limpio -- */
+  const myToken = ++_playToken;
 
-  if (isPlayingNow) {
-    // Crossfade: UI updates happen during fade, bar reflects incoming
-    crossfadeTo(item, () => {
-      isPlaying = true;
-      updatePlayIcons(true);
-      preloadNextTrack(item);
-    });
-    isPlaying = true;
-    updatePlayIcons(true);
-    return;
-  }
-
-  // Not playing — hard switch
-  _fadeToken++;  // cancel any stale fade
+  // Pausar primero para cancelar cualquier play() en vuelo
+  activeAudio.pause();
   activeAudio.src = item._offlineSrc || item.file;
+  activeAudio.currentTime = 0;
   activeAudio.volume = 1;
+
+  // Reset UI a estado "cargando"
+  sheetFill.style.width        = "0%";
+  sheetThumb.style.left        = "0%";
+  sheetCurrent.textContent     = "0:00";
+  miniProgressFill.style.width = "0%";
 
   activeAudio.play()
     .then(() => {
+      if (myToken !== _playToken) return;  // superseded por otro loadTrack
       isPlaying = true;
       updatePlayIcons(true);
-      preloadNextTrack(item);
     })
     .catch(err => {
+      if (myToken !== _playToken) return;
       isPlaying = false;
       updatePlayIcons(false);
-      if (err.name !== "NotAllowedError") console.warn("[DROPLY]", err);
+      if (err.name === "NotAllowedError") {
+        window._droplyPendingTrack = true;
+      } else if (err.name !== "AbortError") {
+        console.warn("[DROPLY] play error:", err);
+      }
     });
 }
 
-/* ── Preload next track ──────────────────────────────── */
-function preloadNextTrack(currentItem) {
-  clearTimeout(window._droplyPreloadTimer);
-  window._droplyPreloadTimer = setTimeout(() => {
-    if (activeAudio.paused) return;
-    const nextItem = getNextItem(currentItem);
-    // Prime the inactive element quietly
-    if (nextItem && inactiveAudio.src !== (nextItem._offlineSrc || nextItem.file)) {
-      inactiveAudio.src    = nextItem._offlineSrc || nextItem.file;
-      inactiveAudio.volume = 0;
-      inactiveAudio.preload = "auto";
-    }
-  }, 5000);
-}
 
-/* ── Next item helper ────────────────────────────────── */
-function getNextItem(currentItem) {
-  if (queue.length > 0) return getTrackByFile(queue[0]);
-  const idx = playlist.findIndex(p => p.file === currentItem?.file);
-  if (idx < 0) return null;
-  return playlist[(idx + 1) % playlist.length];
-}
 
 /* ── Seek / Volume (always on active audio) ──────────── */
 // Volume
@@ -3243,16 +3433,12 @@ function buildLibraryRow(item, num, cover, onClick, itemForCtx) {
       <span class="library-track-artist">${item.artist}</span>
     </div>
     <div class="library-item-actions">
-      <button class="library-action-btn" data-action="queue" title="Añadir a cola">
-        <svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-      <button class="library-action-btn" data-action="more" title="Más opciones">
-        <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
+      <button class="library-action-btn library-action-more" data-action="more" title="Más opciones" aria-label="Más opciones">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
       </button>
     </div>
     <span class="library-item-dur">${item.duration || ""}</span>`;
   row.addEventListener("click", e => { if (!e.target.closest(".library-item-actions")) onClick(); });
-  row.querySelector('[data-action="queue"]').addEventListener("click", e => { e.stopPropagation(); addToQueue(item); });
   row.querySelector('[data-action="more"]').addEventListener("click", e => { e.stopPropagation(); openContextMenu(itemForCtx || item); });
   return row;
 }
@@ -3380,16 +3566,24 @@ function openPlaylistDetail(id) {
           <div class="playlist-detail-artist">${item.artist} · <span style="color:var(--accent);font-size:.68rem">${item.category}</span></div>
         </div>
         <span style="font-size:.72rem;color:var(--text-soft);flex-shrink:0;font-variant-numeric:tabular-nums">${item.duration || ""}</span>
+        <button class="library-action-more playlist-more-btn" title="Más opciones" aria-label="Más opciones" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:transparent;border:none;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:1">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
         <button class="playlist-detail-remove" title="Eliminar de playlist">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>`;
       div.addEventListener("click", e => {
         if (e.target.closest(".playlist-detail-remove")) return;
+        if (e.target.closest(".playlist-more-btn")) return;
         const plItems = pl.tracks.map(f => getTrackByFile(f)).filter(Boolean);
         loadTrack(item, false, plItems);
         // highlight row
         playlistDetailList.querySelectorAll(".playlist-detail-item").forEach(r => r.classList.remove("playing"));
         div.classList.add("playing");
+      });
+      div.querySelector(".playlist-more-btn").addEventListener("click", e => {
+        e.stopPropagation();
+        openContextMenu(item);
       });
       div.querySelector(".playlist-detail-remove").addEventListener("click", e => {
         e.stopPropagation();
@@ -3600,16 +3794,16 @@ function buildGenreGrid() {
               <div class="playlist-detail-track">${item.title}</div>
               <div class="playlist-detail-artist">${item.artist}${item.duration ? ` · <span style="color:var(--text-soft);font-size:.68rem">${item.duration}</span>` : ""}</div>
             </div>
-            <button class="card-more-btn" aria-label="Más opciones" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:transparent;border:none;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
+            <button class="library-action-more" aria-label="Más opciones" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:transparent;border:none;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:1">
+              <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
             </button>`;
           div.addEventListener("click", e => {
-            if (e.target.closest(".card-more-btn")) return;
+            if (e.target.closest(".library-action-more")) return;
             loadTrack(item, false, currentGenreTracks);
             listEl.querySelectorAll(".playlist-detail-item").forEach(r => r.classList.remove("playing"));
             div.classList.add("playing");
           });
-          div.querySelector(".card-more-btn").addEventListener("click", e => {
+          div.querySelector(".library-action-more").addEventListener("click", e => {
             e.stopPropagation();
             openContextMenu(item);
           });
@@ -3676,6 +3870,47 @@ searchInput.addEventListener("input", () => {
       return;
     }
     searchResults.innerHTML = "";
+
+    // ── Artist header card ──────────────────────────────────
+    const qLow = q.toLowerCase();
+    // Find if query matches a specific artist name
+    const artistMatch = [...new Set(results.map(r => r.artist.split(/[,&]/)[0].trim()))]
+      .find(name => name.toLowerCase().includes(qLow) || qLow.includes(name.toLowerCase()));
+    if (artistMatch) {
+      const artistTracks = results.filter(r => r.artist.toLowerCase().includes(artistMatch.toLowerCase()));
+      const artistPhoto = getArtistPhoto(artistMatch);
+      const coverSrc = artistPhoto || artistTracks[0]?.cover || getPlaceholderCover("music");
+      const placeholder = getPlaceholderCover("music");
+
+      const header = document.createElement("div");
+      header.className = "search-artist-header";
+      header.innerHTML = `
+        <div class="search-artist-photo-wrap">
+          <img class="search-artist-photo" src="${coverSrc}" alt="${artistMatch}">
+        </div>
+        <div class="search-artist-meta">
+          <span class="search-artist-label">Artista</span>
+          <h2 class="search-artist-name">${artistMatch}</h2>
+          <span class="search-artist-count">${artistTracks.length} canción${artistTracks.length !== 1 ? 'es' : ''}</span>
+        </div>`;
+
+      const img = header.querySelector(".search-artist-photo");
+      img.onerror = () => { img.onerror = null; fetchArtistPhotoFromWiki(artistMatch, img, placeholder); };
+      if (!artistPhoto) fetchArtistPhotoFromWiki(artistMatch, img, coverSrc);
+
+      header.addEventListener("click", () => {
+        if (artistTracks.length > 0) loadTrack(artistTracks[0], false, artistTracks);
+      });
+      searchResults.appendChild(header);
+
+      // Section label for tracks
+      const tracksLabel = document.createElement("p");
+      tracksLabel.className = "search-section-label";
+      tracksLabel.textContent = "Canciones";
+      searchResults.appendChild(tracksLabel);
+    }
+    // ────────────────────────────────────────────────────────
+
     results.forEach(item => {
       const cover = item.cover || getPlaceholderCover(item.category);
       const row = document.createElement("div");
@@ -3687,16 +3922,16 @@ searchInput.addEventListener("input", () => {
           <span class="search-result-artist">${item.artist}</span>
         </div>
         <div class="search-result-actions">
-          <button class="search-result-queue-btn" title="Añadir a cola">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button class="search-result-more-btn library-action-more" title="Más opciones" aria-label="Más opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
           </button>
         </div>
         <span class="search-result-cat">${item.category}</span>`;
       row.addEventListener("click", e => {
-        if (e.target.closest(".search-result-queue-btn")) return;
+        if (e.target.closest(".search-result-more-btn")) return;
         loadTrack(item); showPage("pageHome");
       });
-      row.querySelector(".search-result-queue-btn").addEventListener("click", e => { e.stopPropagation(); addToQueue(item); });
+      row.querySelector(".search-result-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       searchResults.appendChild(row);
     });
   }, 220);
@@ -3733,7 +3968,8 @@ function setupMediaSession(item) {
 
   // play — también actualiza la UI para que los iconos sean coherentes
   navigator.mediaSession.setActionHandler("play", () => {
-    const audio = window.audioEl || audioEl;
+    const audio = activeAudio;
+    if (!audio) return;
     audio.play()
       .then(() => { isPlaying = true; updatePlayIcons(true); })
       .catch(() => {});
@@ -3741,7 +3977,8 @@ function setupMediaSession(item) {
 
   // pause — también actualiza la UI
   navigator.mediaSession.setActionHandler("pause", () => {
-    const audio = window.audioEl || audioEl;
+    const audio = activeAudio;
+    if (!audio) return;
     audio.pause();
     isPlaying = false;
     updatePlayIcons(false);
@@ -3758,7 +3995,8 @@ function setupMediaSession(item) {
   // seekto — barra de progreso en pantalla bloqueada
   try {
     navigator.mediaSession.setActionHandler("seekto", ({ seekTime, fastSeek }) => {
-      const audio = window.audioEl || audioEl;
+      const audio = activeAudio;
+      if (!audio) return;
       const dur = audio.duration;
       if (!dur || !isFinite(dur)) return;
       const t = Math.max(0, Math.min(dur, seekTime));
@@ -3778,7 +4016,8 @@ function setupMediaSession(item) {
 function _updateMediaSessionPosition() {
   if (!("mediaSession" in navigator)) return;
   try {
-    const audio = window.audioEl || audioEl;
+    const audio = activeAudio;
+    if (!audio) return;
     const dur = audio.duration;
     const cur = audio.currentTime;
     if (!dur || !isFinite(dur) || dur <= 0) return;
@@ -3840,12 +4079,19 @@ function renderHomeScreen() {
       if (hccGlow) hccGlow.style.backgroundImage = `url(${cover})`;
       // Show progress if this is the current track
       const isCurrentTrack = playlist[currentTrackIdx]?.file === lastTrack.file;
-      if (isCurrentTrack && audioEl.duration) {
-        const pct = (audioEl.currentTime / audioEl.duration) * 100;
+      if (isCurrentTrack && activeAudio.duration) {
+        const pct = (activeAudio.currentTime / activeAudio.duration) * 100;
         if (hccFill) hccFill.style.width = pct + "%";
       }
       if (hccPlayBtn) {
-        hccPlayBtn.onclick = () => loadTrack(lastTrack);
+        hccPlayBtn.onclick = () => {
+          const currentFile = playlist[currentTrackIdx]?.file;
+          if (currentFile === lastTrack.file) {
+            togglePlay();
+          } else {
+            loadTrack(lastTrack);
+          }
+        };
       }
       continueSection.style.display = "";
     }
@@ -3919,14 +4165,25 @@ function renderHomeScreen() {
     if (displayArtists.length > 0) {
       artistsGrid.innerHTML = "";
       displayArtists.forEach(artist => {
-        const cover = artist.cover || getPlaceholderCover(artist.category);
+        const artistPhoto = getArtistPhoto(artist.name);
+        const cover = artistPhoto || artist.cover || getPlaceholderCover(artist.category);
+        const placeholder = getPlaceholderCover(artist.category);
         const card = document.createElement("div");
         card.className = "home-artist-card";
         card.innerHTML = `
           <div class="home-artist-img-wrap">
-            <img src="${cover}" alt="${artist.name}" onerror="this.src='${getPlaceholderCover(artist.category)}'">
+            <img src="${cover}" alt="${artist.name}">
           </div>
           <p class="home-artist-name">${artist.name.split(',')[0].trim()}</p>`;
+        const img = card.querySelector('img');
+        img.onerror = () => {
+          img.onerror = null; // Prevent loop
+          fetchArtistPhotoFromWiki(artist.name, img, placeholder);
+        };
+        // If no dedicated artist photo, proactively try Wikipedia
+        if (!artistPhoto) {
+          fetchArtistPhotoFromWiki(artist.name, img, cover);
+        }
         card.addEventListener("click", () => {
           // Navigate to search with artist name
           const si = document.getElementById("searchInput");
@@ -4006,8 +4263,9 @@ function renderHomeScreen() {
 function updateHomeContinueProgress() {
   const fill = document.getElementById("hccProgressFill");
   if (!fill) return;
-  if (audioEl.duration && isPlaying) {
-    fill.style.width = ((audioEl.currentTime / audioEl.duration) * 100) + "%";
+  const audio = activeAudio;
+  if (audio && audio.duration && isPlaying) {
+    fill.style.width = ((audio.currentTime / audio.duration) * 100) + "%";
   }
 }
 
@@ -4028,20 +4286,33 @@ function hapticFeedback(style) {
 
 /* ── Toggle play / pause ────────────────────────────── */
 function togglePlay() {
-  const audio = activeAudio || audioEl;
+  const audio = activeAudio;
   if (!audio) return;
+  // If no source loaded yet, do nothing
+  if (!audio.src && !audio.currentSrc) return;
   if (audio.paused) {
     audio.play()
-      .then(() => { isPlaying = true; updatePlayIcons(true); })
+      .then(() => {
+        isPlaying = true;
+        updatePlayIcons(true);
+        if ("mediaSession" in navigator) {
+          try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+        }
+      })
       .catch(err => {
         if (err.name === 'NotAllowedError') {
           window._droplyPendingTrack = true;
+        } else {
+          console.warn('[DROPLY] togglePlay error:', err);
         }
       });
   } else {
     audio.pause();
     isPlaying = false;
     updatePlayIcons(false);
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+    }
   }
 }
 
