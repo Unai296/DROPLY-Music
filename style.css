@@ -2283,3 +2283,154 @@ input { font-family: inherit; }
   .home-track-card  { width: 156px; }
   .home-track-cover { width: 156px; height: 156px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MIXES
+═══════════════════════════════════════════════════════════ */
+
+/* ── Página Mixes ── */
+.mixes-page-header { padding-bottom: .5rem; }
+
+.mixes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .9rem;
+  padding: .25rem 1.1rem calc(var(--bottomnav-h) + var(--miniplayer-h) + var(--safe-bottom) + 1.5rem);
+}
+@media (min-width: 480px) { .mixes-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 700px) { .mixes-grid { grid-template-columns: repeat(4, 1fr); gap: 1.1rem; } }
+@media (min-width: 1024px) {
+  .mixes-grid {
+    grid-template-columns: repeat(5, 1fr);
+    padding-left: 2.5rem; padding-right: 2.5rem;
+  }
+}
+
+/* ── Tarjeta Mix (grid) ── */
+.mix-card {
+  display: flex; flex-direction: column; gap: .5rem;
+  cursor: pointer;
+  transition: transform .18s ease, opacity .18s;
+  will-change: transform;
+}
+.mix-card:active { transform: scale(.95); opacity: .8; }
+
+.mix-card-cover {
+  position: relative;
+  width: 100%; aspect-ratio: 1/1;
+  border-radius: 14px; overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+.mix-card-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%; object-fit: cover; object-position: center;
+  display: block;
+  transition: transform .3s ease;
+}
+.mix-card:hover .mix-card-cover img { transform: scale(1.05); }
+
+.mix-card-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(150deg, transparent 35%, rgba(0,0,0,.5) 100%);
+  pointer-events: none;
+}
+
+.mix-card-badge {
+  position: absolute; top: .5rem; left: .5rem;
+  background: rgba(139,92,246,.85);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  color: #fff; font-size: .55rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: .18rem .42rem; border-radius: 99px;
+}
+
+.mix-card-play {
+  position: absolute; bottom: .55rem; right: .55rem;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(139,92,246,.55);
+  opacity: 0; transform: scale(.8) translateY(4px);
+  transition: opacity .18s, transform .18s;
+}
+.mix-card:hover .mix-card-play { opacity: 1; transform: scale(1) translateY(0); }
+.mix-card-play svg { margin-left: 2px; }
+
+.mix-card-name {
+  font-size: .84rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 0 .1rem;
+}
+.mix-card-meta {
+  font-size: .72rem; color: var(--text-dim);
+  margin-top: -.25rem; padding: 0 .1rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Tarjeta Mix en home (scroll horizontal, usa clases de home-pl) ── */
+.mix-home-card { cursor: pointer; transition: transform .18s, opacity .18s; }
+.mix-home-card:active { transform: scale(.95); opacity: .8; }
+
+.mix-home-badge {
+  position: absolute; top: .45rem; left: .45rem;
+  background: rgba(139,92,246,.85);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  color: #fff; font-size: .5rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: .15rem .38rem; border-radius: 99px;
+  pointer-events: none;
+}
+
+/* ── Mix Detail: portada cuadrada con imagen ── */
+.mix-detail-cover {
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,.55);
+  display: block; /* sobreescribe el grid 2x2 heredado de playlist-detail-cover */
+}
+
+.mix-detail-type-label {
+  background: linear-gradient(135deg, var(--accent), var(--accent-lt));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700; letter-spacing: .12em;
+}
+
+.mix-detail-desc {
+  font-size: .82rem; color: var(--text-dim);
+  text-align: center; max-width: 260px;
+  line-height: 1.5; margin: .1rem 0 .2rem;
+}
+
+/* ── Estado vacío ── */
+.mixes-empty {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: .75rem; padding: 3rem 1rem; text-align: center;
+  color: var(--text-dim);
+}
+.mixes-empty svg { opacity: .35; stroke: var(--text-dim); fill: none;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mixes-empty p { font-size: .9rem; }
+.mixes-empty span { font-size: .78rem; opacity: .7; }
+.mixes-empty code {
+  background: rgba(255,255,255,.07); padding: .1rem .35rem;
+  border-radius: 4px; font-family: monospace;
+}
+
+/* ── Animaciones de entrada ── */
+@keyframes _mixIn {
+  from { opacity:0; transform: translateY(10px) scale(.97); }
+  to   { opacity:1; transform: none; }
+}
+.mix-card { animation: _mixIn .32s ease both; }
+.mix-card:nth-child(1)  { animation-delay:.02s }
+.mix-card:nth-child(2)  { animation-delay:.06s }
+.mix-card:nth-child(3)  { animation-delay:.10s }
+.mix-card:nth-child(4)  { animation-delay:.13s }
+.mix-card:nth-child(5)  { animation-delay:.16s }
+.mix-card:nth-child(6)  { animation-delay:.19s }
+.mix-card:nth-child(7)  { animation-delay:.22s }
+.mix-card:nth-child(8)  { animation-delay:.25s }

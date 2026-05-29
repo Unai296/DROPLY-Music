@@ -2907,6 +2907,7 @@ function showPage(pageId) {
   if (pageId === "pageFavoritos") renderFavoritos();
   if (pageId === "pagePlaylists") renderPlaylists();
   if (pageId === "pageEventos")   EventosManager.render();
+  if (pageId === "pageMixes")     MixesManager.renderGrid();
   if (pageId === "pageDownloads") {
     if (typeof OfflineManager !== 'undefined') OfflineManager.renderDownloadsList();
     if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
@@ -6452,3 +6453,713 @@ if (document.readyState === 'loading') {
   // Small delay to ensure script.js has finished its init()
   setTimeout(bootPremium, 0);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DROPLY — MIXES
+   Colecciones curadas fijas. Para añadir canciones a un mix,
+   edita el array `tracks` de cada mix con objetos del array `media`.
+   
+   ┌─────────────────────────────────────────────────────────┐
+   │  Cómo añadir canciones a un mix:                        │
+   │  Copia el objeto del track desde media[] y pégalo       │
+   │  en el array tracks[] del mix correspondiente.          │
+   └─────────────────────────────────────────────────────────┘
+═══════════════════════════════════════════════════════════ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const MIXES = [
+  {
+    id: "reggaeton",
+    name: "Reggaeton Mix",
+    cover: "https://i1.sndcdn.com/artworks-iPQ42vfLz8sFRz1G-L6HOkA-t500x500.jpg",
+    desc: "Los mejores beats urbanos latinos",
+    tracks: [
+      {
+        type: "music",
+        title: "In Da Getto",
+        artist: "J. Balvin, Skrillex",
+        cover: "https://i.ytimg.com/vi/7aPzYlc2RY4/maxresdefault.jpg",
+        file: "./Music/indagetto.mp3",
+        category: "Reggaeton",
+        duration: "2:10"
+      },
+      {
+        type: "music",
+        title: "Enzaciao",
+        artist: "Clarent",
+        cover: "https://i.scdn.co/image/ab67616d0000b27386b1784848d2cc7ccd58e05e",
+        file: "./Music/enzaciao.mp3",
+        category: "Reggaeton",
+        duration: "2:05"
+      },
+      {
+        type: "music",
+        title: "Azukita",
+        artist: "Steve Aoki, Daddy Yankee, Play-N-Skillz & Elvis Crespo",
+        cover: "https://i.ytimg.com/vi/mGN3kfEk_P4/maxresdefault.jpg",
+        file: "./Music/azukita.mp3",
+        category: "Reggaeton",
+        duration: "3:46"
+      },
+      {
+        type: "music",
+        title: "Classy 101",
+        artist: "FEID, YOUNG MIKO",
+        cover: "https://m.media-amazon.com/images/I/61vTly9zD+L._UXNaN_FMjpg_QL85_.jpg",
+        file: "./Music/classy.mp3",
+        category: "Reggaeton",
+        duration: "3:15"
+      },
+      {
+        type: "music",
+        title: "BADGYAL",
+        artist: "SAIKO, JC Reyes, Dei V",
+        cover: "https://i1.sndcdn.com/artworks-by0H8XlmcCvzkf5u-6bxytg-t1080x1080.jpg",
+        file: "./Music/badgyal.mp3",
+        category: "Reggaeton",
+        duration: "4:14"
+      },
+      {
+  type: "music",
+  title: "La Gozadera",
+  artist: "Gente De Zona, Marc Anthony",
+  cover: "https://images.genius.com/cf43fd45336758c065537970f6a79f96.1000x1000x1.jpg",
+  file: "./Music/lagozadera.mp3",
+  category: "Reggaeton",
+  duration: "3:23"
+},
+{
+  type: "music",
+  title: "BAILE INoLVIDABLE",
+  artist: "BAD BUNNY",
+  cover: "https://i.scdn.co/image/ab67616d0000b273bbd45c8d36e0e045ef640411",
+  file: "./Music/baileinolvidable.mp3",
+  category: "Reggaeton",
+  duration: "6:18"
+},
+{
+  type: "music",
+  title: "Con Altura",
+  artist: "ROSALÍA, J Balvin, El Guincho",
+  cover: "https://images.genius.com/a8b0efd41e6a43091837da78850cf312.1000x1000x1.png",
+  file: "./Music/conaltura.mp3",
+  category: "Reggaeton",
+  duration: "2:44"
+},
+{
+  type: "music",
+  title: "La Bicicleta",
+  artist: "Carlos Vives, Shakira",
+  cover: "https://i.scdn.co/image/ab67616d0000b273e588b4129b0afd8595ac55b0",
+  file: "./Music/labicicleta.mp3",
+  category: "Reggaeton",
+  duration: "3:46"
+},
+{
+  type: "music",
+  title: "NUEVAYoL",
+  artist: "BAD BUNNY",
+  cover: "https://i.scdn.co/image/ab67616d0000b273bbd45c8d36e0e045ef640411",
+  file: "./Music/nuevayol.mp3",
+  category: "Reggaeton",
+  duration: "3:43"
+},
+{
+  type: "music",
+  title: "Danza Kuduro",
+  artist: "Don Omar, Lucenzo",
+  cover: "https://i.scdn.co/image/ab67616d0000b2737b31a1e4b17d0c4d9a00d357",
+  file: "./Music/danzakuduro.mp3",
+  category: "Reggaeton",
+  duration: "3:18"
+},
+
+
+
+
+{
+  type: "music", title: "YO y TÚ", artist: "Ovy On The Drums, Quevedo, Beéle",
+  cover: "https://media.motivafm.es/wp-content/uploads/2025/06/30103026/images.jpeg",
+  file: "./Music/yo_y_tú.mp3", category: "Reggaeton", duration: "3:18"
+},
+{
+  type: "music", title: "SHINY", artist: "EASYKID",
+  cover: "https://images.genius.com/1995e27f519734bc292c49e7f1fcf9c6.1000x1000x1.png",
+  file: "./Music/shiny.mp3", category: "Reggaeton", duration: "2:37"
+},
+{
+  type: "music", title: "Santa", artist: "Rvssian x Rauw Alejandro x Ayra Starr",
+  cover: "https://m.media-amazon.com/images/I/51Jn+yat4DL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/santa.mp3", category: "Reggaeton", duration: "3:13"
+},
+{
+  type: "music", title: "ADIVINO", artist: "Myke Towers, Bad Bunny",
+  cover: "https://cdn-images.dzcdn.net/images/cover/7d4bfd96b8744fc8ca9b475c81254418/0x1900-000000-80-0-0.jpg",
+  file: "./Music/adivino.mp3", category: "Reggaeton", duration: "4:38"
+},
+{
+  type: "music", title: "Ride Or Die Pt. 2", artist: "Sevdaliza, Tokischa, Villano Antillano",
+  cover: "https://m.media-amazon.com/images/I/513DswxlqbL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/ride_or_die_pt_2.mp3", category: "Reggaeton", duration: "2:39"
+},
+{
+  type: "music", title: "SI NO ES CONTIGO", artist: "Cris MJ",
+  cover: "https://cdn-images.dzcdn.net/images/cover/0bd32c8cb02372f394ca2b602bfaf2fe/0x1900-000000-80-0-0.jpg",
+  file: "./Music/si_no_es_contigo.mp3", category: "Reggaeton", duration: "2:38"
+},
+{
+  type: "music", title: "BELLAKEO", artist: "Peso Pluma, Anitta",
+  cover: "https://pics.filmaffinity.com/peso_pluma_anitta_bellakeo-952115569-mmed.jpg",
+  file: "./Music/bellakeo.mp3", category: "Reggaeton", duration: "3:18"
+},
+{
+  type: "music", title: "Yandel 150", artist: "Yandel, Feid",
+  cover: "https://m.media-amazon.com/images/I/51FqssjQaLL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/yandel150.mp3", category: "Reggaeton", duration: "3:36"
+},
+{
+  type: "music", title: "Clavaito", artist: "Chanel, Abraham Mateo",
+  cover: "https://images.genius.com/3a494e516ff0fce415ef807ab097ed32.1000x1000x1.jpg",
+  file: "./Music/clavaito.mp3", category: "Reggaeton", duration: "2:42"
+},
+{
+  type: "music", title: "Mon Amour (Remix)", artist: "Zzoilo, Aitana",
+  cover: "https://i.scdn.co/image/ab67616d0000b2730317d0bdead0b5050f0c2656",
+  file: "./Music/monamour.mp3", category: "Reggaeton", duration: "3:00"
+},
+{
+  type: "music", title: "LA INOCENTE", artist: "Mora, Feid",
+  cover: "https://images.genius.com/a4af721758b67745a66042a5dcf45c83.1000x1000x1.png",
+  file: "./Music/lainocente.mp3", category: "Reggaeton", duration: "3:20"
+},
+{
+  type: "music", title: "A Solas (Remix)", artist: "Lunay, Lyanno, Anuel AA, Brytiago, Alex Rose",
+  cover: "https://i.scdn.co/image/ab67616d0000b273fddcbb546dd3440b1897c4c7",
+  file: "./Music/asolasremix.mp3", category: "Reggaeton", duration: "4:33"
+},
+{
+  type: "music", title: "Luna", artist: "Feid, ATL Jacob",
+  cover: "https://media.motivafm.es/wp-content/uploads/2023/12/14111441/a6817a29955bc26af0ed704b2e705bee.1000x1000x1.png",
+  file: "./Music/luna.mp3", category: "Reggaeton", duration: "3:16"
+},
+{
+  type: "music", title: "Columbia", artist: "Quevedo",
+  cover: "https://m.media-amazon.com/images/I/417eQyJPmHL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/columbia.mp3", category: "Reggaeton", duration: "3:25"
+},
+{
+  type: "music", title: "DEGENERE", artist: "Myke Towers & benny blanco",
+  cover: "https://i1.sndcdn.com/artworks-GH2OElzFEMUrAg9L-mWrQzw-t500x500.png",
+  file: "./Music/degenere.mp3", category: "Reggaeton", duration: "2:12"
+},
+{
+  type: "music", title: "Desesperados", artist: "Rauw Alejandro, Chencho Corleone",
+  cover: "https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Rauw_Alejandro%2C_Chencho_Corleone_-_Desesperados.jpeg/250px-Rauw_Alejandro%2C_Chencho_Corleone_-_Desesperados.jpeg",
+  file: "./Music/desesperados.mp3", category: "Reggaeton", duration: "3:45"
+},
+{
+  type: "music", title: "CABELO LOIRINHO", artist: "KEVIN DO RECIFE, MC MORENA, THIAGUINHO DO RECIFE",
+  cover: "https://images.genius.com/da50480499543acea79f42969b3225d7.640x640x1.jpg",
+  file: "./Music/cabelolorinho.mp3", category: "Reggaeton", duration: "3:20"
+},
+{
+  type: "music", title: "Punto G", artist: "Quevedo",
+  cover: "https://m.media-amazon.com/images/I/41uLLdflAIL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/puntog.mp3", category: "Reggaeton", duration: "2:35"
+},
+{
+  type: "music", title: "LALA", artist: "Myke Towers",
+  cover: "https://i1.sndcdn.com/artworks-fMPBciEwqIpuMI49-Cfk5Dg-t500x500.jpg",
+  file: "./Music/lala.mp3", category: "Reggaeton", duration: "3:17"
+},
+{
+  type: "music", title: "SEYA", artist: "Morad, GIMS, Sativa Music",
+  cover: "https://m.media-amazon.com/images/I/41Wz9YI5AnL._UXNaN_FMjpg_QL85_.jpg",
+  file: "./Music/seya.mp3", category: "Reggaeton", duration: "3:06"
+},
+{
+  type: "music", title: "LOS DEL ESPACIO", artist: "LIT killah, Tiago PZK, Maria Becerra, Duki, Emilia, Big One, FMK",
+  cover: "https://fotografias.flooxernow.com/clipping/cmsimages01/2023/06/02/82B9AC5F-DA27-4258-B928-FDD97CAB556D/espacio_103.jpg",
+  file: "./Music/losdelespacio.mp3", category: "Reggaeton", duration: "5:38"
+},
+{
+  type: "music", title: "Diosa", artist: "Myke Towers",
+  cover: "https://images.genius.com/83f8d7b3e75f152bbc6889c11a9348bd.1000x1000x1.png",
+  file: "./Music/diosa.mp3", category: "Reggaeton", duration: "3:35"
+},
+{
+  type: "music", title: "El Efecto", artist: "Rauw Alejandro, Chencho Corleone",
+  cover: "https://upload.wikimedia.org/wikipedia/en/0/02/Rauw_Alejandro%2C_Chencho_Corleone_-_El_Efecto.jpeg",
+  file: "./Music/elefecto.mp3", category: "Reggaeton", duration: "3:27"
+},
+{
+  type: "music", title: "SUPERESTRELLA", artist: "Aitana",
+  cover: "https://ih1.redbubble.net/image.6030595463.8549/fposter,small,wall_texture,square_product,600x600.jpg",
+  file: "./Music/superestrella.mp3", category: "Reggaeton", duration: "3:03"
+},
+{
+  type: "music", title: "LA GRACIOSA", artist: "Quevedo, Elvis Crespo",
+  cover: "https://images.genius.com/a90f642ebbf88596e4b9773614cab132.1000x1000x1.png",
+  file: "./Music/lagraciosa.mp3", category: "Reggaeton", duration: "4:17"
+},
+{
+  type: "music", title: "AL GOLPITO", artist: "Quevedo, Nueva Línea",
+  cover: "https://images.genius.com/a90f642ebbf88596e4b9773614cab132.1000x1000x1.png",
+  file: "./Music/algolpito.mp3", category: "Reggaeton", duration: "3:27"
+},
+{
+  type: "music", title: "NI BORRACHO", artist: "Quevedo",
+  cover: "https://i1.sndcdn.com/artworks-vuqTqo6xOIKR-0-t500x500.jpg",
+  file: "./Music/niborracho.mp3", category: "Reggaeton", duration: "4:08"
+}
+    ]
+  },
+
+  {
+    id: "electronic",
+    name: "Electronic Mix",
+    cover: "https://i.scdn.co/image/ab67616d0000b273b52ed3e88f7589434cc19a51",
+    desc: "Energía electrónica sin parar",
+    tracks: [
+      {
+        type: "music",
+        title: "I'm Good (Blue)",
+        artist: "David Guetta, Bebe Rexha",
+        cover: "https://m.media-amazon.com/images/I/51R8fS3ESYL._UXNaN_FMjpg_QL85_.jpg",
+        file: "./Music/imgood.mp3",
+        category: "Electronic",
+        duration: "2:57"
+      },
+      {
+        type: "music",
+        title: "FADE",
+        artist: "Alesso, Pendulum",
+        cover: "https://i.scdn.co/image/ab67616d0000b273dcbb69d4be6c29c0be851f32",
+        file: "./Music/fade.mp3",
+        category: "Electronic",
+        duration: "3:03"
+      },
+      {
+        type: "music",
+        title: "Atlantis",
+        artist: "Netherworld",
+        cover: "https://m.media-amazon.com/images/I/51R59lHZtYL._UXNaN_FMjpg_QL85_.jpg",
+        file: "./Music/atlantis.mp3",
+        category: "Electronic",
+        duration: "2:26"
+      },
+      {
+        type: "music",
+        title: "Ecuador",
+        artist: "SASH",
+        cover: "https://m.media-amazon.com/images/I/71Vx2arL6vL._UF894,1000_QL80_.jpg",
+        file: "./Music/ecuador.mp3",
+        category: "Electronic",
+        duration: "5:25"
+      },
+
+      {
+  type: "music",
+  title: "DAVID GUETTA MASHUP",
+  artist: "David Guetta",
+  cover: "https://i.ytimg.com/vi/UhBfoDqaOhk/maxresdefault.jpg",
+  file: "./Music/davidguettamashup.mp3",
+  category: "Electronic",
+  duration: "2:42"
+},
+{
+  type: "music",
+  title: "BLA BLA BLA",
+  artist: "GIGI D'AGOSTINO",
+  cover: "https://m.media-amazon.com/images/I/61Le1BprXyS._UF894,1000_QL80_.jpg",
+  file: "./Music/bla_bla_bla.mp3",
+  category: "Electronic",
+  duration: "3:11"
+},
+
+
+
+{ type:"music", title:"Blah Blah Blah", artist:"Armin van Buuren", cover:"https://cdn-images.dzcdn.net/images/cover/9da9fd102b5ecbaece028b725d9da59c/1900x1900-000000-80-0-0.jpg", file:"./Music/blahblahblah.mp3", category:"Electronic", duration:"3:13" },
+{ type:"music", title:"Turn It Up", artist:"Armin van Buuren", cover:"https://i.scdn.co/image/ab67616d0000b273adb479942159dea093c86fa5", file:"./Music/turnitup.mp3", category:"Electronic", duration:"3:03" },
+{ type:"music", title:"Animals", artist:"Martin Garrix", cover:"https://i.scdn.co/image/ab67616d0000b273c4a03dba6c420bda982b3f62", file:"./Music/animals.mp3", category:"Electronic", duration:"3:06" },
+{ type:"music", title:"Titanium (Live Edit)", artist:"Sia, David Guetta, MORTEN", cover:"https://cdn-images.dzcdn.net/images/cover/b1da2dd795492946f90722f6fa871adb/0x1900-000000-80-0-0.jpg", file:"./Music/titanium(liveedit).mp3", category:"Electronic", duration:"3:16" },
+{ type:"music", title:"Outside", artist:"Calvin Harris, Ellie Goulding", cover:"https://www.alexurbanpop.com/wp-content/uploads/2014/11/Calvin-Harris-ft.-Ellie-Goulding-Outside.jpg", file:"./Music/outside.mp3", category:"Electronic", duration:"3:45" },
+{ type:"music", title:"Bad", artist:"David Guetta, Showtek, Vassy", cover:"https://i1.sndcdn.com/artworks-000100525488-ou5n5t-t500x500.jpg", file:"./Music/bad.mp3", category:"Electronic", duration:"2:50" },
+{ type:"music", title:"Jamaican (Bam Bam)", artist:"HUGEL, SOLTO", cover:"https://m.media-amazon.com/images/I/51kkslWHRkL._UXNaN_FMjpg_QL85_.jpg", file:"./Music/jamaicanbambam.mp3", category:"Electronic", duration:"4:45" },
+{ type:"music", title:"Move Your Body", artist:"Dimitri Vegas, Like Mike, Timmy Trumpet, Sub Zero Project", cover:"https://i1.sndcdn.com/artworks-hyUDQ5WzQFmetzAy-hYHSwA-t500x500.jpg", file:"./Music/moveyourbodytimmyytumpet.mp3", category:"Electronic", duration:"2:50" },
+{ type:"music", title:"Thank You (Not So Bad)", artist:"Dimitri Vegas, Like Mike, Tiësto, Dido, W&W", cover:"https://i1.sndcdn.com/artworks-SzvymHnuSjCZ20aN-zjjm3Q-t500x500.jpg", file:"./Music/thankyounotsobad.mp3", category:"Electronic", duration:"2:19" },
+{ type:"music", title:"The Spectre", artist:"Alan Walker", cover:"https://i1.sndcdn.com/artworks-000375722355-fxlohc-t500x500.jpg", file:"./Music/thespectre.mp3", category:"Electronic", duration:"3:26" }
+
+
+
+    ]
+  },
+
+  {
+    id: "remember",
+    name: "Remember Mix",
+    cover: "https://cdn-images.dzcdn.net/images/cover/71bfabf85b2ad87eb8f3ac595a1555ac/0x1900-000000-80-0-0.jpg",
+    desc: "Los clásicos de los 90s y 2000s",
+    tracks: [
+      {
+        type: "music",
+        title: "Désenchantée",
+        artist: "Kate Ryan",
+        cover: "https://i.scdn.co/image/ab67616d00001e02b8faab714250452ae5ea2122",
+        file: "./Music/desenchante.mp3",
+        category: "90s",
+        duration: "3:40"
+      },
+      {
+        type: "music",
+        title: "Freed from desire",
+        artist: "GALA",
+        cover: "https://cdn-images.dzcdn.net/images/cover/ba8311a74318c401fb64d7594018f44d/0x1900-000000-80-0-0.jpg",
+        file: "./Music/frefromdesier.mp3",
+        category: "90s",
+        duration: "3:35"
+      },
+      {
+  type: "music",
+  title: "Gimme! Gimme! Gimme!",
+  artist: "ABBA",
+  cover: "https://upload.wikimedia.org/wikipedia/en/a/a5/ABBA_-_Gimme%21_Gimme%21_Gimme%21_%28A_Man_After_Midnight%29.png",
+  file: "./Music/gimme.mp3",
+  category: "90s",
+  duration: "3:16"
+},
+{
+  type: "music",
+  title: "What Is Love",
+  artist: "Haddaway",
+  cover: "https://upload.wikimedia.org/wikipedia/en/a/a8/HaddawayWhatIsLoveMaxiCDCover.jpg",
+  file: "./Music/whatislove.mp3",
+  category: "90s",
+  duration: "4:00"
+},
+
+
+
+{ type:"music", title:"L'Amour Toujours", artist:"Gigi D'Agostino", cover:"https://m.media-amazon.com/images/I/71a-IQRpEYL._UF894,1000_QL80_.jpg", file:"./Music/l_amour_toujours.mp3", category:"90s", duration:"4:01" },
+{ type:"music", title:"The Riddle", artist:"Gigi D'Agostino", cover:"https://i.scdn.co/image/ab67616d0000b273d8f8af4309c24d540b6f9128", file:"./Music/the_riddle.mp3", category:"90s", duration:"3:24" },
+{ type:"music", title:"Another Way", artist:"Gigi D'Agostino", cover:"https://shop.blancoynegro.com/4924-large_default/gigi-d-agostino-another-way-marble-vinyl.jpg", file:"./Music/another_way.mp3", category:"90s", duration:"6:03" }
+
+
+    ]
+  },
+
+  {
+    id: "dancepop",
+    name: "Dance-Pop Mix",
+    cover: "https://i.scdn.co/image/ab67616d0000b2738ecb7d515346d2635105e7c4",
+    desc: "Pop que te mueve los pies",
+    tracks: [
+      {
+        type: "music",
+        title: "International Love",
+        artist: "Pitbull, Chris Brown",
+        cover: "https://i.ytimg.com/vi/OLqaMYc9LFE/maxresdefault.jpg",
+        file: "./Music/internationallove.mp3",
+        category: "Dance-Pop",
+        duration: "4:08"
+      },
+      {
+        type: "music",
+        title: "Give Me Everything",
+        artist: "Pitbull, Ne-Yo, Afrojack, Nayer",
+        cover: "https://i1.sndcdn.com/artworks-haGUy7OWdKcoRgMH-Zglw6A-t1080x1080.jpg",
+        file: "./Music/givemeeverything.mp3",
+        category: "Dance-Pop",
+        duration: "4:26"
+      },
+      {
+        type: "music",
+        title: "On The Floor",
+        artist: "Jennifer Lopez, Pitbull",
+        cover: "https://i.scdn.co/image/ab67616d0000b2735c7fdd07d99c156401073aaa",
+        file: "./Music/onthefloor.mp3",
+        category: "Dance-Pop",
+        duration: "4:26"
+      },
+
+    ]
+  },
+
+ 
+];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   MixesManager — lógica interna (no tocar)
+═══════════════════════════════════════════════════════════ */
+const MixesManager = (function() {
+
+  /* Placeholder SVG con gradiente si no hay portada */
+  function _placeholder(name) {
+    const palettes = [
+      ["#8b5cf6","#6366f1"],["#ec4899","#8b5cf6"],["#3b82f6","#8b5cf6"],
+      ["#f59e0b","#ef4444"],["#10b981","#3b82f6"],["#7c3aed","#ec4899"],
+      ["#06b6d4","#6366f1"],
+    ];
+    const i = name.split("").reduce((a,c)=>a+c.charCodeAt(0),0) % palettes.length;
+    const [c1,c2] = palettes[i];
+    const initials = name.replace(/Mix$/i,"").trim().slice(0,2).toUpperCase();
+    return `data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+        <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/>
+        </linearGradient></defs>
+        <rect width="200" height="200" fill="url(#g)" rx="0"/>
+        <text x="100" y="118" font-family="system-ui,sans-serif" font-size="62"
+          font-weight="700" fill="rgba(255,255,255,.92)" text-anchor="middle">${initials}</text>
+      </svg>`
+    )}`;
+  }
+
+  /* Calcular duración total legible */
+  function _duration(tracks) {
+    let s = 0;
+    tracks.forEach(t => {
+      if (!t.duration) return;
+      const p = String(t.duration).split(":").map(Number);
+      s += p.length===2 ? p[0]*60+p[1] : p[0];
+    });
+    const m = Math.floor(s/60);
+    return m < 60 ? `${m} min` : `${Math.floor(m/60)}h ${m%60}min`;
+  }
+
+  /* Sólo mostrar mixes que tengan al menos 1 track */
+  function _visible() {
+    return MIXES.filter(m => m.tracks && m.tracks.length > 0);
+  }
+
+  /* ── Tarjeta para el grid de pageMixes ── */
+  function _makeCard(mix) {
+    const fb  = _placeholder(mix.name);
+    const src = mix.cover || fb;
+    const dur = _duration(mix.tracks);
+
+    const card = document.createElement("div");
+    card.className = "mix-card";
+
+    card.innerHTML = `
+      <div class="mix-card-cover">
+        <img src="${src}" alt="${mix.name}" onerror="this.src='${fb}'" loading="lazy"/>
+        <div class="mix-card-overlay"></div>
+        <span class="mix-card-badge">MIX</span>
+        <button class="mix-card-play" aria-label="Reproducir">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </button>
+      </div>
+      <div class="mix-card-name">${mix.name}</div>
+      <div class="mix-card-meta">${mix.tracks.length} canciones · ${dur}</div>
+    `;
+
+    card.querySelector(".mix-card-play").addEventListener("click", e => {
+      e.stopPropagation();
+      _play(mix, false);
+    });
+    card.addEventListener("click", () => openMixDetail(mix));
+    return card;
+  }
+
+  /* ── Tarjeta compacta para el home ── */
+  function _makeHomeCard(mix) {
+    const fb  = _placeholder(mix.name);
+    const src = mix.cover || fb;
+
+    const card = document.createElement("div");
+    card.className = "home-pl-card mix-home-card";
+
+    card.innerHTML = `
+      <div class="home-pl-cover-wrap" style="position:relative">
+        <img class="home-pl-cover" src="${src}" alt="${mix.name}" onerror="this.src='${fb}'" loading="lazy"/>
+        <span class="mix-home-badge">MIX</span>
+      </div>
+      <div class="home-pl-name">${mix.name}</div>
+      <div class="home-pl-count">${mix.tracks.length} canciones</div>
+    `;
+    card.addEventListener("click", () => openMixDetail(mix));
+    return card;
+  }
+
+  /* ── Reproducir mix (con shuffle opcional) ── */
+  function _play(mix, shuffle) {
+    if (!mix.tracks.length) return;
+    let list = [...mix.tracks];
+    if (shuffle) list = list.sort(()=>Math.random()-.5);
+    if (typeof loadTrack === "function") loadTrack(list[0], false, list);
+  }
+
+  /* ── Abrir detalle ── */
+  function openMixDetail(mix) {
+    const modal = document.getElementById("mixDetailModal");
+    if (!modal) return;
+
+    const fb  = _placeholder(mix.name);
+    const src = mix.cover || fb;
+    const dur = _duration(mix.tracks);
+
+    // Blurred BG
+    const bg = document.getElementById("mixDetailBg");
+    if (bg) bg.style.backgroundImage = `url('${src}')`;
+
+    // Top title
+    document.getElementById("mixDetailTopTitle").textContent = mix.name;
+
+    // Cover
+    const coverEl = document.getElementById("mixDetailCover");
+    coverEl.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = mix.name;
+    img.onerror = () => { img.src = fb; };
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+    coverEl.appendChild(img);
+
+    // Meta
+    document.getElementById("mixDetailName").textContent  = mix.name;
+    document.getElementById("mixDetailDesc").textContent  = mix.desc || "";
+    document.getElementById("mixDetailCount").textContent =
+      `${mix.tracks.length} canciones · ${dur}`;
+
+    // Track list
+    const list = document.getElementById("mixDetailList");
+    list.innerHTML = "";
+    mix.tracks.forEach((track, idx) => {
+      const row = document.createElement("div");
+      row.className = "playlist-detail-item";
+
+      const coverFb = track.cover || "";
+      row.innerHTML = `
+        <span class="playlist-detail-num">${idx+1}</span>
+        <img class="playlist-detail-thumb" src="${coverFb}" alt="${track.title}" loading="lazy"
+             onerror="this.style.opacity='.3'"/>
+        <div class="playlist-detail-info">
+          <div class="playlist-detail-track">${track.title}</div>
+          <div class="playlist-detail-artist">${track.artist||""}</div>
+        </div>
+        <span class="playlist-detail-dur">${track.duration||""}</span>
+      `;
+
+      row.addEventListener("click", () => {
+        if (typeof loadTrack === "function") loadTrack(track, false, mix.tracks);
+      });
+      row.addEventListener("contextmenu", e => {
+        e.preventDefault();
+        if (typeof openContextMenu === "function") openContextMenu(track);
+      });
+      list.appendChild(row);
+    });
+
+    // Buttons
+    document.getElementById("btnPlayMix").onclick    = () => _play(mix, false);
+    document.getElementById("btnShuffleMix").onclick = () => _play(mix, true);
+
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  /* ── Cerrar detalle ── */
+  function closeMixDetail() {
+    const modal = document.getElementById("mixDetailModal");
+    if (modal) modal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  /* ── Render grid pageMixes ── */
+  function renderGrid() {
+    const grid = document.getElementById("mixesGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    const visible = _visible();
+    if (!visible.length) {
+      grid.innerHTML = `
+        <div class="mixes-empty">
+          <svg viewBox="0 0 24 24" width="40" height="40"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <p>Todavía no hay canciones en ningún mix.</p>
+          <span>Añade tracks a los mixes en el archivo <code>script.js</code></span>
+        </div>`;
+      return;
+    }
+    visible.forEach(mix => grid.appendChild(_makeCard(mix)));
+  }
+
+  /* ── Render home row ── */
+  function renderHome() {
+    const row = document.getElementById("homeMixesRow");
+    if (!row) return;
+    row.innerHTML = "";
+    const visible = _visible();
+    const section = document.getElementById("homeMixesSection");
+    if (!visible.length) {
+      if (section) section.style.display = "none";
+      return;
+    }
+    if (section) section.style.display = "";
+    visible.forEach(mix => row.appendChild(_makeHomeCard(mix)));
+  }
+
+  /* ── Init ── */
+  function init() {
+    const closeBtn = document.getElementById("mixDetailClose");
+    if (closeBtn) closeBtn.addEventListener("click", closeMixDetail);
+    renderHome();
+  }
+
+  return { init, renderGrid, renderHome, openMixDetail };
+})();
+
+/* Boot */
+(function(){
+  function _boot(){ MixesManager.init(); }
+  if (document.readyState==="loading") document.addEventListener("DOMContentLoaded",_boot);
+  else setTimeout(_boot, 60);
+})();
