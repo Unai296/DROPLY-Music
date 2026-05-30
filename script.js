@@ -2986,6 +2986,9 @@ const ctxSheetAddPlaylist= document.getElementById("ctxSheetAddPlaylist");
 const ctxSheetLike    = document.getElementById("ctxSheetLike");
 const ctxSheetLikeIcon = document.getElementById("ctxSheetLikeIcon");
 const ctxSheetLikeLabel= document.getElementById("ctxSheetLikeLabel");
+const ctxSheetOffline  = document.getElementById("ctxSheetOffline");
+const ctxSheetOfflineIcon  = document.getElementById("ctxSheetOfflineIcon");
+const ctxSheetOfflineLabel = document.getElementById("ctxSheetOfflineLabel");
 const ctxSheetCancel  = document.getElementById("ctxSheetCancel");
 
 // Touch-drag-to-dismiss state
@@ -3007,6 +3010,13 @@ function openContextMenu(item) {
   // Like state
   _updateCtxLikeState(liked);
 
+  // Offline state — check async and update button
+  _updateCtxOfflineState(false); // reset first
+  if (typeof OfflineManager !== 'undefined' && ctxSheetOffline) {
+    const isAlreadyDownloaded = OfflineManager.isDownloaded(item.file);
+    _updateCtxOfflineState(isAlreadyDownloaded);
+  }
+
   // Open
   ctxSheet.classList.add("open");
   ctxSheetOverlay.classList.add("open");
@@ -3015,6 +3025,19 @@ function openContextMenu(item) {
   // Reset drag
   ctxSheet.style.transform = "";
   ctxSheet.style.transition = "";
+}
+
+function _updateCtxOfflineState(isDownloaded) {
+  if (!ctxSheetOffline) return;
+  ctxSheetOffline.classList.toggle("downloaded", isDownloaded);
+  if (ctxSheetOfflineLabel) {
+    ctxSheetOfflineLabel.textContent = isDownloaded ? "Eliminar descarga" : "Guardar sin conexión";
+  }
+  if (ctxSheetOfflineIcon) {
+    ctxSheetOfflineIcon.innerHTML = isDownloaded
+      ? `<svg viewBox="0 0 24 24" width="20" height="20" style="color:var(--green)"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+  }
 }
 
 function _updateCtxLikeState(liked) {
@@ -3086,6 +3109,22 @@ ctxSheetLike.addEventListener("click", () => {
     setTimeout(closeContextMenu, 280);
   }
 });
+
+if (ctxSheetOffline) {
+  ctxSheetOffline.addEventListener("click", async () => {
+    if (!contextTarget || typeof OfflineManager === 'undefined') return;
+    const isDownloaded = OfflineManager.isDownloaded(contextTarget.file);
+    if (isDownloaded) {
+      await OfflineManager.deleteDownload(contextTarget.file);
+      if (typeof showToast === 'function') showToast('Descarga eliminada');
+    } else {
+      closeContextMenu();
+      await OfflineManager.downloadTrack(contextTarget);
+      return;
+    }
+    closeContextMenu();
+  });
+}
 
 /* ══════════════════════════════════════════════════════
    8. HOME GRID
@@ -3235,16 +3274,22 @@ const activeAudio = audioEl;   // mainAudio del DOM — único elemento
 window.audioEl = activeAudio;
 
 /* ── Audio events ────────────────────────────────────── */
+let _rafPending = false;
 activeAudio.addEventListener("timeupdate", function () {
-  const dur = this.duration, cur = this.currentTime;
-  if (!dur || isNaN(dur) || !isFinite(dur) || dur <= 0) return;
-  const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
-  sheetFill.style.width        = pct + "%";
-  sheetThumb.style.left        = pct + "%";
-  sheetCurrent.textContent     = formatTime(cur);
-  sheetDuration.textContent    = formatTime(dur);
-  miniProgressFill.style.width = pct + "%";
-  _updateMediaSessionPosition();
+  if (_rafPending) return;
+  _rafPending = true;
+  requestAnimationFrame(() => {
+    _rafPending = false;
+    const dur = activeAudio.duration, cur = activeAudio.currentTime;
+    if (!dur || isNaN(dur) || !isFinite(dur) || dur <= 0) return;
+    const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
+    sheetFill.style.width        = pct + "%";
+    sheetThumb.style.left        = pct + "%";
+    sheetCurrent.textContent     = formatTime(cur);
+    sheetDuration.textContent    = formatTime(dur);
+    miniProgressFill.style.width = pct + "%";
+    _updateMediaSessionPosition();
+  });
 }, { passive: true });
 
 activeAudio.addEventListener("ended", function () {
@@ -3370,34 +3415,46 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   /* -- Audio: hard switch limpio -- */
   const myToken = ++_playToken;
 
-  // Pausar primero para cancelar cualquier play() en vuelo
-  activeAudio.pause();
-  activeAudio.src = item._offlineSrc || item.file;
-  activeAudio.currentTime = 0;
-  activeAudio.volume = 1;
-
   // Reset UI a estado "cargando"
   sheetFill.style.width        = "0%";
   sheetThumb.style.left        = "0%";
   sheetCurrent.textContent     = "0:00";
   miniProgressFill.style.width = "0%";
 
-  activeAudio.play()
-    .then(() => {
-      if (myToken !== _playToken) return;  // superseded por otro loadTrack
-      isPlaying = true;
-      updatePlayIcons(true);
-    })
-    .catch(err => {
-      if (myToken !== _playToken) return;
-      isPlaying = false;
-      updatePlayIcons(false);
-      if (err.name === "NotAllowedError") {
-        window._droplyPendingTrack = true;
-      } else if (err.name !== "AbortError") {
-        console.warn("[DROPLY] play error:", err);
-      }
-    });
+  // Pausar antes de cambiar src
+  activeAudio.pause();
+
+  // Si la canción está descargada offline, usar el blob de IndexedDB
+  function _doPlay(audioSrc) {
+    if (myToken !== _playToken) return;
+    activeAudio.src = audioSrc;
+    activeAudio.currentTime = 0;
+    activeAudio.volume = 1;
+    activeAudio.play()
+      .then(() => {
+        if (myToken !== _playToken) return;
+        isPlaying = true;
+        updatePlayIcons(true);
+      })
+      .catch(err => {
+        if (myToken !== _playToken) return;
+        isPlaying = false;
+        updatePlayIcons(false);
+        if (err.name === "NotAllowedError") {
+          window._droplyPendingTrack = true;
+        } else if (err.name !== "AbortError") {
+          console.warn("[DROPLY] play error:", err);
+        }
+      });
+  }
+
+  if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
+    OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
+      _doPlay(blobUrl || item.file);
+    }).catch(() => _doPlay(item.file));
+  } else {
+    _doPlay(item.file);
+  }
 }
 
 
@@ -4190,12 +4247,12 @@ function renderHomeScreen() {
           <div class="home-track-play-overlay">
             <svg viewBox="0 0 24 24" fill="white" stroke="none" width="18" height="18"><polygon points="5,3 19,12 5,21"/></svg>
           </div>
+          <button class="home-track-more-btn" aria-label="Más opciones">
+            <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
+          </button>
         </div>
         <p class="home-track-title">${item.title}</p>
-        <p class="home-track-artist">${item.artist}</p>
-        <button class="home-track-more-btn" aria-label="Más opciones">
-          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
-        </button>`;
+        <p class="home-track-artist">${item.artist}</p>`;
       card.addEventListener("click", e => { if (!e.target.closest(".home-track-more-btn")) loadTrack(item); });
       card.querySelector(".home-track-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       recentGrid.appendChild(card);
@@ -4269,12 +4326,12 @@ function renderHomeScreen() {
           <div class="home-track-play-overlay">
             <svg viewBox="0 0 24 24" fill="white" stroke="none" width="18" height="18"><polygon points="5,3 19,12 5,21"/></svg>
           </div>
+          <button class="home-track-more-btn" aria-label="Más opciones">
+            <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
+          </button>
         </div>
         <p class="home-track-title">${item.title}</p>
-        <p class="home-track-artist">${item.artist}</p>
-        <button class="home-track-more-btn" aria-label="Más opciones">
-          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
-        </button>`;
+        <p class="home-track-artist">${item.artist}</p>`;
       card.addEventListener("click", e => { if (!e.target.closest(".home-track-more-btn")) loadTrack(item, false, allMusic); });
       card.querySelector(".home-track-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       featuredGrid.appendChild(card);
@@ -4322,13 +4379,19 @@ function renderHomeScreen() {
 }
 
 /* ── Update continue card progress while playing ── */
+let _hccRafPending = false;
 function updateHomeContinueProgress() {
-  const fill = document.getElementById("hccProgressFill");
-  if (!fill) return;
-  const audio = activeAudio;
-  if (audio && audio.duration && isPlaying) {
-    fill.style.width = ((audio.currentTime / audio.duration) * 100) + "%";
-  }
+  if (_hccRafPending) return;
+  _hccRafPending = true;
+  requestAnimationFrame(() => {
+    _hccRafPending = false;
+    const fill = document.getElementById("hccProgressFill");
+    if (!fill) return;
+    const audio = activeAudio;
+    if (audio && audio.duration && isPlaying) {
+      fill.style.width = ((audio.currentTime / audio.duration) * 100) + "%";
+    }
+  });
 }
 
 /* ══════════════════════════════════════════════════════
@@ -5029,7 +5092,7 @@ const CarMode = (() => {
   }
 
   return {
-    activate, deactivate, toggle, active: () => active,
+    activate, deactivate, toggle, active: () => active, isActive: () => active,
     syncToPlayer: syncCarModeToPlayer,
     updatePlayState: updateCarPlayState,
     updateProgress: updateCarProgress,
@@ -5770,7 +5833,12 @@ function patchExistingFunctions() {
   /* ── Hook audio timeupdate for car mode progress ── */
   const audio = typeof audioEl !== 'undefined' ? audioEl : null;
   if (audio) {
-    audio.addEventListener('timeupdate', () => CarMode.updateProgress(), { passive: true });
+    let _carRafPending = false;
+    audio.addEventListener('timeupdate', () => {
+      if (!CarMode.isActive() || _carRafPending) return;
+      _carRafPending = true;
+      requestAnimationFrame(() => { _carRafPending = false; CarMode.updateProgress(); });
+    }, { passive: true });
     audio.addEventListener('play',   () => { CarMode.updatePlayState(); }, { passive: true });
     audio.addEventListener('pause',  () => { CarMode.updatePlayState(); }, { passive: true });
   }
