@@ -2503,27 +2503,6 @@ const media = [
     category: "Reggaeton",
     duration: "2:46"
   },
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "LA GRACIOSA",
@@ -2533,22 +2512,6 @@ const media = [
     category: "Reggaeton",
     duration: "4:17"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "AL GOLPITO",
@@ -2558,23 +2521,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:27"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "NI BORRACHO",
@@ -2596,6 +2542,46 @@ const media = [
 
 
 
+                {
+    type:     "music",
+    title:    "Volcans",
+    artist:   "Buhos",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/2d11d4afcd2651434b321536d53ce0c1/1900x1900-000000-80-0-0.jpg",
+    file:     "./Music/volcans.mp3",
+    category: "Catalanes",
+    duration: "3:45"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Caminem Lluny",
+    artist:   "Doctor Prats",
+    cover:    "https://www.viasona.cat/imatges/discos/doctor-prats-caminem-lluny-portada.jpg",
+    file:     "./Music/caminemlluny.mp3",
+    category: "Catalanes",
+    duration: "4:00"
+  },
 
 
 
@@ -2623,6 +2609,15 @@ const media = [
 
 
 
+                {
+    type:     "music",
+    title:    "Tutu Turú",
+    artist:   "Siderland",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273b46f297be12fdcc0cdc07394",
+    file:     "./Music/tututuru.mp3",
+    category: "Catalanes",
+    duration: "3:40"
+  },
 
 
 
@@ -2636,6 +2631,62 @@ const media = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Camins, Somnis i Promeses",
+    artist:   "Sopa de Cabra",
+    cover:    "https://m.media-amazon.com/images/I/51xE1YqsxmL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/caminssomnisipromeses.mp3",
+    category: "Catalanes",
+    duration: "2:43"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "a la freSka",
+    artist:   "Figa Flawas",
+    cover:    "https://www.viasona.cat/imatges/viasona.cat/discos/figa-flawas-a-la-freska-portada.jpg",
+    file:     "./Music/alafreska.mp3",
+    category: "Catalanes",
+    duration: "2:58"
+  },
 
 
 
