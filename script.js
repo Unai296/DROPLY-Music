@@ -3424,7 +3424,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   // Pausar antes de cambiar src
   activeAudio.pause();
 
-  // Si la canción está descargada offline, usar el blob de IndexedDB
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
     activeAudio.src = audioSrc;
@@ -4736,28 +4735,34 @@ const OfflineManager = (() => {
     updateCardDownloadBtn(key, 'downloading');
 
     try {
-      // Fetch audio
-      const audioResp = await fetch(key);
+      // Fetch audio — cache:'reload' evita interferencia del SW
+      // Usa blob() como fallback para iOS Safari (no soporta ReadableStream)
+      const audioResp = await fetch(key, { cache: 'reload' });
       if (!audioResp.ok) throw new Error(`HTTP ${audioResp.status}`);
-      const total    = parseInt(audioResp.headers.get('content-length') || '0');
-      const reader   = audioResp.body.getReader();
-      const chunks   = [];
-      let loaded     = 0;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        loaded += value.byteLength;
-        if (total > 0 && onProgress) onProgress(loaded / total);
+      let audioBlob;
+      if (audioResp.body && typeof audioResp.body.getReader === 'function') {
+        const total  = parseInt(audioResp.headers.get('content-length') || '0');
+        const reader = audioResp.body.getReader();
+        const chunks = [];
+        let loaded   = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.byteLength;
+          if (total > 0 && onProgress) onProgress(loaded / total);
+        }
+        audioBlob = new Blob(chunks, { type: 'audio/mpeg' });
+      } else {
+        // Fallback Safari
+        audioBlob = await audioResp.blob();
       }
-
-      const audioBlob = new Blob(chunks, { type: 'audio/mpeg' });
 
       // Fetch cover (best-effort)
       let coverBlob = null;
       try {
-        const coverResp = await fetch(item.cover);
+        const coverResp = await fetch(item.cover, { cache: 'reload' });
         if (coverResp.ok) coverBlob = await coverResp.blob();
       } catch(_) {}
 
@@ -4770,9 +4775,8 @@ const OfflineManager = (() => {
       downloadedKeys.add(key);
       updateCardDownloadBtn(key, 'done');
       updateDownloadsBadge();
-      renderDownloadsList();
       if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
-      if (typeof showToast === 'function') showToast(`"${item.title}" guardada offline`, 'success');
+      if (typeof showToast === 'function') showToast(`"${item.title}" guardada offline ✓`, 'success');
     } catch(err) {
       downloadStates.set(key, 'error');
       updateCardDownloadBtn(key, 'error');
@@ -4800,7 +4804,6 @@ const OfflineManager = (() => {
     downloadedKeys.delete(key);
     updateCardDownloadBtn(key, 'none');
     updateDownloadsBadge();
-    renderDownloadsList();
     if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
   }
 
@@ -5795,23 +5798,11 @@ function patchExistingFunctions() {
     }
   }
 
-  /* ── Patch loadTrack to use offline src when available ── */
+  /* ── Patch loadTrack — car mode sync only (offline handled inside loadTrack) ── */
   const origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
   if (origLoadTrack) {
-    window.loadTrack = async function(item, fromQueue, newPlaylistContext) {
-      // Check offline first
-      if (OfflineManager.isDownloaded(item.file) && !navigator.onLine) {
-        const offlineSrc = await OfflineManager.getOfflineSrc(item.file);
-        if (offlineSrc) {
-          const patchedItem = { ...item, file: offlineSrc };
-          origLoadTrack.call(this, patchedItem, fromQueue, newPlaylistContext);
-          // Sync car mode
-          setTimeout(() => CarMode.syncToPlayer(), 200);
-          return;
-        }
-      }
+    window.loadTrack = function(item, fromQueue, newPlaylistContext) {
       origLoadTrack.call(this, item, fromQueue, newPlaylistContext);
-      // Sync car mode
       setTimeout(() => CarMode.syncToPlayer(), 200);
     };
   }
