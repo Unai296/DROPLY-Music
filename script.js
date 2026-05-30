@@ -3113,16 +3113,18 @@ ctxSheetLike.addEventListener("click", () => {
 if (ctxSheetOffline) {
   ctxSheetOffline.addEventListener("click", async () => {
     if (!contextTarget || typeof OfflineManager === 'undefined') return;
-    const isDownloaded = OfflineManager.isDownloaded(contextTarget.file);
+    // Guardar referencia ANTES de cerrar el menú (closeContextMenu pone contextTarget a null)
+    const trackToProcess = contextTarget;
+    const isDownloaded = OfflineManager.isDownloaded(trackToProcess.file);
     if (isDownloaded) {
-      await OfflineManager.deleteDownload(contextTarget.file);
-      if (typeof showToast === 'function') showToast('Descarga eliminada');
+      closeContextMenu();
+      await OfflineManager.deleteDownload(trackToProcess.file);
+      if (typeof showToast === 'function') showToast(`"${trackToProcess.title}" eliminada de offline`);
     } else {
       closeContextMenu();
-      await OfflineManager.downloadTrack(contextTarget);
-      return;
+      // downloadTrack muestra el toast de éxito y actualiza la lista offline automáticamente
+      await OfflineManager.downloadTrack(trackToProcess);
     }
-    closeContextMenu();
   });
 }
 
