@@ -404,58 +404,39 @@ function initYouTubeIntegration() {
     _streamCache.set(videoId, { url, ts: Date.now() });
   }
 
-  async function _fetchStreamUrl(videoId) {
-    const cached = _streamCacheGet(videoId);
-    if (cached) return cached;
-
-    const res = await fetch(`/api/yt-stream?v=${encodeURIComponent(videoId)}`);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP_${res.status}`);
-    }
-    const data = await res.json();
-    if (!data.url) throw new Error('NO_STREAM_URL');
-
-    _streamCacheSet(videoId, data.url);
-    return data.url;
-  }
-
   async function _playYouTubeNative(videoId, item) {
     if (!audioEl) {
       /* Fallback al IFrame si no hay elemento <audio> */
       return YouTubeProvider.play(videoId);
     }
 
-    /* Mostrar toast de carga solo si tarda */
-    let _toastShown = false;
+    /* Mostrar toast de carga */
     const _loadingTimer = setTimeout(() => {
-      _toastShown = true;
-      if (typeof showToast === 'function') showToast('Cargando stream…');
+      if (typeof showToast === 'function') showToast('Cargando…');
     }, 1800);
 
     try {
-      const streamUrl = await _fetchStreamUrl(videoId);
-
-      clearTimeout(_loadingTimer);
-
       /* Detener el IFrame por si estaba activo */
       YouTubeProvider.stop();
 
-      /* Configurar el <audio> nativo con la URL de stream */
+      /* Apuntar el <audio> nativo directamente al proxy.
+         El proxy hace pipe del stream — el navegador lo trata
+         como cualquier archivo de audio local, incluyendo
+         background playback y pantalla bloqueada. */
       audioEl.pause();
-      audioEl.src = streamUrl;
+      audioEl.src = `/api/yt-stream?v=${encodeURIComponent(videoId)}`;
       audioEl.load();
+
+      clearTimeout(_loadingTimer);
 
       const playPromise = audioEl.play();
       if (playPromise) {
         await playPromise.catch(err => {
-          /* Autoplay bloqueado — el usuario tendrá que pulsar play */
           console.warn('[DROPLY YT] Autoplay bloqueado:', err.name);
           window._droplyPendingTrack = item;
         });
       }
 
-      /* Notificar estado */
       if (typeof isPlaying !== 'undefined') isPlaying = true;
       if (typeof updatePlayIcons === 'function') updatePlayIcons(true);
       try { if (navigator.mediaSession) navigator.mediaSession.playbackState = 'playing'; } catch(_) {}
@@ -464,7 +445,6 @@ function initYouTubeIntegration() {
       clearTimeout(_loadingTimer);
       console.warn('[DROPLY YT] Stream proxy fallado, usando IFrame:', err.message);
 
-      /* Fallback transparente al IFrame si el proxy falla */
       if (_ytActive) {
         await YouTubeProvider.play(videoId).catch(() => {
           if (typeof showToast === 'function') showToast('No se pudo reproducir');
