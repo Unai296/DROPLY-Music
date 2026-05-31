@@ -1,8 +1,0 @@
-{
-  "name": "droply",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "@distube/ytdl-core": "^4.16.12"
-  }
-}
