@@ -1,82 +1,102 @@
 /* ═══════════════════════════════════════════════════════════
-   DROPLY — api/yt-stream.js
-   Extrae la URL de stream de audio de YouTube y la devuelve.
-
-   GET /api/yt-stream?v=VIDEO_ID
-   Responde: { url, mimeType, duration }
+   DROPLY — api/yt-stream.js  (Edge Function)
+   Hace pipe del stream de audio de YouTube al cliente.
+   Usar Edge runtime evita el timeout de serverless.
 ═══════════════════════════════════════════════════════════ */
 
-const ytdl = require('@distube/ytdl-core');
+export const config = { runtime: 'edge' };
 
-const _cache = new Map();
-const CACHE_TTL = 4 * 60 * 1000;
+const YT_BASE = 'https://www.youtube.com/watch?v=';
 
-function _cacheGet(key) {
-  const e = _cache.get(key);
-  if (!e) return null;
-  if (Date.now() - e.ts > CACHE_TTL) { _cache.delete(key); return null; }
-  return e.data;
+/* Extraer formatos de audio del innertube response */
+async function getAudioUrl(videoId) {
+  const body = JSON.stringify({
+    context: {
+      client: {
+        clientName: 'ANDROID',
+        clientVersion: '17.31.35',
+        androidSdkVersion: 30,
+        hl: 'en',
+        gl: 'US'
+      }
+    },
+    videoId
+  });
+
+  const res = await fetch('https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'com.google.android.youtube/17.31.35 (Linux; U; Android 11) gzip',
+      'X-YouTube-Client-Name': '3',
+      'X-YouTube-Client-Version': '17.31.35'
+    },
+    body
+  });
+
+  if (!res.ok) throw new Error(`YT_API_${res.status}`);
+  const data = await res.json();
+
+  const formats = [
+    ...(data?.streamingData?.adaptiveFormats || []),
+    ...(data?.streamingData?.formats || [])
+  ].filter(f => f.mimeType?.startsWith('audio'));
+
+  if (!formats.length) throw new Error('NO_AUDIO_FORMAT');
+
+  /* Preferir m4a/mp4 (mejor soporte móvil) */
+  const m4a  = formats.filter(f => f.mimeType.includes('mp4')).sort((a,b) => (b.bitrate||0)-(a.bitrate||0));
+  const webm = formats.filter(f => f.mimeType.includes('webm')).sort((a,b) => (b.bitrate||0)-(a.bitrate||0));
+  const best = m4a[0] || webm[0] || formats[0];
+
+  return {
+    url:      best.url,
+    mimeType: best.mimeType.split(';')[0],
+    duration: parseInt(data?.videoDetails?.lengthSeconds || '0', 10)
+  };
 }
-function _cacheSet(key, data) {
-  if (_cache.size > 100) _cache.delete(_cache.keys().next().value);
-  _cache.set(key, { data, ts: Date.now() });
-}
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+export default async function handler(req) {
+  const url = new URL(req.url);
 
-  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
-  if (req.method !== 'GET') { res.status(405).end(); return; }
-
-  const videoId = String(req.query.v || '').trim();
-  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    res.status(400).json({ error: 'INVALID_VIDEO_ID' });
-    return;
+  /* CORS preflight */
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      }
+    });
   }
 
-  const cached = _cacheGet(videoId);
-  if (cached) {
-    res.setHeader('Cache-Control', 's-maxage=180');
-    return res.status(200).json(cached);
+  const videoId = url.searchParams.get('v') || '';
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+    return new Response(JSON.stringify({ error: 'INVALID_VIDEO_ID' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
   }
 
   try {
-    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`, {
-      requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 Chrome/113.0.0.0 Mobile Safari/537.36'
-        }
+    const { url: streamUrl, mimeType, duration } = await getAudioUrl(videoId);
+
+    /* Redirigir al cliente a la URL real — desde Edge esto funciona
+       porque la IP del edge node está autorizada por YouTube */
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': streamUrl,
+        'Access-Control-Allow-Origin': '*',
+        'X-Duration': String(duration),
+        'Cache-Control': 'no-store'
       }
     });
 
-    const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
-    if (!audioFormats.length) { res.status(404).json({ error: 'NO_AUDIO_FORMAT' }); return; }
-
-    const m4a  = audioFormats.filter(f => f.mimeType?.includes('mp4')).sort((a,b) => (b.audioBitrate||0)-(a.audioBitrate||0));
-    const webm = audioFormats.filter(f => f.mimeType?.includes('webm')).sort((a,b) => (b.audioBitrate||0)-(a.audioBitrate||0));
-    const best = m4a[0] || webm[0] || audioFormats[0];
-
-    const result = {
-      url:      best.url,
-      mimeType: best.mimeType?.split(';')[0] || 'audio/mp4',
-      bitrate:  best.audioBitrate || 0,
-      duration: parseInt(info.videoDetails.lengthSeconds || '0', 10),
-      videoId
-    };
-
-    _cacheSet(videoId, result);
-    res.setHeader('Cache-Control', 's-maxage=180');
-    res.status(200).json(result);
-
   } catch (err) {
-    console.error('[yt-stream]', err.message);
-    if (err.message?.includes('unavailable') || err.message?.includes('not available')) {
-      res.status(404).json({ error: 'VIDEO_UNAVAILABLE' });
-    } else if (err.message?.includes('private')) {
-      res.status(403).json({ error: 'VIDEO_PRIVATE' });
-    } else {
-      res.status(500).json({ error: 'STREAM_FAILED', detail: err.message });
-    }
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
   }
-};
+}
