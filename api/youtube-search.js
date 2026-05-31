@@ -125,4 +125,3 @@ module.exports = async function handler(req, res) {
     res.status(status).json({ error: code });
   }
 };
-
