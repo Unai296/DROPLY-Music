@@ -181,6 +181,73 @@ function initYouTubeIntegration() {
   });
 
   /* ════════════════════════════════════════════════════════
+     EVENTOS DEL <audio> NATIVO PARA TRACKS DE YOUTUBE
+     Cuando reproducimos vía stream proxy, el control
+     pasa por el elemento <audio> nativo del DOM.
+     Estos listeners propagan los eventos de vuelta a la UI.
+  ════════════════════════════════════════════════════════ */
+  function _isYtStreamSrc(src) {
+    if (!src || src === window.location.href) return false;
+    // Una URL de stream de YouTube tiene el dominio googlevideo.com o similar
+    // y NO incluye rutas de música local
+    if (src.includes('./Music/') || src.endsWith('.mp3')) return false;
+    // Si tiene src que no es local, asumimos que es stream de YT
+    try {
+      const u = new URL(src);
+      return u.origin !== window.location.origin;
+    } catch(_) { return false; }
+  }
+
+  if (audioEl) {
+    audioEl.addEventListener('timeupdate', () => {
+      if (!_ytActive || !_isYtStreamSrc(audioEl.src)) return;
+      const cur = audioEl.currentTime || 0;
+      const dur = audioEl.duration;
+      if (!dur || !isFinite(dur)) return;
+      _ytCurrent  = cur;
+      _ytDuration = dur;
+      _updateProgressUI(cur, dur);
+      _updateMediaSessionPosition(cur, dur);
+    });
+
+    audioEl.addEventListener('play', () => {
+      if (!_ytActive || !_isYtStreamSrc(audioEl.src)) return;
+      if (typeof isPlaying !== 'undefined') isPlaying = true;
+      if (typeof updatePlayIcons === 'function') updatePlayIcons(true);
+      try { if (navigator.mediaSession) navigator.mediaSession.playbackState = 'playing'; } catch(_) {}
+    });
+
+    audioEl.addEventListener('pause', () => {
+      if (!_ytActive || !_isYtStreamSrc(audioEl.src)) return;
+      if (typeof isPlaying !== 'undefined') isPlaying = false;
+      if (typeof updatePlayIcons === 'function') updatePlayIcons(false);
+      try { if (navigator.mediaSession) navigator.mediaSession.playbackState = 'paused'; } catch(_) {}
+    });
+
+    audioEl.addEventListener('ended', () => {
+      if (!_ytActive || !_isYtStreamSrc(audioEl.src)) return;
+      if (typeof isPlaying !== 'undefined') isPlaying = false;
+      if (typeof updatePlayIcons === 'function') updatePlayIcons(false);
+      if (typeof repeatMode !== 'undefined' && repeatMode) {
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+        return;
+      }
+      if (typeof playNext === 'function') playNext();
+    });
+
+    audioEl.addEventListener('error', () => {
+      if (!_ytActive || !_isYtStreamSrc(audioEl.src)) return;
+      console.warn('[DROPLY YT] Error en stream nativo, usando IFrame como fallback');
+      const cur = typeof playlist !== 'undefined' ? playlist?.[currentTrackIdx] : null;
+      if (cur && YouTubeProvider.isYouTubeTrack(cur)) {
+        const vid = YouTubeProvider.getVideoId(cur);
+        if (vid) YouTubeProvider.play(vid).catch(() => {});
+      }
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════
      2. PATCH DE loadTrack PARA SOPORTAR YOUTUBE
   ════════════════════════════════════════════════════════ */
   const _originalLoadTrack = window.loadTrack;
@@ -304,13 +371,13 @@ function initYouTubeIntegration() {
     // MediaSession
     if (typeof setupMediaSession === 'function') setupMediaSession(item);
 
-    /* -- Reproducir en YouTube -- */
+    /* -- Reproducir con stream nativo (background-safe) -- */
     _rememberYtTrack(item);
     _ytActive   = true;
     _ytDuration = 0;
     _ytCurrent  = 0;
 
-    YouTubeProvider.play(videoId)
+    _playYouTubeNative(videoId, item)
       .catch(err => {
         console.warn('[DROPLY YT] Error al iniciar playback:', err);
         if (typeof showToast === 'function') showToast('No se pudo reproducir');
@@ -318,7 +385,98 @@ function initYouTubeIntegration() {
   };
 
   /* ════════════════════════════════════════════════════════
+     REPRODUCCIÓN NATIVA VÍA PROXY /api/yt-stream
+     Extrae la URL de audio real y la pasa al <audio> nativo.
+     Esto permite reproducción en background y pantalla bloqueada.
+  ════════════════════════════════════════════════════════ */
+
+  /* Cache de URLs de stream en memoria */
+  const _streamCache = new Map();
+  const STREAM_CACHE_TTL = 4 * 60 * 1000; // 4 min (URLs expiran en ~6h pero re-fetch por seguridad)
+
+  function _streamCacheGet(videoId) {
+    const e = _streamCache.get(videoId);
+    if (!e) return null;
+    if (Date.now() - e.ts > STREAM_CACHE_TTL) { _streamCache.delete(videoId); return null; }
+    return e.url;
+  }
+  function _streamCacheSet(videoId, url) {
+    _streamCache.set(videoId, { url, ts: Date.now() });
+  }
+
+  async function _fetchStreamUrl(videoId) {
+    const cached = _streamCacheGet(videoId);
+    if (cached) return cached;
+
+    const res = await fetch(`/api/yt-stream?v=${encodeURIComponent(videoId)}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP_${res.status}`);
+    }
+    const data = await res.json();
+    if (!data.url) throw new Error('NO_STREAM_URL');
+
+    _streamCacheSet(videoId, data.url);
+    return data.url;
+  }
+
+  async function _playYouTubeNative(videoId, item) {
+    if (!audioEl) {
+      /* Fallback al IFrame si no hay elemento <audio> */
+      return YouTubeProvider.play(videoId);
+    }
+
+    /* Mostrar toast de carga solo si tarda */
+    let _toastShown = false;
+    const _loadingTimer = setTimeout(() => {
+      _toastShown = true;
+      if (typeof showToast === 'function') showToast('Cargando stream…');
+    }, 1800);
+
+    try {
+      const streamUrl = await _fetchStreamUrl(videoId);
+
+      clearTimeout(_loadingTimer);
+
+      /* Detener el IFrame por si estaba activo */
+      YouTubeProvider.stop();
+
+      /* Configurar el <audio> nativo con la URL de stream */
+      audioEl.pause();
+      audioEl.src = streamUrl;
+      audioEl.load();
+
+      const playPromise = audioEl.play();
+      if (playPromise) {
+        await playPromise.catch(err => {
+          /* Autoplay bloqueado — el usuario tendrá que pulsar play */
+          console.warn('[DROPLY YT] Autoplay bloqueado:', err.name);
+          window._droplyPendingTrack = item;
+        });
+      }
+
+      /* Notificar estado */
+      if (typeof isPlaying !== 'undefined') isPlaying = true;
+      if (typeof updatePlayIcons === 'function') updatePlayIcons(true);
+      try { if (navigator.mediaSession) navigator.mediaSession.playbackState = 'playing'; } catch(_) {}
+
+    } catch (err) {
+      clearTimeout(_loadingTimer);
+      console.warn('[DROPLY YT] Stream proxy fallado, usando IFrame:', err.message);
+
+      /* Fallback transparente al IFrame si el proxy falla */
+      if (_ytActive) {
+        await YouTubeProvider.play(videoId).catch(() => {
+          if (typeof showToast === 'function') showToast('No se pudo reproducir');
+        });
+      }
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════
      3. PATCH DE togglePlay
+     Cuando hay un track de YouTube, el audio va por el
+     elemento <audio> nativo — no por el IFrame.
   ════════════════════════════════════════════════════════ */
   const _originalTogglePlay = window.togglePlay;
 
@@ -326,7 +484,16 @@ function initYouTubeIntegration() {
     if (!_ytActive) {
       return _originalTogglePlay.call(this);
     }
-    // Track de YouTube activo
+    /* Si el audio nativo tiene src de stream, controlarlo directamente */
+    if (audioEl && audioEl.src && !audioEl.src.startsWith('yt::') && audioEl.src !== window.location.href) {
+      if (audioEl.paused) {
+        audioEl.play().catch(() => {});
+      } else {
+        audioEl.pause();
+      }
+      return;
+    }
+    /* Fallback al IFrame */
     if (YouTubeProvider.isPlaying()) {
       YouTubeProvider.pause();
     } else {
@@ -347,6 +514,12 @@ function initYouTubeIntegration() {
         audio.currentTime = Math.max(0, Math.min(1, pct)) * audio.duration;
       return;
     }
+    /* Stream nativo */
+    if (audioEl && audioEl.src && audioEl.duration && isFinite(audioEl.duration)) {
+      audioEl.currentTime = Math.max(0, Math.min(1, pct)) * audioEl.duration;
+      return;
+    }
+    /* Fallback IFrame */
     const dur = YouTubeProvider.getDuration();
     if (dur > 0) YouTubeProvider.seek(Math.max(0, Math.min(1, pct)) * dur);
   };

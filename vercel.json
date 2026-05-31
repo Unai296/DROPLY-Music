@@ -29,6 +29,12 @@
       ]
     },
     {
+      "source": "/api/yt-stream",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=240, stale-while-revalidate=60" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -43,5 +49,13 @@
       "source": "/((?!api|_vercel|sw\\.js|manifest\\.json|icons|style\\.css|script\\.js|droply\\.png|youtube-api\\.js|youtube-provider\\.js|youtube-integration\\.js).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/yt-stream.js": {
+      "maxDuration": 10
+    },
+    "api/youtube-search.js": {
+      "maxDuration": 10
+    }
+  }
 }
