@@ -22,6 +22,13 @@
       ]
     },
     {
+      "source": "/(youtube-api|youtube-provider|youtube-integration)\\.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -33,7 +40,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_vercel|sw\\.js|manifest\\.json|icons|style\\.css|script\\.js|droply\\.png).*)",
+      "source": "/((?!api|_vercel|sw\\.js|manifest\\.json|icons|style\\.css|script\\.js|droply\\.png|youtube-api\\.js|youtube-provider\\.js|youtube-integration\\.js).*)",
       "destination": "/index.html"
     }
   ]

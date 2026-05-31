@@ -4,7 +4,7 @@
    v3 — Rutas absolutas, scope raíz, compatibilidad Android Chrome
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'droply-v3';
+const CACHE_VERSION = 'droply-v13';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const MUSIC_CACHE   = `${CACHE_VERSION}-music`;
 const IMG_CACHE     = `${CACHE_VERSION}-images`;
@@ -14,7 +14,10 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './script.js',
+  './script.js?v=13',
+  './youtube-api.js?v=13',
+  './youtube-provider.js?v=13',
+  './youtube-integration.js?v=13',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -68,6 +71,7 @@ self.addEventListener('fetch', event => {
   if (
     request.destination === 'image' ||
     url.hostname.includes('ytimg.com') ||
+    url.hostname.includes('i.ytimg.com') ||
     url.hostname.includes('scdn.co') ||
     url.hostname.includes('dzcdn.net') ||
     url.hostname.includes('media-amazon.com') ||
