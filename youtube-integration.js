@@ -414,20 +414,14 @@ function initYouTubeIntegration() {
     }, 1800);
 
     try {
-      /* 1. Obtener URL de stream desde el proxy */
-      const res = await fetch(`/api/yt-stream?v=${encodeURIComponent(videoId)}`);
-      if (!res.ok) throw new Error(`HTTP_${res.status}`);
-      const data = await res.json();
-      if (!data.url) throw new Error('NO_URL');
-
       clearTimeout(_loadingTimer);
 
-      /* 2. Detener IFrame */
+      /* El endpoint devuelve un 302 redirect a la URL de stream.
+         El <audio> nativo sigue el redirect automáticamente. */
       YouTubeProvider.stop();
 
-      /* 3. Reproducir con <audio> nativo */
       audioEl.pause();
-      audioEl.src = data.url;
+      audioEl.src = `/api/yt-stream?v=${encodeURIComponent(videoId)}`;
       audioEl.load();
 
       const playPromise = audioEl.play();
