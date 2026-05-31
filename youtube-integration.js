@@ -406,28 +406,29 @@ function initYouTubeIntegration() {
 
   async function _playYouTubeNative(videoId, item) {
     if (!audioEl) {
-      /* Fallback al IFrame si no hay elemento <audio> */
       return YouTubeProvider.play(videoId);
     }
 
-    /* Mostrar toast de carga */
     const _loadingTimer = setTimeout(() => {
       if (typeof showToast === 'function') showToast('Cargando…');
     }, 1800);
 
     try {
-      /* Detener el IFrame por si estaba activo */
-      YouTubeProvider.stop();
-
-      /* Apuntar el <audio> nativo directamente al proxy.
-         El proxy hace pipe del stream — el navegador lo trata
-         como cualquier archivo de audio local, incluyendo
-         background playback y pantalla bloqueada. */
-      audioEl.pause();
-      audioEl.src = `/api/yt-stream?v=${encodeURIComponent(videoId)}`;
-      audioEl.load();
+      /* 1. Obtener URL de stream desde el proxy */
+      const res = await fetch(`/api/yt-stream?v=${encodeURIComponent(videoId)}`);
+      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      const data = await res.json();
+      if (!data.url) throw new Error('NO_URL');
 
       clearTimeout(_loadingTimer);
+
+      /* 2. Detener IFrame */
+      YouTubeProvider.stop();
+
+      /* 3. Reproducir con <audio> nativo */
+      audioEl.pause();
+      audioEl.src = data.url;
+      audioEl.load();
 
       const playPromise = audioEl.play();
       if (playPromise) {
@@ -444,7 +445,6 @@ function initYouTubeIntegration() {
     } catch (err) {
       clearTimeout(_loadingTimer);
       console.warn('[DROPLY YT] Stream proxy fallado, usando IFrame:', err.message);
-
       if (_ytActive) {
         await YouTubeProvider.play(videoId).catch(() => {
           if (typeof showToast === 'function') showToast('No se pudo reproducir');
