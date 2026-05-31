@@ -2929,13 +2929,7 @@ function updatePlayIcons(playing) {
   }
 }
 
-function getTrackByFile(file) {
-  if (typeof file === "string" && file.startsWith("yt::")) {
-    const ytTrack = window.DroplyYouTubeIntegration?.getTrackByFile?.(file);
-    if (ytTrack) return ytTrack;
-  }
-  return media.find(m => m.file === file) || null;
-}
+function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
 
 /* ══════════════════════════════════════════════════════
    5. TOAST NOTIFICATIONS
@@ -3350,9 +3344,6 @@ function animateBackgroundTransition(newCover) {
 let _playToken = 0;
 
 function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
-  if (window.DroplyYouTubeIntegration?.isYouTubeTrack?.(item)) {
-    return window.DroplyYouTubeIntegration.loadTrack(item, fromQueue, newPlaylistContext);
-  }
   if (item.type !== "music") return;
 
   const cover = item.cover || getPlaceholderCover(item.category);
@@ -3476,10 +3467,6 @@ volSlider.addEventListener("input", () => {
 });
 
 function seekToPercent(pct) {
-  if (window.DroplyYouTubeIntegration?.isActive?.()) {
-    window.DroplyYouTubeIntegration.seekToPercent(pct);
-    return;
-  }
   const audio = activeAudio;
   if (audio.duration && isFinite(audio.duration))
     audio.currentTime = Math.max(0, Math.min(1, pct)) * audio.duration;
@@ -3502,9 +3489,6 @@ nowPlayingSheet.addEventListener("touchend",   e => { if (e.changedTouches[0].cl
    13. LIKES
 ══════════════════════════════════════════════════════ */
 function toggleLike(item) {
-  if (window.DroplyYouTubeIntegration?.isYouTubeTrack?.(item)) {
-    item = window.DroplyYouTubeIntegration.saveOnlineTrack?.(item) || item;
-  }
   const key = item.file;
   const wasLiked = likedTracks.has(key);
   if (wasLiked) {
@@ -3534,9 +3518,7 @@ function toggleLike(item) {
 ══════════════════════════════════════════════════════ */
 function renderFavoritos() {
   favoritosList.innerHTML = "";
-  const likedItems = [...likedTracks]
-    .map(file => getTrackByFile(file))
-    .filter(item => item && item.type === "music");
+  const likedItems = media.filter(m => m.type === "music" && likedTracks.has(m.file));
   if (likedItems.length === 0) {
     favoritosList.innerHTML = `<div class="fav-empty"><svg viewBox="0 0 24 24" width="48" height="48" style="margin:0 auto 1rem;display:block;color:#e94f4f;opacity:.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><p style="color:#b3b3b3;text-align:center;font-size:.9rem">Aún no tienes canciones favoritas.<br>Pulsa el ❤ en cualquier canción.</p></div>`;
     return;
@@ -3595,14 +3577,9 @@ function deletePlaylist(id) {
 function addTrackToPlaylist(playlistId, trackFile) {
   const pl = playlists.find(p => p.id === playlistId);
   if (!pl) return;
-  const track = getTrackByFile(trackFile);
-  if (window.DroplyYouTubeIntegration?.isYouTubeTrack?.(track)) {
-    window.DroplyYouTubeIntegration.saveOnlineTrack?.(track);
-  }
   if (pl.tracks.includes(trackFile)) { showToast("Ya está en la playlist"); return; }
   pl.tracks.push(trackFile);
   savePlaylists();
-  window.DroplyYouTubeIntegration?.refreshDiscoverySurfaces?.();
   showToast(`Añadida a "${pl.name}"`, "success");
 }
 
@@ -3804,9 +3781,6 @@ playlistNameInput.addEventListener("keydown", e => { if (e.key === "Enter") conf
 
 // Add to playlist modal
 function openAddToPlaylist(item) {
-  if (window.DroplyYouTubeIntegration?.isYouTubeTrack?.(item)) {
-    item = window.DroplyYouTubeIntegration.saveOnlineTrack?.(item) || item;
-  }
   addToPlaylistList.innerHTML = "";
   if (playlists.length === 0) {
     addToPlaylistList.innerHTML = `<p style="color:var(--text-soft);font-size:.85rem;padding:.5rem">No tienes playlists aún.</p>`;
@@ -4104,42 +4078,35 @@ function setupMediaSession(item) {
     ]
   });
 
-  navigator.mediaSession.setActionHandler("play", () => { if (!isPlaying) togglePlay(); });
-  navigator.mediaSession.setActionHandler("pause", () => { if (isPlaying) togglePlay(); });
+  // play — también actualiza la UI para que los iconos sean coherentes
+  navigator.mediaSession.setActionHandler("play", () => {
+    const audio = activeAudio;
+    if (!audio) return;
+    audio.play()
+      .then(() => { isPlaying = true; updatePlayIcons(true); })
+      .catch(() => {});
+  });
+
+  // pause — también actualiza la UI
+  navigator.mediaSession.setActionHandler("pause", () => {
+    const audio = activeAudio;
+    if (!audio) return;
+    audio.pause();
+    isPlaying = false;
+    updatePlayIcons(false);
+  });
 
   // Controles de pista
   navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
   navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
 
-  try {
-    navigator.mediaSession.setActionHandler("seekbackward", ({ seekOffset = 10 } = {}) => {
-      if (window.DroplyYouTubeIntegration?.isActive?.()) {
-        const cur = window.DroplyYouTubeIntegration.getCurrentTime?.() || 0;
-        window.DroplyYouTubeIntegration.seek(Math.max(0, cur - seekOffset));
-        return;
-      }
-      if (activeAudio?.duration) activeAudio.currentTime = Math.max(0, activeAudio.currentTime - seekOffset);
-    });
-  } catch(_) {}
-  try {
-    navigator.mediaSession.setActionHandler("seekforward", ({ seekOffset = 10 } = {}) => {
-      if (window.DroplyYouTubeIntegration?.isActive?.()) {
-        const cur = window.DroplyYouTubeIntegration.getCurrentTime?.() || 0;
-        const dur = window.DroplyYouTubeIntegration.getDuration?.() || 0;
-        window.DroplyYouTubeIntegration.seek(dur ? Math.min(dur, cur + seekOffset) : cur + seekOffset);
-        return;
-      }
-      if (activeAudio?.duration) activeAudio.currentTime = Math.min(activeAudio.duration, activeAudio.currentTime + seekOffset);
-    });
-  } catch(_) {}
+  // Desregistrar seekbackward/seekforward para que Android muestre flechas prev/next
+  try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
+  try { navigator.mediaSession.setActionHandler("seekforward",  null); } catch(_) {}
 
   // seekto — barra de progreso en pantalla bloqueada
   try {
     navigator.mediaSession.setActionHandler("seekto", ({ seekTime, fastSeek }) => {
-      if (window.DroplyYouTubeIntegration?.isActive?.()) {
-        window.DroplyYouTubeIntegration.seek(seekTime || 0);
-        return;
-      }
       const audio = activeAudio;
       if (!audio) return;
       const dur = audio.duration;
@@ -4445,10 +4412,6 @@ function hapticFeedback(style) {
 
 /* ── Toggle play / pause ────────────────────────────── */
 function togglePlay() {
-  if (window.DroplyYouTubeIntegration?.isActive?.()) {
-    window.DroplyYouTubeIntegration.togglePlay();
-    return;
-  }
   const audio = activeAudio;
   if (!audio) return;
   // If no source loaded yet, do nothing
@@ -4501,13 +4464,6 @@ function playNext() {
 
 /* ── Play previous track ────────────────────────────── */
 function playPrev() {
-  if (window.DroplyYouTubeIntegration?.isActive?.()) {
-    const ytCurrent = window.DroplyYouTubeIntegration.getCurrentTime?.() || 0;
-    if (ytCurrent > 3) {
-      window.DroplyYouTubeIntegration.seek(0);
-      return;
-    }
-  }
   const audio = activeAudio || audioEl;
   // If more than 3s in, restart current track
   if (audio && audio.currentTime > 3) {
@@ -4523,9 +4479,6 @@ function playPrev() {
 /* ── Add to queue ───────────────────────────────────── */
 function addToQueue(item) {
   if (!item?.file) return;
-  if (window.DroplyYouTubeIntegration?.isYouTubeTrack?.(item)) {
-    item = window.DroplyYouTubeIntegration.saveOnlineTrack?.(item) || item;
-  }
   queue.push(item.file);
   saveQueue();
   renderQueueList();
