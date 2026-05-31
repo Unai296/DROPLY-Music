@@ -1,13 +1,26 @@
 /* ═══════════════════════════════════════════════════════════
    DROPLY — api/yt-stream.js
-   Proxy de stream de audio de YouTube.
-   En lugar de devolver la URL (que el móvil bloquea en background),
-   hace pipe del audio directamente al cliente.
+   Extrae la URL de stream de audio de YouTube y la devuelve.
 
    GET /api/yt-stream?v=VIDEO_ID
+   Responde: { url, mimeType, duration }
 ═══════════════════════════════════════════════════════════ */
 
 const ytdl = require('@distube/ytdl-core');
+
+const _cache = new Map();
+const CACHE_TTL = 4 * 60 * 1000;
+
+function _cacheGet(key) {
+  const e = _cache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.ts > CACHE_TTL) { _cache.delete(key); return null; }
+  return e.data;
+}
+function _cacheSet(key, data) {
+  if (_cache.size > 100) _cache.delete(_cache.keys().next().value);
+  _cache.set(key, { data, ts: Date.now() });
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,6 +35,12 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  const cached = _cacheGet(videoId);
+  if (cached) {
+    res.setHeader('Cache-Control', 's-maxage=180');
+    return res.status(200).json(cached);
+  }
+
   try {
     const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`, {
       requestOptions: {
@@ -31,7 +50,6 @@ module.exports = async function handler(req, res) {
       }
     });
 
-    /* Elegir formato: m4a primero (mejor soporte iOS/Android), luego webm */
     const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
     if (!audioFormats.length) { res.status(404).json({ error: 'NO_AUDIO_FORMAT' }); return; }
 
@@ -39,56 +57,26 @@ module.exports = async function handler(req, res) {
     const webm = audioFormats.filter(f => f.mimeType?.includes('webm')).sort((a,b) => (b.audioBitrate||0)-(a.audioBitrate||0));
     const best = m4a[0] || webm[0] || audioFormats[0];
 
-    const duration = parseInt(info.videoDetails.lengthSeconds || '0', 10);
+    const result = {
+      url:      best.url,
+      mimeType: best.mimeType?.split(';')[0] || 'audio/mp4',
+      bitrate:  best.audioBitrate || 0,
+      duration: parseInt(info.videoDetails.lengthSeconds || '0', 10),
+      videoId
+    };
 
-    /* Cabeceras para que el <audio> nativo funcione bien en móvil */
-    res.setHeader('Content-Type', best.mimeType?.split(';')[0] || 'audio/mp4');
-    res.setHeader('Accept-Ranges', 'bytes');
-    res.setHeader('Cache-Control', 'no-cache');
-    if (duration > 0) {
-      res.setHeader('X-Duration', String(duration));
-    }
-
-    /* Soporte de Range requests (necesario para seek en iOS/Safari) */
-    const rangeHeader = req.headers['range'];
-    const streamOptions = {};
-    if (rangeHeader) {
-      const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
-      if (match) {
-        streamOptions.begin = parseInt(match[1], 10);
-        if (match[2]) streamOptions.end = parseInt(match[2], 10);
-        res.status(206);
-      }
-    } else {
-      res.status(200);
-    }
-
-    /* Pipe del stream de ytdl directamente a la respuesta */
-    const stream = ytdl.downloadFromInfo(info, {
-      format: best,
-      ...streamOptions
-    });
-
-    stream.on('error', (err) => {
-      console.error('[yt-stream] stream error:', err.message);
-      if (!res.headersSent) res.status(500).end();
-      else res.end();
-    });
-
-    req.on('close', () => stream.destroy());
-
-    stream.pipe(res);
+    _cacheSet(videoId, result);
+    res.setHeader('Cache-Control', 's-maxage=180');
+    res.status(200).json(result);
 
   } catch (err) {
-    console.error('[yt-stream] Error:', err.message);
-    if (!res.headersSent) {
-      if (err.message?.includes('unavailable') || err.message?.includes('not available')) {
-        res.status(404).json({ error: 'VIDEO_UNAVAILABLE' });
-      } else if (err.message?.includes('private')) {
-        res.status(403).json({ error: 'VIDEO_PRIVATE' });
-      } else {
-        res.status(500).json({ error: 'STREAM_FAILED' });
-      }
+    console.error('[yt-stream]', err.message);
+    if (err.message?.includes('unavailable') || err.message?.includes('not available')) {
+      res.status(404).json({ error: 'VIDEO_UNAVAILABLE' });
+    } else if (err.message?.includes('private')) {
+      res.status(403).json({ error: 'VIDEO_PRIVATE' });
+    } else {
+      res.status(500).json({ error: 'STREAM_FAILED', detail: err.message });
     }
   }
 };
