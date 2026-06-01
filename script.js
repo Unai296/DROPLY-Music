@@ -2864,7 +2864,8 @@ function updateBottomNavSlider() {
   if (!slider || !activeBtn) return;
   const width = Math.max(activeBtn.offsetWidth, 56);
   slider.style.width = `${width}px`;
-  slider.style.left = `${activeBtn.offsetLeft}px`;
+  slider.style.left = `0px`;
+  slider.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
 }
 
 bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
@@ -7276,6 +7277,7 @@ const MixesManager = (function() {
   const slider = document.getElementById("bnavGlassSlider");
   const nav = document.getElementById("bottomNav");
   if (!slider || !nav) return;
+  const NAV_DEBUG = true; // set to false to disable debug logs
   
   // Posicionar en el primer botón activo
   const activeBtn = nav.querySelector(".bnav-btn.active");
@@ -7283,7 +7285,8 @@ const MixesManager = (function() {
     const btnWidth = activeBtn.offsetWidth;
     const btnLeft = activeBtn.offsetLeft;
     slider.style.width = `${Math.max(btnWidth, 56)}px`;
-    slider.style.left = `${btnLeft}px`;
+    slider.style.left = `0px`;
+    slider.style.transform = `translateX(${btnLeft}px)`;
   }
 
   let bnavDragActive = false;
@@ -7317,7 +7320,8 @@ const MixesManager = (function() {
     const clientX = event.clientX;
     const navRect = nav.getBoundingClientRect();
     const left = clampSliderLeft(clientX - navRect.left - bnavDragOffset);
-    slider.style.left = `${left}px`;
+    if (NAV_DEBUG) console.log('bnav: move', { clientX, left, dragOffset: bnavDragOffset });
+    slider.style.transform = `translateX(${left}px)`;
   };
 
   // Touch fallback for older browsers / Safari that prefer touch events
@@ -7328,7 +7332,8 @@ const MixesManager = (function() {
     const clientX = e.touches[0].clientX;
     const navRect = nav.getBoundingClientRect();
     const left = clampSliderLeft(clientX - navRect.left - bnavDragOffset);
-    slider.style.left = `${left}px`;
+    if (NAV_DEBUG) console.log('bnav: touchmove', { clientX, left, dragOffset: bnavDragOffset });
+    slider.style.transform = `translateX(${left}px)`;
   };
 
   const endDrag = (event) => {
@@ -7346,7 +7351,15 @@ const MixesManager = (function() {
       clientX = sRect.left + sRect.width / 2;
     }
     const nearest = getNearestNavButton(clientX);
-    if (nearest) showPage(nearest.dataset.page);
+    // Re-enable transition so the slider animates to the final button
+    slider.style.transition = '';
+    if (NAV_DEBUG) console.log('bnav: end', { clientX, nearest: nearest ? nearest.dataset.page : null });
+    if (nearest) {
+      showPage(nearest.dataset.page);
+    } else {
+      // Snap back to active
+      updateBottomNavSlider();
+    }
   };
 
   nav.addEventListener("pointerdown", (event) => {
@@ -7363,6 +7376,9 @@ const MixesManager = (function() {
     bnavDragActive = true;
     bnavDragOffset = event.clientX - sliderRect.left;
     document.body.style.userSelect = "none";
+    // disable transition for smooth direct-follow dragging
+    slider.style.transition = 'none';
+    if (NAV_DEBUG) console.log('bnav: down', { clientX: event.clientX, sliderLeft: sliderRect.left, dragOffset: bnavDragOffset });
     slider.setPointerCapture?.(event.pointerId);
     event.preventDefault();
   });
@@ -7382,6 +7398,8 @@ const MixesManager = (function() {
     bnavDragActive = true;
     bnavDragOffset = touchX - sliderRect.left;
     document.body.style.userSelect = "none";
+    slider.style.transition = 'none';
+    if (NAV_DEBUG) console.log('bnav: touchstart', { clientX: touchX, sliderLeft: sliderRect.left, dragOffset: bnavDragOffset });
   }, { passive: false });
 
   document.addEventListener("pointermove", onPointerMove, { passive: false });

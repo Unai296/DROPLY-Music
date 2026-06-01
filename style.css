@@ -1403,7 +1403,8 @@ input { font-family: inherit; }
   pointer-events: auto;
   touch-action: none;
   cursor: grab;
-  transition: left .35s cubic-bezier(0.34, 1.56, 0.64, 1), width .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform .28s cubic-bezier(0.2,0.9,0.2,1), width .28s cubic-bezier(0.2,0.9,0.2,1);
+  will-change: transform;
   box-shadow: 0 14px 34px rgba(12, 130, 255, 0.18), inset 0 1px 1px rgba(255,255,255,0.24);
   z-index: 1;
 }
@@ -1745,6 +1746,7 @@ input { font-family: inherit; }
   .bnav-btn svg { width: 20px; height: 20px; }
   .bnav-btn span { font-size: .5rem; }
   .bnav-glass-slider { top: 3px; height: calc(100% - 6px); border-radius: 16px; min-width:48px; }
+  .bnav-glass-slider { min-width: 40px; }
 }
 
 /* Car mode landscape */
