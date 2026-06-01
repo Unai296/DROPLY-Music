@@ -2530,18 +2530,6 @@ const media = [
     category: "Reggaeton",
     duration: "4:08"
   },
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Volcans",
@@ -2551,28 +2539,6 @@ const media = [
     category: "Catalanes",
     duration: "3:45"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Caminem Lluny",
@@ -2582,33 +2548,6 @@ const media = [
     category: "Catalanes",
     duration: "4:00"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Tutu Turú",
@@ -2618,33 +2557,6 @@ const media = [
     category: "Catalanes",
     duration: "3:40"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Camins, Somnis i Promeses",
@@ -2654,30 +2566,6 @@ const media = [
     category: "Catalanes",
     duration: "2:43"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "a la freSka",
@@ -3315,6 +3203,26 @@ activeAudio.addEventListener("play", function () {
   }
 }, { passive: true });
 
+/* ── loadedmetadata: actualiza posición en cuanto se conoce la duración real ── */
+/* Esto arregla la barra de la pantalla de bloqueo que mostraba 0:00/0:00      */
+activeAudio.addEventListener("loadedmetadata", function () {
+  _updateMediaSessionPosition();
+  // También actualiza la duración en el reproductor inmediatamente
+  const dur = this.duration;
+  if (dur && isFinite(dur) && dur > 0) {
+    if (sheetDuration) sheetDuration.textContent = formatTime(dur);
+  }
+}, { passive: true });
+
+/* ── playing: se dispara cuando el audio empieza a reproducirse de verdad ──── */
+/* En iOS/Safari loadedmetadata llega tarde; 'playing' es más fiable           */
+activeAudio.addEventListener("playing", function () {
+  _updateMediaSessionPosition();
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+  }
+}, { passive: true });
+
 activeAudio.addEventListener("pause", function () {
   // Solo actualiza si el audio está realmente pausado
   // (evita falsos positivos por cambio de src)
@@ -3345,6 +3253,15 @@ let _playToken = 0;
 
 function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   if (item.type !== "music") return;
+
+  // ── Comprobación offline ──────────────────────────────────────────────────
+  // Si no hay conexión y la canción no está descargada, avisar y salir
+  if (!navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(item.file)) {
+    if (typeof showToast === 'function') {
+      showToast(`"${item.title}" no está descargada — sin conexión`, 'default');
+    }
+    return;
+  }
 
   const cover = item.cover || getPlaceholderCover(item.category);
 
@@ -3421,7 +3338,20 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   sheetFill.style.width        = "0%";
   sheetThumb.style.left        = "0%";
   sheetCurrent.textContent     = "0:00";
+  sheetDuration.textContent    = "0:00";
   miniProgressFill.style.width = "0%";
+
+  // Reset posición en pantalla de bloqueo ANTES de cambiar src
+  // (evita que se muestre el tiempo del track anterior mientras carga el nuevo)
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: 0,
+        playbackRate: 1,
+        position: 0
+      });
+    } catch(_) {}
+  }
 
   // Pausar antes de cambiar src
   activeAudio.pause();
@@ -4133,10 +4063,12 @@ function _updateMediaSessionPosition() {
     const dur = audio.duration;
     const cur = audio.currentTime;
     if (!dur || !isFinite(dur) || dur <= 0) return;
+    // iOS lanza excepción si position > duration, forzamos el clamp
+    const safePos = Math.max(0, Math.min(cur, dur - 0.01));
     navigator.mediaSession.setPositionState({
       duration:     dur,
       playbackRate: audio.playbackRate || 1,
-      position:     Math.max(0, Math.min(cur, dur))
+      position:     safePos
     });
   } catch(_) {}
 }
@@ -4449,17 +4381,46 @@ function playNext() {
     const nextFile = queue.shift();
     saveQueue();
     const item = getTrackByFile(nextFile);
-    if (item) { loadTrack(item, true); renderQueueList(); return; }
+    if (item) {
+      // Si estamos offline y la canción no está descargada, vaciamos la cola y buscamos la siguiente disponible
+      if (!navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(item.file)) {
+        saveQueue();
+        renderQueueList();
+        // Fall through to playlist
+      } else {
+        loadTrack(item, true);
+        renderQueueList();
+        return;
+      }
+    }
   }
   if (playlist.length === 0) return;
-  if (shuffleMode) {
-    const nextIdx = Math.floor(Math.random() * playlist.length);
-    currentTrackIdx = nextIdx;
-  } else {
-    currentTrackIdx = (currentTrackIdx + 1) % playlist.length;
+
+  const isOffline = !navigator.onLine;
+  const maxTries  = playlist.length;
+  let   tries     = 0;
+
+  let nextIdx = currentTrackIdx;
+  do {
+    if (shuffleMode) {
+      nextIdx = Math.floor(Math.random() * playlist.length);
+    } else {
+      nextIdx = (nextIdx + 1) % playlist.length;
+    }
+    tries++;
+    const candidate = playlist[nextIdx];
+    // En modo offline solo reproducir si está descargada (o si no hay OfflineManager)
+    if (!isOffline || typeof OfflineManager === 'undefined' || OfflineManager.isDownloaded(candidate.file)) {
+      currentTrackIdx = nextIdx;
+      loadTrack(candidate, true);
+      return;
+    }
+  } while (tries < maxTries);
+
+  // Ningún track disponible offline
+  if (isOffline && typeof showToast === 'function') {
+    showToast('Sin canciones descargadas disponibles', 'default');
   }
-  const item = playlist[currentTrackIdx];
-  if (item) loadTrack(item, true);
 }
 
 /* ── Play previous track ────────────────────────────── */
@@ -4471,9 +4432,26 @@ function playPrev() {
     return;
   }
   if (playlist.length === 0) return;
-  currentTrackIdx = (currentTrackIdx - 1 + playlist.length) % playlist.length;
-  const item = playlist[currentTrackIdx];
-  if (item) loadTrack(item, true);
+
+  const isOffline = !navigator.onLine;
+  const maxTries  = playlist.length;
+  let   tries     = 0;
+  let   prevIdx   = currentTrackIdx;
+
+  do {
+    prevIdx = (prevIdx - 1 + playlist.length) % playlist.length;
+    tries++;
+    const candidate = playlist[prevIdx];
+    if (!isOffline || typeof OfflineManager === 'undefined' || OfflineManager.isDownloaded(candidate.file)) {
+      currentTrackIdx = prevIdx;
+      loadTrack(candidate, true);
+      return;
+    }
+  } while (tries < maxTries);
+
+  if (isOffline && typeof showToast === 'function') {
+    showToast('Sin canciones descargadas disponibles', 'default');
+  }
 }
 
 /* ── Add to queue ───────────────────────────────────── */

@@ -1914,120 +1914,184 @@ input { font-family: inherit; }
 .home-continue-section {
   padding: 1.4rem 1.25rem .4rem;
 }
+
+/* ── Tarjeta "Continuar escuchando" ── */
 .home-continue-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 1rem 1rem 1rem 1rem;
+  gap: .9rem;
+  border-radius: 20px;
+  padding: .85rem .9rem .85rem .85rem;
   cursor: pointer;
-  transition: background var(--t), transform .2s var(--ease-spring), box-shadow .2s;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  transition: transform .22s var(--ease-spring), box-shadow .22s;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,.45);
 }
+
+/* Overlay oscuro encima del blur de portada para legibilidad */
 .home-continue-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(139,92,246,.06) 0%, transparent 60%);
+  background:
+    linear-gradient(105deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.32) 55%, rgba(0,0,0,.15) 100%);
+  z-index: 0;
   pointer-events: none;
 }
-.home-continue-card:hover {
-  background: var(--bg4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+
+/* Todos los hijos por encima del overlay */
+.home-continue-card > * {
+  position: relative;
+  z-index: 1;
 }
+
+.home-continue-card:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 16px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.1);
+}
+.home-continue-card:active {
+  transform: scale(.98);
+}
+
+/* ── Portada ── */
 .hcc-cover-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
+  z-index: 1;
 }
 .hcc-cover {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
+  width: 68px;
+  height: 68px;
+  border-radius: 11px;
   object-fit: cover;
   display: block;
-  box-shadow: 0 6px 24px rgba(0,0,0,.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.1);
+  transition: box-shadow .2s;
 }
+.home-continue-card:hover .hcc-cover {
+  box-shadow: 0 6px 28px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.18);
+}
+
+/* Glow de portada: doble función — blur chico bajo la imagen Y blur grande como fondo de tarjeta */
 .hcc-cover-glow {
   position: absolute;
-  inset: 4px;
-  border-radius: 10px;
+  /* Versión grande: tapa toda la tarjeta como fondo difuso */
+  inset: -200px -300px;
   background-size: cover;
   background-position: center;
-  filter: blur(16px);
-  opacity: .5;
+  filter: blur(48px) saturate(1.7) brightness(.3);
+  -webkit-filter: blur(48px) saturate(1.7) brightness(.3);
+  opacity: .95;
   z-index: -1;
-  transform: scale(1.1);
+  transform: scale(1.2);
+  border-radius: 0;
+  transition: opacity .4s;
+  pointer-events: none;
 }
+.home-continue-card:hover .hcc-cover-glow { opacity: 1; filter: blur(48px) saturate(1.9) brightness(.35); }
+
+/* ── Info ── */
 .hcc-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 1;
 }
 .hcc-label {
-  font-size: .62rem;
-  font-weight: 600;
-  letter-spacing: .14em;
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: .3rem;
+  color: var(--accent-lt);
+  margin-bottom: .28rem;
+  opacity: .95;
 }
 .hcc-title {
-  font-size: .97rem;
+  font-size: .95rem;
   font-weight: 600;
-  color: var(--text);
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: .15rem;
+  margin-bottom: .12rem;
   line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0,0,0,.5);
 }
 .hcc-artist {
-  font-size: .77rem;
-  color: var(--text-mid);
+  font-size: .74rem;
+  color: rgba(255,255,255,.58);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: .6rem;
 }
+
+/* ── Barra de progreso ── */
 .hcc-progress-wrap {
   margin-top: auto;
 }
 .hcc-progress-bar {
   height: 3px;
-  background: rgba(255,255,255,.12);
+  background: rgba(255,255,255,.15);
   border-radius: 99px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 .hcc-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-lt) 100%);
   border-radius: 99px;
   transition: width .5s linear;
+  position: relative;
 }
+/* Punto luminoso al final */
+.hcc-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px var(--accent-lt), 0 0 3px #fff;
+  opacity: 0;
+  transition: opacity .25s;
+}
+.home-continue-card:hover .hcc-progress-fill::after { opacity: 1; }
+
+/* ── Botón play/pause — blanco sobre el fondo de color ── */
 .hcc-play-btn {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: var(--accent);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  color: #0a0a0e;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
   transition: background var(--t), transform .15s var(--ease-spring), box-shadow var(--t);
+  z-index: 1;
 }
 .hcc-play-btn:hover {
-  background: var(--accent-lt);
-  transform: scale(1.08);
-  box-shadow: 0 6px 24px var(--accent-glow-lg);
+  background: #fff;
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(0,0,0,.6);
 }
-.hcc-play-btn:active { transform: scale(.93); }
+.hcc-play-btn:active { transform: scale(.92); }
 
 /* ══════════════════════════════════════════════════
    QUICK ACCESS GRID
@@ -2264,10 +2328,10 @@ input { font-family: inherit; }
   .home-hscroll          { padding: 0 2rem 1.2rem; }
   .home-quick-grid       { padding: 1.5rem 2rem .75rem; max-width: 460px; }
 
-  .home-continue-card { padding: 1.2rem 1.2rem 1.2rem 1.2rem; }
-  .hcc-cover, .hcc-cover-wrap { width: 88px; height: 88px; }
-  .hcc-cover { border-radius: 14px; }
-  .hcc-title { font-size: 1.1rem; }
+  .home-continue-card { padding: 1rem 1.1rem 1rem 1rem; }
+  .hcc-cover, .hcc-cover-wrap { width: 80px; height: 80px; }
+  .hcc-cover { border-radius: 13px; }
+  .hcc-title { font-size: 1.05rem; }
 
   .home-pl-card  { width: 160px; }
   .home-pl-cover { width: 160px; height: 160px; border-radius: 16px; }
