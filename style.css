@@ -1740,7 +1740,8 @@ input { font-family: inherit; }
     width: calc(100vw - 2.4rem);
     border-radius: 20px;
     bottom: 0.9rem;
-    height: calc(48px + var(--safe-bottom));
+    /* restore original bottom nav height for mobile */
+    height: calc(var(--bottomnav-h) + var(--safe-bottom));
   }
   .bnav-btn { padding: .32rem 0 .32rem; }
   .bnav-btn svg { width: 20px; height: 20px; }
