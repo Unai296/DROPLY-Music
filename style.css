@@ -1354,6 +1354,7 @@ input { font-family: inherit; }
   overflow: hidden;
   z-index: 860;
 }
+.bottom-nav { touch-action: pan-y; }
 .bottom-nav::before {
   content: '';
   position: absolute;
@@ -1399,8 +1400,8 @@ input { font-family: inherit; }
   -webkit-backdrop-filter: blur(22px) brightness(1.2);
   border-radius: 24px;
   border: 1px solid rgba(255,255,255,0.18);
-  pointer-events: none;
-  touch-action: pan-x;
+  pointer-events: auto;
+  touch-action: none;
   cursor: grab;
   transition: left .35s cubic-bezier(0.34, 1.56, 0.64, 1), width .35s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 14px 34px rgba(12, 130, 255, 0.18), inset 0 1px 1px rgba(255,255,255,0.24);
@@ -1730,6 +1731,17 @@ input { font-family: inherit; }
   .bottom-nav { max-width: 768px; left: 50%; transform: translateX(-50%); }
   .mini-player { max-width: 768px; }
   .queue-panel { width: 360px; }
+}
+
+/* Mobile tweaks: shorter pill and tighter padding */
+@media (max-width: 520px) {
+  .bottom-nav {
+    width: calc(100vw - 2.4rem);
+    border-radius: 20px;
+    bottom: 0.9rem;
+  }
+  .bnav-btn { padding: .48rem 0 .48rem; }
+  .bnav-glass-slider { top: 3px; height: calc(100% - 6px); border-radius: 20px; }
 }
 
 /* Car mode landscape */

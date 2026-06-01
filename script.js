@@ -7320,6 +7320,17 @@ const MixesManager = (function() {
     slider.style.left = `${left}px`;
   };
 
+  // Touch fallback for older browsers / Safari that prefer touch events
+  const onTouchMove = (e) => {
+    if (!bnavDragActive) return;
+    if (!e.touches || !e.touches[0]) return;
+    e.preventDefault();
+    const clientX = e.touches[0].clientX;
+    const navRect = nav.getBoundingClientRect();
+    const left = clampSliderLeft(clientX - navRect.left - bnavDragOffset);
+    slider.style.left = `${left}px`;
+  };
+
   const endDrag = (event) => {
     if (!bnavDragActive) return;
     bnavDragActive = false;
@@ -7342,11 +7353,32 @@ const MixesManager = (function() {
     bnavDragActive = true;
     bnavDragOffset = event.clientX - sliderRect.left;
     document.body.style.userSelect = "none";
+    slider.setPointerCapture?.(event.pointerId);
     event.preventDefault();
   });
+
+  // Touch start handler
+  nav.addEventListener('touchstart', (e) => {
+    if (!e.touches || !e.touches[0]) return;
+    const touchX = e.touches[0].clientX;
+    const activeBtn = nav.querySelector(".bnav-btn.active");
+    if (!activeBtn) return;
+    const activeRect = activeBtn.getBoundingClientRect();
+    const sliderRect = slider.getBoundingClientRect();
+    const isOnActive = touchX >= activeRect.left && touchX <= activeRect.right;
+    const isOnSlider = touchX >= sliderRect.left && touchX <= sliderRect.right;
+    if (!isOnActive && !isOnSlider) return;
+
+    bnavDragActive = true;
+    bnavDragOffset = touchX - sliderRect.left;
+    document.body.style.userSelect = "none";
+  }, { passive: false });
 
   document.addEventListener("pointermove", onPointerMove, { passive: false });
   document.addEventListener("pointerup", endDrag);
   document.addEventListener("pointercancel", endDrag);
+  // Touch fallback listeners
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', endDrag, { passive: false });
 })();
 })();
