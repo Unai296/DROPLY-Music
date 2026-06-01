@@ -1739,9 +1739,12 @@ input { font-family: inherit; }
     width: calc(100vw - 2.4rem);
     border-radius: 20px;
     bottom: 0.9rem;
+    height: calc(48px + var(--safe-bottom));
   }
-  .bnav-btn { padding: .48rem 0 .48rem; }
-  .bnav-glass-slider { top: 3px; height: calc(100% - 6px); border-radius: 20px; }
+  .bnav-btn { padding: .32rem 0 .32rem; }
+  .bnav-btn svg { width: 20px; height: 20px; }
+  .bnav-btn span { font-size: .5rem; }
+  .bnav-glass-slider { top: 3px; height: calc(100% - 6px); border-radius: 16px; min-width:48px; }
 }
 
 /* Car mode landscape */

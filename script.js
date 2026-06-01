@@ -7335,7 +7335,17 @@ const MixesManager = (function() {
     if (!bnavDragActive) return;
     bnavDragActive = false;
     document.body.style.userSelect = "";
-    const nearest = getNearestNavButton(event.clientX);
+    // Normalize clientX for pointer and touch events
+    let clientX = event && event.clientX;
+    if (!clientX && event && event.changedTouches && event.changedTouches[0]) {
+      clientX = event.changedTouches[0].clientX;
+    }
+    // Fallback to slider center if we couldn't get a coordinate
+    if (!clientX) {
+      const sRect = slider.getBoundingClientRect();
+      clientX = sRect.left + sRect.width / 2;
+    }
+    const nearest = getNearestNavButton(clientX);
     if (nearest) showPage(nearest.dataset.page);
   };
 
