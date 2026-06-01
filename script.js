@@ -3374,7 +3374,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
     if (myToken !== _playToken) return;
     activeAudio.src = audioSrc;
     activeAudio.currentTime = 0;
-    activeAudio.volume = 1;
+    activeAudio.muted = false;
+    if (activeAudio.volume === 0) activeAudio.volume = 1;
+    activeAudio.volume = activeAudio.volume || 1;
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -4026,6 +4028,8 @@ function setupMediaSession(item) {
   navigator.mediaSession.setActionHandler("play", () => {
     const audio = activeAudio;
     if (!audio) return;
+    audio.muted = false;
+    if (audio.volume === 0) audio.volume = 1;
     audio.play()
       .then(() => { isPlaying = true; updatePlayIcons(true); })
       .catch(() => {});
@@ -4041,8 +4045,22 @@ function setupMediaSession(item) {
   });
 
   // Controles de pista
-  navigator.mediaSession.setActionHandler("previoustrack", () => playPrev());
-  navigator.mediaSession.setActionHandler("nexttrack",     () => playNext());
+  navigator.mediaSession.setActionHandler("previoustrack", () => {
+    const audio = activeAudio;
+    if (audio) {
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+    }
+    playPrev();
+  });
+  navigator.mediaSession.setActionHandler("nexttrack",     () => {
+    const audio = activeAudio;
+    if (audio) {
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+    }
+    playNext();
+  });
 
   // Desregistrar seekbackward/seekforward para que Android muestre flechas prev/next
   try { navigator.mediaSession.setActionHandler("seekbackward", null); } catch(_) {}
@@ -4396,6 +4414,11 @@ function playNext() {
     saveQueue();
     const item = getTrackByFile(nextFile);
     if (item) {
+      const audio = activeAudio;
+      if (audio) {
+        audio.muted = false;
+        if (audio.volume === 0) audio.volume = 1;
+      }
       // Si estamos offline y la canción no está descargada, vaciamos la cola y buscamos la siguiente disponible
       if (!navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(item.file)) {
         saveQueue();
@@ -4426,6 +4449,11 @@ function playNext() {
     // En modo offline solo reproducir si está descargada (o si no hay OfflineManager)
     if (!isOffline || typeof OfflineManager === 'undefined' || OfflineManager.isDownloaded(candidate.file)) {
       currentTrackIdx = nextIdx;
+      const audio = activeAudio;
+      if (audio) {
+        audio.muted = false;
+        if (audio.volume === 0) audio.volume = 1;
+      }
       loadTrack(candidate, true);
       return;
     }
@@ -4458,6 +4486,11 @@ function playPrev() {
     const candidate = playlist[prevIdx];
     if (!isOffline || typeof OfflineManager === 'undefined' || OfflineManager.isDownloaded(candidate.file)) {
       currentTrackIdx = prevIdx;
+      const audio = activeAudio;
+      if (audio) {
+        audio.muted = false;
+        if (audio.volume === 0) audio.volume = 1;
+      }
       loadTrack(candidate, true);
       return;
     }
