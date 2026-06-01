@@ -2853,12 +2853,25 @@ function showPage(pageId) {
     if (typeof updateOfflineStatusBanner === 'function') updateOfflineStatusBanner();
   }
   closeContextMenu();
+  
+  // Animar slider glassmorphic
+  updateBottomNavSlider();
+}
+
+function updateBottomNavSlider() {
+  const slider = document.getElementById("bnavGlassSlider");
+  const activeBtn = bottomNav.querySelector(".bnav-btn.active");
+  if (!slider || !activeBtn) return;
+  const width = Math.max(activeBtn.offsetWidth, 56);
+  slider.style.width = `${width}px`;
+  slider.style.left = `${activeBtn.offsetLeft}px`;
 }
 
 bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
   btn.addEventListener("click", () => showPage(btn.dataset.page));
 });
 topbarSearchBtn.addEventListener("click", () => showPage("pageSearch"));
+window.addEventListener("resize", updateBottomNavSlider);
 
 /* ══════════════════════════════════════════════════════
    7. CONTEXT MENU — Bottom Sheet (mobile-first)
@@ -6530,6 +6543,9 @@ function bootPremium() {
   // Render offline playlist (after IDB is ready, slight delay)
   setTimeout(() => { renderOfflinePlaylist(); updateOfflineStatusBanner(); }, 400);
 
+  // Ensure bottom nav slider recalculates after premium DOM (offline tab) is injected
+  setTimeout(() => { try { if (typeof updateBottomNavSlider === 'function') updateBottomNavSlider(); } catch(_){} }, 500);
+
   // Register SW
   registerServiceWorker();
 
@@ -7252,4 +7268,85 @@ const MixesManager = (function() {
   function _boot(){ MixesManager.init(); }
   if (document.readyState==="loading") document.addEventListener("DOMContentLoaded",_boot);
   else setTimeout(_boot, 60);
+
+/* ══════════════════════════════════════════════════════
+   GLASS SLIDER INIT
+══════════════════════════════════════════════════════ */
+(function initGlassSlider() {
+  const slider = document.getElementById("bnavGlassSlider");
+  const nav = document.getElementById("bottomNav");
+  if (!slider || !nav) return;
+  
+  // Posicionar en el primer botón activo
+  const activeBtn = nav.querySelector(".bnav-btn.active");
+  if (activeBtn) {
+    const btnWidth = activeBtn.offsetWidth;
+    const btnLeft = activeBtn.offsetLeft;
+    slider.style.width = `${Math.max(btnWidth, 56)}px`;
+    slider.style.left = `${btnLeft}px`;
+  }
+
+  let bnavDragActive = false;
+  let bnavDragOffset = 0;
+
+  const getNearestNavButton = (clientX) => {
+    const buttons = Array.from(nav.querySelectorAll(".bnav-btn"));
+    const navRect = nav.getBoundingClientRect();
+    let nearest = buttons[0] || null;
+    let closest = Infinity;
+    buttons.forEach(btn => {
+      const rect = btn.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const dist = Math.abs(clientX - center);
+      if (dist < closest) {
+        closest = dist;
+        nearest = btn;
+      }
+    });
+    return nearest;
+  };
+
+  const clampSliderLeft = (left) => {
+    const maxLeft = nav.clientWidth - slider.offsetWidth;
+    return Math.min(Math.max(left, 0), Math.max(maxLeft, 0));
+  };
+
+  const onPointerMove = (event) => {
+    if (!bnavDragActive) return;
+    event.preventDefault();
+    const clientX = event.clientX;
+    const navRect = nav.getBoundingClientRect();
+    const left = clampSliderLeft(clientX - navRect.left - bnavDragOffset);
+    slider.style.left = `${left}px`;
+  };
+
+  const endDrag = (event) => {
+    if (!bnavDragActive) return;
+    bnavDragActive = false;
+    document.body.style.userSelect = "";
+    const nearest = getNearestNavButton(event.clientX);
+    if (nearest) showPage(nearest.dataset.page);
+  };
+
+  nav.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    const activeBtn = nav.querySelector(".bnav-btn.active");
+    if (!activeBtn) return;
+    const activeRect = activeBtn.getBoundingClientRect();
+    const sliderRect = slider.getBoundingClientRect();
+    const targetX = event.clientX;
+    const isOnActive = targetX >= activeRect.left && targetX <= activeRect.right;
+    const isOnSlider = targetX >= sliderRect.left && targetX <= sliderRect.right;
+    if (!isOnActive && !isOnSlider) return;
+
+    bnavDragActive = true;
+    bnavDragOffset = event.clientX - sliderRect.left;
+    document.body.style.userSelect = "none";
+    event.preventDefault();
+  });
+
+  document.addEventListener("pointermove", onPointerMove, { passive: false });
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+})();
 })();
