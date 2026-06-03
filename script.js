@@ -2605,6 +2605,15 @@ const media = [
 
 
 
+                {
+    type:     "music",
+    title:    "LA FALDA",
+    artist:   "Myke Towers",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/afc1539c3fe20a2fed707ba72aacbb05/500x500.jpg",
+    file:     "./Music/lafalda.mp3",
+    category: "Reggaeton",
+    duration: "3:47"
+  },
 
 
 
@@ -2618,6 +2627,402 @@ const media = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Madrid City",
+    artist:   "Ana Mena",
+    cover:    "https://i.scdn.co/image/ab67616d0000b27357d3916c661917951085047c",
+    file:     "./Music/madridcity.mp3",
+    category: "Reggaeton",
+    duration: "3:10"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "AVÍSAME x HOT",
+    artist:   "JC Reyes, Inna",
+    cover:    "https://i1.sndcdn.com/artworks-11890D8ZnXz40yKe-IwMFLQ-t500x500.png",
+    file:     "./Music/avismasexhot.mp3",
+    category: "Mashups",
+    duration: "2:22"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Contra La Pared",
+    artist:   "Sean Paul, J Balvin",
+    cover:    "https://i1.sndcdn.com/artworks-000597385118-o5cf6a-t500x500.jpg",
+    file:     "./Music/contralapared.mp3",
+    category: "Reggaeton",
+    duration: "3:55"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Peligrosa",
+    artist:   "FloyyMenor",
+    cover:    "https://m.media-amazon.com/images/I/51KxT7+HAJL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/peligrosa.mp3",
+    category: "Reggaeton",
+    duration: "2:16"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Capaz X We Found Love",
+    artist:   "Vilu Gontero, Ima Tolosa, SoundWorld",
+    cover:    "https://m.media-amazon.com/images/I/41LYZstJAUL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/capazxwefoundlove.mp3",
+    category: "Mashups",
+    duration: "2:50"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "El Conjuntito X Freed From Desire",
+    artist:   "Omar Montes, El Bobe, Gala",
+    cover:    "https://i1.sndcdn.com/artworks-45nPzb9GySqhFCLV-UkUw7A-t500x500.jpg",
+    file:     "./Music/elconjuntitoxfreedfromdesire.mp3",
+    category: "Mashups",
+    duration: "2:52"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "POLARIS REMIX X QUIERE BEBER",
+    artist:   "Anna Gisbert",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2738f4a278cd5b5b2f65a0f87fd",
+    file:     "./Music/polarisremixxquierebeber.mp3",
+    category: "Mashups",
+    duration: "5:48"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Toca Toca x Calabria x Thrift Shop",
+    artist:   "Winged",
+    cover:    "https://i1.sndcdn.com/artworks-2GvSuy8lz0WzEn6y-JaaflA-t500x500.jpg",
+    file:     "./Music/tocatocaxcalabriaxthriftshop.mp3",
+    category: "Mashups",
+    duration: "3:09"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Pelele x Estrellita de Madrugada",
+    artist:   "Morad, Daddy Yankee, Omega",
+    cover:    "https://i1.sndcdn.com/artworks-gyRycQPzGgqhE74i-m907gw-t500x500.jpg",
+    file:     "./Music/pelelexestrellitademadrugada.mp3",
+    category: "Mashups",
+    duration: "5:21"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "SETEADORA x MOTINHA 2.0 x MARTILLANDO",
+    artist:   "Sergio Salinas",
+    cover:    "https://m.media-amazon.com/images/I/51KSlr8YNTL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/seteadoraxmotinha2.0xmartillando.mp3",
+    category: "Mashups",
+    duration: "5:19"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "GASOLINA X MOTINHA 2.0",
+    artist:   "Samu Castillo",
+    cover:    "https://vipremixer.winkermind.com/mediafiles/2025/Junio/Vip%20Remixer/images/artworks-ckz9jjiIacjH3SmO-yYHs6g-t500x500.jpg",
+    file:     "./Music/gasolinaxmotinha.mp3",
+    category: "Mashups",
+    duration: "3:44"
+  },
 
 
 
