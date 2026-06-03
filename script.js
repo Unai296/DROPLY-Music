@@ -2822,15 +2822,40 @@ function getTrackByFile(file) { return media.find(m => m.file === file) || null;
 /* ══════════════════════════════════════════════════════
    5. TOAST NOTIFICATIONS
 ══════════════════════════════════════════════════════ */
+const TOAST_DURATION = 2800;
 function showToast(msg, type = "default") {
   const el = document.createElement("div");
   el.className = `toast toast-${type}`;
-  el.innerHTML = `<span class="toast-dot"></span>${msg}`;
+  el.style.setProperty('--toast-duration', `${TOAST_DURATION}ms`);
+
+  // Icon based on type
+  const iconMap = {
+    success: `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:var(--green);stroke-width:2.5;fill:none;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:#ef4444;stroke-width:2.5;fill:none;flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    warn:    `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:#fabd00;stroke-width:2.5;fill:none;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    default: `<span class="toast-dot"></span>`
+  };
+  const icon = iconMap[type] || iconMap.default;
+
+  el.innerHTML = `
+    <div class="toast-content">${icon}<span>${msg}</span></div>
+    <div class="toast-bar-wrap"><div class="toast-bar"></div></div>
+  `;
+
   toastContainer.appendChild(el);
-  setTimeout(() => {
+
+  // Auto-remove when bar finishes
+  const timer = setTimeout(() => {
     el.classList.add("toast-out");
     el.addEventListener("animationend", () => el.remove(), { once: true });
-  }, 2800);
+  }, TOAST_DURATION);
+
+  // Tap to dismiss
+  el.addEventListener("click", () => {
+    clearTimeout(timer);
+    el.classList.add("toast-out");
+    el.addEventListener("animationend", () => el.remove(), { once: true });
+  });
 }
 
 /* ══════════════════════════════════════════════════════
@@ -3214,6 +3239,21 @@ activeAudio.addEventListener("play", function () {
   updatePlayIcons(true);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+    // Re-assert handlers on every play (some browsers drop them)
+    try {
+      navigator.mediaSession.setActionHandler("play", () => {
+        activeAudio.muted = false;
+        if (activeAudio.volume === 0) activeAudio.volume = 1;
+        activeAudio.play()
+          .then(() => { isPlaying = true; updatePlayIcons(true); })
+          .catch(() => {});
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        activeAudio.pause();
+        isPlaying = false;
+        updatePlayIcons(false);
+      });
+    } catch(_) {}
   }
 }, { passive: true });
 
@@ -3615,6 +3655,17 @@ function openPlaylistDetail(id) {
       if (!item) return;
       const cover = item.cover || getPlaceholderCover(item.category);
       const isPlaying = file === currentFile;
+
+      // Outer wrapper for swipe reveal
+      const wrap = document.createElement("div");
+      wrap.className = "playlist-detail-item-wrap";
+
+      // Red delete background
+      const deleteBg = document.createElement("div");
+      deleteBg.className = "playlist-detail-item-delete-bg";
+      deleteBg.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg><span>BORRAR</span>`;
+      wrap.appendChild(deleteBg);
+
       const div = document.createElement("div");
       div.className = "playlist-detail-item" + (isPlaying ? " playing" : "");
       div.innerHTML = `
@@ -3630,12 +3681,12 @@ function openPlaylistDetail(id) {
         <button class="playlist-detail-remove" title="Eliminar de playlist">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>`;
+
       div.addEventListener("click", e => {
         if (e.target.closest(".playlist-detail-remove")) return;
         if (e.target.closest(".playlist-more-btn")) return;
         const plItems = pl.tracks.map(f => getTrackByFile(f)).filter(Boolean);
         loadTrack(item, false, plItems);
-        // highlight row
         playlistDetailList.querySelectorAll(".playlist-detail-item").forEach(r => r.classList.remove("playing"));
         div.classList.add("playing");
       });
@@ -3647,7 +3698,78 @@ function openPlaylistDetail(id) {
         e.stopPropagation();
         removeTrackFromPlaylist(id, file);
       });
-      playlistDetailList.appendChild(div);
+
+      // ── Swipe-to-delete (touch) ─────────────────────────────
+      const SWIPE_THRESHOLD = 72; // px to trigger delete
+      let _swipeStartX = 0, _swipeStartY = 0, _swipeDx = 0, _swiping = false, _swipeLocked = false;
+
+      div.addEventListener("touchstart", e => {
+        _swipeStartX = e.touches[0].clientX;
+        _swipeStartY = e.touches[0].clientY;
+        _swipeDx = 0;
+        _swiping = false;
+        _swipeLocked = false;
+        div.classList.remove("snap-back");
+      }, { passive: true });
+
+      div.addEventListener("touchmove", e => {
+        const dx = e.touches[0].clientX - _swipeStartX;
+        const dy = e.touches[0].clientY - _swipeStartY;
+
+        // Lock direction after first clear movement
+        if (!_swipeLocked) {
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            _swipeLocked = true;
+            if (Math.abs(dy) > Math.abs(dx)) return; // vertical scroll wins
+            _swiping = true;
+          } else return;
+        }
+        if (!_swiping) return;
+
+        _swipeDx = Math.min(0, dx); // only left
+        div.style.transform = `translateX(${_swipeDx}px)`;
+        div.classList.add("swiping");
+        wrap.classList.add("swiping");
+
+        // Colour intensity hint
+        const ratio = Math.min(1, Math.abs(_swipeDx) / SWIPE_THRESHOLD);
+        deleteBg.style.opacity = ratio;
+        deleteBg.style.background = ratio >= 1 ? "#c0392b" : "#e94f4f";
+      }, { passive: true });
+
+      div.addEventListener("touchend", () => {
+        div.classList.remove("swiping");
+        wrap.classList.remove("swiping");
+        deleteBg.style.opacity = "";
+        deleteBg.style.background = "";
+
+        if (!_swiping) return;
+        _swiping = false;
+
+        if (Math.abs(_swipeDx) >= SWIPE_THRESHOLD) {
+          // Fly out and delete
+          div.classList.add("fly-out");
+          hapticFeedback("medium");
+          setTimeout(() => {
+            wrap.style.maxHeight = wrap.offsetHeight + "px";
+            wrap.style.transition = "max-height .28s ease, opacity .28s";
+            wrap.style.overflow = "hidden";
+            requestAnimationFrame(() => { wrap.style.maxHeight = "0"; wrap.style.opacity = "0"; });
+            setTimeout(() => {
+              removeTrackFromPlaylist(id, file);
+            }, 280);
+          }, 60);
+        } else {
+          // Snap back
+          div.classList.add("snap-back");
+          div.style.transform = "";
+          setTimeout(() => div.classList.remove("snap-back"), 350);
+        }
+        _swipeDx = 0;
+      }, { passive: true });
+
+      wrap.appendChild(div);
+      playlistDetailList.appendChild(wrap);
     });
   }
 
@@ -3980,6 +4102,9 @@ searchInput.addEventListener("input", () => {
           <span class="search-result-artist">${item.artist}</span>
         </div>
         <div class="search-result-actions">
+          <button class="search-result-add-btn" title="Añadir a playlist" aria-label="Añadir a playlist">
+            <svg viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
           <button class="search-result-more-btn library-action-more" title="Más opciones" aria-label="Más opciones">
             <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
           </button>
@@ -3987,8 +4112,10 @@ searchInput.addEventListener("input", () => {
         <span class="search-result-cat">${item.category}</span>`;
       row.addEventListener("click", e => {
         if (e.target.closest(".search-result-more-btn")) return;
+        if (e.target.closest(".search-result-add-btn")) return;
         loadTrack(item); showPage("pageHome");
       });
+      row.querySelector(".search-result-add-btn").addEventListener("click", e => { e.stopPropagation(); openAddToPlaylist(item); });
       row.querySelector(".search-result-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       searchResults.appendChild(row);
     });
@@ -4919,8 +5046,20 @@ const OfflineManager = (() => {
 
     const fragment = document.createDocumentFragment();
     items.sort((a,b) => (b.downloadedAt||0) - (a.downloadedAt||0)).forEach(item => {
+      // Wrap for swipe-to-delete
+      const wrap = document.createElement('div');
+      wrap.className = 'playlist-detail-item-wrap';
+      wrap.style.borderRadius = '10px';
+      wrap.style.marginBottom = '2px';
+
+      const deleteBg = document.createElement('div');
+      deleteBg.className = 'playlist-detail-item-delete-bg';
+      deleteBg.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg><span>BORRAR</span>`;
+      wrap.appendChild(deleteBg);
+
       const row = document.createElement('div');
-      row.className = 'library-item fade-in';
+      row.className = 'library-item fade-in playlist-detail-item';
+      row.style.margin = '0';
       const cover = item.cover || (typeof getPlaceholderCover === 'function' ? getPlaceholderCover(item.category) : '');
       row.innerHTML = `
         <div class="library-thumb"><img src="${cover}" alt="${item.title}" /></div>
@@ -4942,7 +5081,6 @@ const OfflineManager = (() => {
         }
         if (typeof hapticFeedback === 'function') hapticFeedback('light');
         const trackItem = { ...item };
-        // Use offline blob src if available
         const offlineSrc = await getOfflineSrc(item.file);
         if (offlineSrc && typeof loadTrack === 'function') {
           const patchedItem = { ...trackItem, _offlineSrc: offlineSrc };
@@ -4951,7 +5089,57 @@ const OfflineManager = (() => {
           loadTrack(trackItem);
         }
       });
-      fragment.appendChild(row);
+
+      // Swipe-to-delete touch handler
+      const SWIPE_THRESHOLD = 72;
+      let _sx = 0, _sy = 0, _dx = 0, _sw = false, _locked = false;
+      row.addEventListener('touchstart', e => {
+        _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
+        _dx = 0; _sw = false; _locked = false;
+        row.classList.remove('snap-back');
+      }, { passive: true });
+      row.addEventListener('touchmove', e => {
+        const dx = e.touches[0].clientX - _sx;
+        const dy = e.touches[0].clientY - _sy;
+        if (!_locked) {
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            _locked = true;
+            if (Math.abs(dy) > Math.abs(dx)) return;
+            _sw = true;
+          } else return;
+        }
+        if (!_sw) return;
+        _dx = Math.min(0, dx);
+        row.style.transform = `translateX(${_dx}px)`;
+        row.classList.add('swiping'); wrap.classList.add('swiping');
+        const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
+        deleteBg.style.opacity = ratio;
+        deleteBg.style.background = ratio >= 1 ? '#c0392b' : '#e94f4f';
+      }, { passive: true });
+      row.addEventListener('touchend', () => {
+        row.classList.remove('swiping'); wrap.classList.remove('swiping');
+        deleteBg.style.opacity = ''; deleteBg.style.background = '';
+        if (!_sw) return; _sw = false;
+        if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
+          row.classList.add('fly-out');
+          if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+          setTimeout(async () => {
+            wrap.style.maxHeight = wrap.offsetHeight + 'px';
+            wrap.style.transition = 'max-height .28s ease, opacity .28s';
+            wrap.style.overflow = 'hidden';
+            requestAnimationFrame(() => { wrap.style.maxHeight = '0'; wrap.style.opacity = '0'; });
+            setTimeout(async () => { await deleteDownload(item.file); }, 280);
+          }, 60);
+        } else {
+          row.classList.add('snap-back');
+          row.style.transform = '';
+          setTimeout(() => row.classList.remove('snap-back'), 350);
+        }
+        _dx = 0;
+      }, { passive: true });
+
+      wrap.appendChild(row);
+      fragment.appendChild(wrap);
     });
     container.innerHTML = '';
     container.appendChild(fragment);
