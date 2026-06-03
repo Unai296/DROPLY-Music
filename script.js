@@ -2693,6 +2693,7 @@ let contextTarget = null;
    3. DOM REFS
 ══════════════════════════════════════════════════════ */
 const audioEl          = document.getElementById("mainAudio");
+const auxAudio         = document.getElementById("auxAudio");
 const mediaGrid        = document.getElementById("mediaGrid");
 const catInner         = document.getElementById("catInner");
 const sectionTitle     = document.getElementById("sectionTitle");
@@ -3199,12 +3200,39 @@ function renderGrid() {
      antes de cambiar de src
 ══════════════════════════════════════════════════════ */
 
-const activeAudio = audioEl;   // mainAudio del DOM — único elemento
+let activeAudio = audioEl;   // referencia mutable a elemento activo
 window.audioEl = activeAudio;
 
-/* ── Audio events ────────────────────────────────────── */
+// Crossfade engine
+let audioCtx = null;
+let mainGain = null, auxGain = null;
+const CROSSFADE_ENABLED = true;
+const CROSSFADE_SECONDS = 6;
+
+function setupCrossfadeEngine() {
+  if (!auxAudio) return;
+  if (audioCtx) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new Ctx();
+    const mainSource = audioCtx.createMediaElementSource(audioEl);
+    const auxSourceNode = audioCtx.createMediaElementSource(auxAudio);
+    mainGain = audioCtx.createGain();
+    auxGain  = audioCtx.createGain();
+    mainGain.gain.value = 1;
+    auxGain.gain.value  = 0;
+    mainSource.connect(mainGain).connect(audioCtx.destination);
+    auxSourceNode.connect(auxGain).connect(audioCtx.destination);
+  } catch (e) {
+    console.warn('[DROPLY] crossfade setup failed', e);
+    audioCtx = null;
+  }
+}
+
+/* ── Audio events (shared handlers attached to both elements) ── */
 let _rafPending = false;
-activeAudio.addEventListener("timeupdate", function () {
+function _handleTimeUpdate(e) {
+  if (e.currentTarget !== activeAudio) return;
   if (_rafPending) return;
   _rafPending = true;
   requestAnimationFrame(() => {
@@ -3219,27 +3247,28 @@ activeAudio.addEventListener("timeupdate", function () {
     miniProgressFill.style.width = pct + "%";
     _updateMediaSessionPosition();
   });
-}, { passive: true });
+}
 
-activeAudio.addEventListener("ended", function () {
+function _handleEnded(e) {
+  if (e.currentTarget !== activeAudio) return;
   isPlaying = false;
   if (repeatMode) {
-    this.currentTime = 0;
-    this.play()
+    activeAudio.currentTime = 0;
+    activeAudio.play()
       .then(() => { isPlaying = true; updatePlayIcons(true); })
       .catch(err => { updatePlayIcons(false); console.warn("[DROPLY] repeat:", err); });
   } else {
     updatePlayIcons(false);
     playNext();
   }
-}, { passive: true });
+}
 
-activeAudio.addEventListener("play", function () {
+function _handlePlay(e) {
+  if (e.currentTarget !== activeAudio) return;
   isPlaying = true;
   updatePlayIcons(true);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
-    // Re-assert handlers on every play (some browsers drop them)
     try {
       navigator.mediaSession.setActionHandler("play", () => {
         activeAudio.muted = false;
@@ -3255,38 +3284,50 @@ activeAudio.addEventListener("play", function () {
       });
     } catch(_) {}
   }
-}, { passive: true });
+}
 
-/* ── loadedmetadata: actualiza posición en cuanto se conoce la duración real ── */
-/* Esto arregla la barra de la pantalla de bloqueo que mostraba 0:00/0:00      */
-activeAudio.addEventListener("loadedmetadata", function () {
+function _handleLoadedMeta(e) {
+  if (e.currentTarget !== activeAudio) return;
   _updateMediaSessionPosition();
-  // También actualiza la duración en el reproductor inmediatamente
-  const dur = this.duration;
+  const dur = activeAudio.duration;
   if (dur && isFinite(dur) && dur > 0) {
     if (sheetDuration) sheetDuration.textContent = formatTime(dur);
   }
-}, { passive: true });
+}
 
-/* ── playing: se dispara cuando el audio empieza a reproducirse de verdad ──── */
-/* En iOS/Safari loadedmetadata llega tarde; 'playing' es más fiable           */
-activeAudio.addEventListener("playing", function () {
+function _handlePlaying(e) {
+  if (e.currentTarget !== activeAudio) return;
   _updateMediaSessionPosition();
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
   }
-}, { passive: true });
+}
 
-activeAudio.addEventListener("pause", function () {
-  // Solo actualiza si el audio está realmente pausado
-  // (evita falsos positivos por cambio de src)
-  if (!this.paused) return;
+function _handlePause(e) {
+  if (e.currentTarget !== activeAudio) return;
+  if (!activeAudio.paused) return;
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
   }
-}, { passive: true });
+}
+
+// Attach handlers to both elements when available
+audioEl.addEventListener("timeupdate", _handleTimeUpdate, { passive: true });
+audioEl.addEventListener("ended", _handleEnded, { passive: true });
+audioEl.addEventListener("play", _handlePlay, { passive: true });
+audioEl.addEventListener("loadedmetadata", _handleLoadedMeta, { passive: true });
+audioEl.addEventListener("playing", _handlePlaying, { passive: true });
+audioEl.addEventListener("pause", _handlePause, { passive: true });
+if (auxAudio) {
+  auxAudio.addEventListener("timeupdate", _handleTimeUpdate, { passive: true });
+  auxAudio.addEventListener("ended", _handleEnded, { passive: true });
+  auxAudio.addEventListener("play", _handlePlay, { passive: true });
+  auxAudio.addEventListener("loadedmetadata", _handleLoadedMeta, { passive: true });
+  auxAudio.addEventListener("playing", _handlePlaying, { passive: true });
+  auxAudio.addEventListener("pause", _handlePause, { passive: true });
+}
 
 /* ── Background blur transition (visual only) ─────── */
 function animateBackgroundTransition(newCover) {
@@ -3385,7 +3426,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
     };
   }
 
-  /* -- Audio: hard switch limpio -- */
+  /* -- Audio: crossfade cuando disponible, fallback a hard switch -- */
   const myToken = ++_playToken;
 
   // Reset UI a estado "cargando"
@@ -3396,51 +3437,79 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   miniProgressFill.style.width = "0%";
 
   // Reset posición en pantalla de bloqueo ANTES de cambiar src
-  // (evita que se muestre el tiempo del track anterior mientras carga el nuevo)
   if ("mediaSession" in navigator) {
     try {
-      navigator.mediaSession.setPositionState({
-        duration: 0,
-        playbackRate: 1,
-        position: 0
-      });
+      navigator.mediaSession.setPositionState({ duration: 0, playbackRate: 1, position: 0 });
     } catch(_) {}
   }
 
-  // Pausar antes de cambiar src
-  activeAudio.pause();
-
-  function _doPlay(audioSrc) {
+  // Helper: perform hard play on given element
+  function _hardPlayOn(el, audioSrc) {
     if (myToken !== _playToken) return;
-    activeAudio.src = audioSrc;
-    activeAudio.currentTime = 0;
-    activeAudio.muted = false;
-    if (activeAudio.volume === 0) activeAudio.volume = 1;
-    activeAudio.volume = activeAudio.volume || 1;
-    activeAudio.play()
-      .then(() => {
-        if (myToken !== _playToken) return;
-        isPlaying = true;
-        updatePlayIcons(true);
-      })
-      .catch(err => {
-        if (myToken !== _playToken) return;
-        isPlaying = false;
-        updatePlayIcons(false);
-        if (err.name === "NotAllowedError") {
-          window._droplyPendingTrack = true;
-        } else if (err.name !== "AbortError") {
-          console.warn("[DROPLY] play error:", err);
-        }
-      });
+    el.pause();
+    el.src = audioSrc;
+    el.currentTime = 0;
+    el.muted = false;
+    if (el.volume === 0) el.volume = 1;
+    el.play().then(() => {
+      if (myToken !== _playToken) return;
+      isPlaying = true; updatePlayIcons(true);
+    }).catch(err => {
+      if (myToken !== _playToken) return;
+      isPlaying = false; updatePlayIcons(false);
+      if (err.name === 'NotAllowedError') window._droplyPendingTrack = true;
+      else if (err.name !== 'AbortError') console.warn('[DROPLY] play error:', err);
+    });
+  }
+
+  // Crossfade logic
+  async function _crossfadeTo(src) {
+    if (!CROSSFADE_ENABLED || !auxAudio) return _hardPlayOn(activeAudio, src);
+    try {
+      setupCrossfadeEngine();
+      if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+      // Start aux with 0 gain
+      auxAudio.pause();
+      auxAudio.src = src;
+      auxAudio.currentTime = 0;
+      await auxAudio.play();
+      if (!mainGain || !auxGain) return _hardPlayOn(activeAudio, src);
+      const now = audioCtx.currentTime;
+      mainGain.gain.cancelScheduledValues(now);
+      auxGain.gain.cancelScheduledValues(now);
+      mainGain.gain.setValueAtTime(mainGain.gain.value, now);
+      auxGain.gain.setValueAtTime(auxGain.gain.value, now);
+      mainGain.gain.linearRampToValueAtTime(0, now + CROSSFADE_SECONDS);
+      auxGain.gain.linearRampToValueAtTime(1, now + CROSSFADE_SECONDS);
+      // After fade complete, pause old, swap activeAudio reference
+      setTimeout(() => {
+        try {
+          audioEl.pause();
+          // swap roles: activeAudio becomes auxAudio
+          activeAudio = auxAudio;
+          window.audioEl = activeAudio;
+          // reset gains (so future crossfades work)
+          if (mainGain && auxGain) {
+            const tmp = mainGain; mainGain = auxGain; auxGain = tmp;
+          }
+          updatePlayIcons(true);
+        } catch (e) { console.warn('[DROPLY] crossfade finalize error', e); }
+      }, CROSSFADE_SECONDS * 1000 + 120);
+    } catch (e) {
+      console.warn('[DROPLY] crossfade failed', e);
+      return _hardPlayOn(activeAudio, src);
+    }
   }
 
   if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
     OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
-      _doPlay(blobUrl || item.file);
-    }).catch(() => _doPlay(item.file));
+      const src = blobUrl || item.file;
+      if (CROSSFADE_ENABLED && !activeAudio.paused) _crossfadeTo(src); else _hardPlayOn(activeAudio, src);
+    }).catch(() => {
+      if (CROSSFADE_ENABLED && !activeAudio.paused) _crossfadeTo(item.file); else _hardPlayOn(activeAudio, item.file);
+    });
   } else {
-    _doPlay(item.file);
+    if (CROSSFADE_ENABLED && !activeAudio.paused) _crossfadeTo(item.file); else _hardPlayOn(activeAudio, item.file);
   }
 }
 
