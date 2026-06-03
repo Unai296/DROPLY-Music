@@ -4093,6 +4093,17 @@ searchInput.addEventListener("input", () => {
 
     results.forEach(item => {
       const cover = item.cover || getPlaceholderCover(item.category);
+
+      // Outer wrapper for swipe reveal (same pattern as playlist-detail)
+      const wrap = document.createElement("div");
+      wrap.className = "search-result-row-wrap";
+
+      // Green add-to-playlist background (revealed on left swipe)
+      const addBg = document.createElement("div");
+      addBg.className = "search-result-add-bg";
+      addBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>AÑADIR</span>`;
+      wrap.appendChild(addBg);
+
       const row = document.createElement("div");
       row.className = "search-result-row";
       row.innerHTML = `
@@ -4117,7 +4128,70 @@ searchInput.addEventListener("input", () => {
       });
       row.querySelector(".search-result-add-btn").addEventListener("click", e => { e.stopPropagation(); openAddToPlaylist(item); });
       row.querySelector(".search-result-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
-      searchResults.appendChild(row);
+
+      // ── Swipe-to-add-to-playlist (touch) ──────────────────────
+      const SWIPE_THRESHOLD = 72;
+      let _swipeStartX = 0, _swipeStartY = 0, _swipeDx = 0, _swiping = false, _swipeLocked = false;
+
+      row.addEventListener("touchstart", e => {
+        _swipeStartX = e.touches[0].clientX;
+        _swipeStartY = e.touches[0].clientY;
+        _swipeDx = 0;
+        _swiping = false;
+        _swipeLocked = false;
+        row.classList.remove("snap-back");
+      }, { passive: true });
+
+      row.addEventListener("touchmove", e => {
+        const dx = e.touches[0].clientX - _swipeStartX;
+        const dy = e.touches[0].clientY - _swipeStartY;
+
+        if (!_swipeLocked) {
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            _swipeLocked = true;
+            if (Math.abs(dy) > Math.abs(dx)) return; // vertical scroll wins
+            _swiping = true;
+          } else return;
+        }
+        if (!_swiping) return;
+
+        _swipeDx = Math.min(0, dx); // only left
+        row.style.transform = `translateX(${_swipeDx}px)`;
+        row.classList.add("swiping");
+        wrap.classList.add("swiping");
+
+        const ratio = Math.min(1, Math.abs(_swipeDx) / SWIPE_THRESHOLD);
+        addBg.style.opacity = ratio;
+        addBg.style.background = ratio >= 1 ? "#16a34a" : "#22c55e";
+      }, { passive: true });
+
+      row.addEventListener("touchend", () => {
+        row.classList.remove("swiping");
+        wrap.classList.remove("swiping");
+        addBg.style.opacity = "";
+        addBg.style.background = "";
+
+        if (!_swiping) return;
+        _swiping = false;
+
+        if (Math.abs(_swipeDx) >= SWIPE_THRESHOLD) {
+          // Snap back and open add-to-playlist
+          row.classList.add("snap-back");
+          row.style.transform = "";
+          setTimeout(() => row.classList.remove("snap-back"), 350);
+          hapticFeedback("medium");
+          openAddToPlaylist(item);
+        } else {
+          // Snap back
+          row.classList.add("snap-back");
+          row.style.transform = "";
+          setTimeout(() => row.classList.remove("snap-back"), 350);
+        }
+        _swipeDx = 0;
+      }, { passive: true });
+
+      wrap.appendChild(row);
+      searchResults.appendChild(wrap);
     });
   }, 220);
 });
