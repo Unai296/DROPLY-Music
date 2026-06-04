@@ -5121,53 +5121,217 @@ function renderQueueNowPlaying(item) {
   if (!queueNowPlaying) return;
   const cover = item.cover || getPlaceholderCover(item.category);
   queueNowPlaying.innerHTML = `
-    <p class="queue-section-label" style="margin-bottom:.5rem">Reproduciendo ahora</p>
-    <div class="library-item" style="background:rgba(139,92,246,.08);border-radius:12px;padding:.6rem .8rem">
-      <div class="library-thumb"><img src="${cover}" alt="${item.title}" /></div>
-      <div class="library-info">
-        <span class="library-track-title" style="color:var(--accent)">${item.title}</span>
-        <span class="library-track-artist">${item.artist}</span>
+    <p class="queue-now-label">Reproduciendo ahora</p>
+    <div class="queue-now-card">
+      <div class="queue-now-cover-wrap">
+        <img class="queue-now-img" src="${cover}" alt="${item.title}" />
+        <div class="queue-now-bars">
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
+        </div>
+      </div>
+      <div class="queue-now-info">
+        <div class="queue-now-title">${item.title}</div>
+        <div class="queue-now-artist">${item.artist}</div>
+        <div class="queue-now-progress">
+          <div class="queue-now-progress-fill" id="queueProgressFill"></div>
+        </div>
       </div>
     </div>`;
+  // Update ambient glow with cover color
+  const ambient = document.getElementById('queueAmbient');
+  if (ambient) {
+    ambient.style.background = `radial-gradient(ellipse 90% 45% at 50% -5%, rgba(139,92,246,.22) 0%, transparent 70%)`;
+  }
+  // Sync progress bar
+  _syncQueueProgress();
+}
+
+function _syncQueueProgress() {
+  const fill = document.getElementById('queueProgressFill');
+  if (!fill) return;
+  const audio = document.getElementById('mainAudio');
+  if (!audio || !audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  fill.style.width = pct + '%';
+}
+
+// Tick progress bar while queue is open
+setInterval(() => {
+  if (document.getElementById('queuePanel')?.classList.contains('open')) {
+    _syncQueueProgress();
+  }
+}, 500);
+
+/* ── Smart Infinite Queue ───────────────────────────── */
+const INFINITE_QUEUE_MIN = 3; // refill when fewer than this many tracks remain
+const INFINITE_QUEUE_MAX = 12; // keep at most this many auto-added tracks
+
+function _getRecentFiles(n = 20) {
+  const recent = new Set();
+  // current track
+  const cur = playlist[currentTrackIdx];
+  if (cur) recent.add(cur.file);
+  // queue items
+  queue.forEach(f => recent.add(f));
+  // history
+  if (typeof historyTracks !== 'undefined') {
+    historyTracks.slice(0, n).forEach(h => recent.add(h.file));
+  }
+  return recent;
+}
+
+function _getSimilarTracks(seedItem, count = 3) {
+  if (!seedItem) return [];
+  const musicTracks = media.filter(m => m.type === 'music');
+  const recent = _getRecentFiles(15);
+
+  // Score each track by similarity
+  const scored = musicTracks
+    .filter(m => !recent.has(m.file))
+    .map(m => {
+      let score = 0;
+      if (m.category === seedItem.category) score += 3;
+      if (m.artist === seedItem.artist) score += 2;
+      // same genre keyword in artist name
+      const seedWords = (seedItem.artist || '').toLowerCase().split(/[\s,&]+/);
+      const mWords    = (m.artist || '').toLowerCase().split(/[\s,&]+/);
+      const overlap   = seedWords.filter(w => w.length > 2 && mWords.includes(w)).length;
+      score += overlap;
+      // add randomness for discovery
+      score += Math.random() * 1.5;
+      return { track: m, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, count)
+    .map(s => s.track);
+
+  return scored;
+}
+
+function _autoFillQueue() {
+  if (queue.length >= INFINITE_QUEUE_MIN) return;
+  const hint = document.getElementById('queueInfiniteHint');
+  const seed = playlist[currentTrackIdx] ||
+               (queue.length > 0 ? getTrackByFile(queue[queue.length - 1]) : null);
+  if (!seed) return;
+
+  const needed = INFINITE_QUEUE_MIN + 2 - queue.length;
+  const similar = _getSimilarTracks(seed, needed);
+  if (similar.length === 0) return;
+
+  similar.forEach(t => {
+    if (queue.length < INFINITE_QUEUE_MAX) {
+      queue.push(t.file);
+    }
+  });
+  saveQueue();
+  renderQueueList();
+  if (hint) {
+    hint.style.display = 'flex';
+    setTimeout(() => { if (hint) hint.style.display = 'none'; }, 3500);
+  }
 }
 
 /* ── Render queue list ──────────────────────────────── */
 function renderQueueList() {
   if (!queueList) return;
+  const countBadge = document.getElementById('queueCountBadge');
+
   if (queue.length === 0) {
-    queueList.innerHTML = '<p style="color:var(--text-soft);font-size:.82rem;padding:1rem .5rem;text-align:center">La cola está vacía</p>';
     if (queueNextLabel) queueNextLabel.style.display = 'none';
+    queueList.innerHTML = `
+      <div class="queue-empty">
+        <div class="queue-empty-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </div>
+        <p><strong>La cola está vacía</strong><br>Añade canciones desde la biblioteca o<br>activa la cola infinita</p>
+      </div>`;
     return;
   }
+
   if (queueNextLabel) queueNextLabel.style.display = '';
+  if (countBadge) countBadge.textContent = queue.length;
+
+  const prevItems = new Set([...queueList.querySelectorAll('.queue-item')].map(el => el.dataset.file));
   queueList.innerHTML = '';
+
   queue.forEach((file, i) => {
     const item = getTrackByFile(file);
     if (!item) return;
     const cover = item.cover || getPlaceholderCover(item.category);
+    const isNew = !prevItems.has(file);
     const row = document.createElement('div');
-    row.className = 'library-item fade-in';
+    row.className = 'queue-item' + (isNew ? ' queue-item-new' : '');
+    row.dataset.file = file;
+    row.dataset.index = i;
+    if (isNew) row.style.animationDelay = (i * 30) + 'ms';
+    row.draggable = true;
     row.innerHTML = `
-      <span class="library-item-num" style="font-size:.75rem;min-width:20px;color:var(--text-soft)">${i + 1}</span>
-      <div class="library-thumb"><img src="${cover}" alt="${item.title}" /></div>
-      <div class="library-info">
-        <span class="library-track-title">${item.title}</span>
-        <span class="library-track-artist">${item.artist}</span>
+      <div class="queue-item-drag" title="Arrastrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
       </div>
-      <button class="library-action-btn" data-action="remove" title="Quitar de la cola">
-        <svg viewBox="0 0 24 24" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>`;
+      <div class="queue-item-cover">
+        <img src="${cover}" alt="${item.title}" loading="lazy" />
+        <div class="queue-item-num">${i + 1}</div>
+      </div>
+      <div class="queue-item-info">
+        <div class="queue-item-title">${item.title}</div>
+        <div class="queue-item-artist">${item.artist}</div>
+      </div>
+      <div class="queue-item-actions">
+        <button class="queue-item-btn" data-action="remove" title="Quitar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+
+    // Click to play
     row.addEventListener('click', e => {
       if (e.target.closest('[data-action="remove"]')) {
         queue.splice(i, 1);
         saveQueue();
         renderQueueList();
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
         return;
       }
       loadTrack(item, true);
     });
+
+    // Drag & Drop
+    row.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', i);
+      row.classList.add('dragging');
+      if (typeof navigator.vibrate === 'function') navigator.vibrate([10, 20, 10]);
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      const to   = parseInt(row.dataset.index);
+      if (from === to || isNaN(from) || isNaN(to)) return;
+      const [moved] = queue.splice(from, 1);
+      queue.splice(to, 0, moved);
+      saveQueue();
+      renderQueueList();
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(20);
+    });
+
     queueList.appendChild(row);
   });
+
+  // Trigger auto-fill if queue is running low
+  setTimeout(_autoFillQueue, 200);
 }
 
 /* ── Open / close queue panel ───────────────────────── */
