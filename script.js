@@ -2575,36 +2575,6 @@ const media = [
     category: "Catalanes",
     duration: "2:58"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "LA FALDA",
@@ -2614,32 +2584,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:47"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Madrid City",
@@ -2649,37 +2593,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:10"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "AVÍSAME x HOT",
@@ -2689,37 +2602,6 @@ const media = [
     category: "Mashups",
     duration: "2:22"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Contra La Pared",
@@ -2729,34 +2611,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:55"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Peligrosa",
@@ -2766,52 +2620,6 @@ const media = [
     category: "Reggaeton",
     duration: "2:16"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Capaz X We Found Love",
@@ -2821,32 +2629,6 @@ const media = [
     category: "Mashups",
     duration: "2:50"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "El Conjuntito X Freed From Desire",
@@ -2856,32 +2638,6 @@ const media = [
     category: "Mashups",
     duration: "2:52"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "POLARIS REMIX X QUIERE BEBER",
@@ -2891,26 +2647,6 @@ const media = [
     category: "Mashups",
     duration: "5:48"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Toca Toca x Calabria x Thrift Shop",
@@ -2920,32 +2656,6 @@ const media = [
     category: "Mashups",
     duration: "3:09"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "Pelele x Estrellita de Madrugada",
@@ -2955,29 +2665,6 @@ const media = [
     category: "Mashups",
     duration: "5:21"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 {
     type:     "music",
     title:    "SETEADORA x MOTINHA 2.0 x MARTILLANDO",
@@ -2987,6 +2674,15 @@ const media = [
     category: "Mashups",
     duration: "5:19"
   },
+                {
+    type:     "music",
+    title:    "GASOLINA X MOTINHA 2.0",
+    artist:   "Samu Castillo",
+    cover:    "https://vipremixer.winkermind.com/mediafiles/2025/Junio/Vip%20Remixer/images/artworks-ckz9jjiIacjH3SmO-yYHs6g-t500x500.jpg",
+    file:     "./Music/gasolinaxmotinha.mp3",
+    category: "Mashups",
+    duration: "3:44"
+  },
 
 
 
@@ -2997,6 +2693,21 @@ const media = [
 
 
 
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Pa Madrid",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/pamadrid.mp3",
+    category: "Pop",
+    duration: "4:22"
+  },
 
 
 
@@ -3016,13 +2727,245 @@ const media = [
 
                 {
     type:     "music",
-    title:    "GASOLINA X MOTINHA 2.0",
-    artist:   "Samu Castillo",
-    cover:    "https://vipremixer.winkermind.com/mediafiles/2025/Junio/Vip%20Remixer/images/artworks-ckz9jjiIacjH3SmO-yYHs6g-t500x500.jpg",
-    file:     "./Music/gasolinaxmotinha.mp3",
-    category: "Mashups",
-    duration: "3:44"
+    title:    "Crónicas de una loca",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/cronicasdeunaloca.mp3",
+    category: "Pop",
+    duration: "4:21"
   },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "El Danzar De Las Mariposas",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/eldanzardelasmariposas.mp3",
+    category: "Pop",
+    duration: "4:16"
+  },
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Abreme la puerta",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/abremelapuerta.mp3",
+    category: "Pop",
+    duration: "4:36"
+  },
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Ángel Malherido",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/Ángel Malherido.mp3",
+    category: "Pop",
+    duration: "4:27"
+  },
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "El Licenciao",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/ellicenciao.mp3",
+    category: "Pop",
+    duration: "4:48"
+  },
+
+
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Quiereme",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/quiereme.mp3",
+    category: "Pop",
+    duration: "3:49"
+  },
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Torpe Canción",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/torpecancion.mp3",
+    category: "Pop",
+    duration: "5:01"
+  },
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Buena, bonita y barata",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/buenabonitaybarata.mp3",
+    category: "Pop",
+    duration: "4:18"
+  },
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Mal de amores",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/maldeamores.mp3",
+    category: "Pop",
+    duration: "3:23"
+  },
+
+
+
+
+
+
+
+
+
+                {
+    type:     "music",
+    title:    "Amores Maníos",
+    artist:   "El Barrio",
+    cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
+    file:     "./Music/amoresmanios.mp3",
+    category: "Pop",
+    duration: "4:18"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3056,6 +2999,7 @@ let currentTrackIdx = -1;
 let isPlaying       = false;
 let playlist        = [];        // current PLAYBACK context (playlist, favorites, etc.)
 let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
+let singleTrackMode = false;     // true when user plays a lone track (enables infinite auto-queue)
 let shuffleMode     = false;
 let repeatMode      = false;
 
@@ -3679,6 +3623,11 @@ activeAudio.addEventListener("playing", function () {
   _updateMediaSessionPosition();
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
+    // Re-assert metadata — algunos navegadores lo pierden entre tracks
+    const cur = playlist[currentTrackIdx];
+    if (cur && navigator.mediaSession.metadata?.title !== cur.title) {
+      setupMediaSession(cur);
+    }
   }
 }, { passive: true });
 
@@ -3737,9 +3686,15 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   /* -- Playlist context -- */
   if (!fromQueue) {
-    if (newPlaylistContext) playlist = newPlaylistContext;
-    else playlist = media.filter(m => m.type === "music");
+    if (newPlaylistContext) {
+      playlist = newPlaylistContext;
+      singleTrackMode = false;  // playing within a defined context — no auto-queue
+    } else {
+      playlist = [item];        // only this track; auto-queue will extend if desired
+      singleTrackMode = true;   // lone track → enable infinite auto-queue
+    }
     currentTrackIdx = playlist.findIndex(p => p.file === item.file);
+    if (currentTrackIdx < 0) { playlist = [item]; currentTrackIdx = 0; }
   } else {
     const idx = playlist.findIndex(p => p.file === item.file);
     if (idx >= 0) currentTrackIdx = idx;
@@ -4529,7 +4484,7 @@ searchInput.addEventListener("input", () => {
       row.addEventListener("click", e => {
         if (e.target.closest(".search-result-more-btn")) return;
         if (e.target.closest(".search-result-add-btn")) return;
-        loadTrack(item); showPage("pageHome");
+        loadTrack(item, false, null); showPage("pageHome");
       });
       row.querySelector(".search-result-add-btn").addEventListener("click", e => { e.stopPropagation(); openAddToPlaylist(item); });
       row.querySelector(".search-result-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
@@ -4613,20 +4568,21 @@ function setupMediaSession(item) {
 
   const cover = item.cover || getPlaceholderCover(item.category);
 
-  // Determinar el tipo MIME real de la imagen para mayor compatibilidad
-  const imgType = cover.startsWith("data:image/svg") ? "image/svg+xml" : "image/jpeg";
+  // Determinar el tipo MIME — las portadas externas suelen ser jpg/png/webp
+  let imgType = "image/jpeg";
+  if (cover.startsWith("data:image/svg")) imgType = "image/svg+xml";
+  else if (cover.startsWith("data:image/png") || cover.match(/\.png(\?|$)/i)) imgType = "image/png";
+  else if (cover.match(/\.webp(\?|$)/i)) imgType = "image/webp";
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title:  item.title,
     artist: item.artist,
     album:  item.category,
     artwork: [
-      { src: cover, sizes: "96x96",   type: imgType },
-      { src: cover, sizes: "128x128", type: imgType },
-      { src: cover, sizes: "192x192", type: imgType },
-      { src: cover, sizes: "256x256", type: imgType },
-      { src: cover, sizes: "384x384", type: imgType },
       { src: cover, sizes: "512x512", type: imgType },
+      { src: cover, sizes: "256x256", type: imgType },
+      { src: cover, sizes: "192x192", type: imgType },
+      { src: cover, sizes: "96x96",   type: imgType },
     ]
   });
 
@@ -5039,6 +4995,20 @@ function playNext() {
   }
   if (playlist.length === 0) return;
 
+  // When in singleTrackMode (lone track played, no context), pick a similar random track
+  // instead of looping the single-item playlist
+  if (singleTrackMode && playlist.length <= 1) {
+    const seed = playlist[0];
+    const similar = _getSimilarTracks(seed, 1);
+    if (similar.length > 0) {
+      const next = similar[0];
+      playlist = [next];
+      currentTrackIdx = 0;
+      loadTrack(next, true);
+    }
+    return;
+  }
+
   const isOffline = !navigator.onLine;
   const maxTries  = playlist.length;
   let   tries     = 0;
@@ -5211,6 +5181,8 @@ function _getSimilarTracks(seedItem, count = 3) {
 }
 
 function _autoFillQueue() {
+  // Only auto-fill when the user played a lone track (not inside a playlist/genre/favorites)
+  if (!singleTrackMode) return;
   if (queue.length >= INFINITE_QUEUE_MIN) return;
   const hint = document.getElementById('queueInfiniteHint');
   const seed = playlist[currentTrackIdx] ||
