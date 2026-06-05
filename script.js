@@ -3584,6 +3584,7 @@ activeAudio.addEventListener("ended", function () {
 }, { passive: true });
 
 activeAudio.addEventListener("play", function () {
+  _isSwitchingTrack = false; // Asegurar que el flag se limpia si se disparó play
   isPlaying = true;
   updatePlayIcons(true);
   if ("mediaSession" in navigator) {
@@ -3604,6 +3605,8 @@ activeAudio.addEventListener("play", function () {
       });
     } catch(_) {}
   }
+  // Actualizar posición para la barra de pantalla de bloqueo desde el inicio
+  _updateMediaSessionPosition();
 }, { passive: true });
 
 /* ── loadedmetadata: actualiza posición en cuanto se conoce la duración real ── */
@@ -3623,22 +3626,36 @@ activeAudio.addEventListener("playing", function () {
   _updateMediaSessionPosition();
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
-    // Re-assert metadata — algunos navegadores lo pierden entre tracks
+    // Re-assert metadata en cada reproducción para garantizar portada y datos correctos
     const cur = playlist[currentTrackIdx];
-    if (cur && navigator.mediaSession.metadata?.title !== cur.title) {
+    if (cur) {
       setupMediaSession(cur);
     }
   }
 }, { passive: true });
 
 activeAudio.addEventListener("pause", function () {
-  // Solo actualiza si el audio está realmente pausado
-  // (evita falsos positivos por cambio de src)
+  // Ignorar si estamos en medio de un cambio de track (pause() intencional antes de nuevo src)
+  if (_isSwitchingTrack) return;
   if (!this.paused) return;
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+  }
+}, { passive: true });
+
+/* ── Audio error handler ────────────────────────────── */
+activeAudio.addEventListener("error", function () {
+  _isSwitchingTrack = false;
+  isPlaying = false;
+  updatePlayIcons(false);
+  const err = this.error;
+  if (err && err.code !== MediaError.MEDIA_ERR_ABORTED) {
+    console.warn("[DROPLY] Audio error:", err.code, err.message);
+    if (typeof showToast === 'function') {
+      showToast("Error al cargar el audio", "error");
+    }
   }
 }, { passive: true });
 
@@ -3658,6 +3675,8 @@ function animateBackgroundTransition(newCover) {
 ══════════════════════════════════════════════════════ */
 // Token para cancelar plays pendientes si llega otro loadTrack antes
 let _playToken = 0;
+// Flag para suprimir eventos pause falsos durante el cambio de src
+let _isSwitchingTrack = false;
 
 function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   if (item.type !== "music") return;
@@ -3702,11 +3721,13 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   /* -- UI -- */
   miniCover.src = cover;
+  miniCover.onerror = () => { miniCover.onerror = null; miniCover.src = getPlaceholderCover(item.category); };
   miniTitle.textContent  = item.title;
   miniArtist.textContent = item.artist;
   miniPlayer.classList.add("visible");
 
   sheetCover.src = cover;
+  sheetCover.onerror = () => { sheetCover.onerror = null; sheetCover.src = getPlaceholderCover(item.category); };
   sheetCategory.textContent = item.category;
   sheetTitle.textContent    = item.title;
   sheetArtist.textContent   = item.artist;
@@ -3726,6 +3747,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   const hccCoverEl = document.getElementById("hccCover");
   if (hccCoverEl) {
     hccCoverEl.src = cover;
+    hccCoverEl.onerror = () => { hccCoverEl.onerror = null; hccCoverEl.src = getPlaceholderCover(item.category); };
     const hccTitleEl  = document.getElementById("hccTitle");
     const hccArtistEl = document.getElementById("hccArtist");
     const hccGlowEl   = document.getElementById("hccGlow");
@@ -3767,12 +3789,15 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
     } catch(_) {}
   }
 
-  // Pausar antes de cambiar src
+  // Pausar antes de cambiar src (flag evita que el listener de 'pause' actualice la UI)
+  _isSwitchingTrack = true;
   activeAudio.pause();
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
     activeAudio.src = audioSrc;
+    activeAudio.load(); // Necesario en Safari/iOS para forzar carga del nuevo src
+    _isSwitchingTrack = false; // Permitir eventos pause reales a partir de aquí
     activeAudio.currentTime = 0;
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
@@ -3787,6 +3812,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
         if (myToken !== _playToken) return;
         isPlaying = false;
         updatePlayIcons(false);
+        _isSwitchingTrack = false;
         if (err.name === "NotAllowedError") {
           window._droplyPendingTrack = true;
         } else if (err.name !== "AbortError") {
@@ -4570,19 +4596,27 @@ function setupMediaSession(item) {
 
   // Determinar el tipo MIME — las portadas externas suelen ser jpg/png/webp
   let imgType = "image/jpeg";
-  if (cover.startsWith("data:image/svg")) imgType = "image/svg+xml";
-  else if (cover.startsWith("data:image/png") || cover.match(/\.png(\?|$)/i)) imgType = "image/png";
-  else if (cover.match(/\.webp(\?|$)/i)) imgType = "image/webp";
+  let artworkSrc = cover;
+  if (cover.startsWith("data:image/svg")) {
+    // Los data:svg no se muestran en pantalla de bloqueo (iOS/Android los ignoran)
+    // Usar icono de la app como fallback
+    artworkSrc = location.origin + "/icons/icon-512.png";
+    imgType = "image/png";
+  } else if (cover.startsWith("data:image/png") || cover.match(/\.png(\?|$)/i)) {
+    imgType = "image/png";
+  } else if (cover.match(/\.webp(\?|$)/i)) {
+    imgType = "image/webp";
+  }
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title:  item.title,
     artist: item.artist,
     album:  item.category,
     artwork: [
-      { src: cover, sizes: "512x512", type: imgType },
-      { src: cover, sizes: "256x256", type: imgType },
-      { src: cover, sizes: "192x192", type: imgType },
-      { src: cover, sizes: "96x96",   type: imgType },
+      { src: artworkSrc, sizes: "512x512", type: imgType },
+      { src: artworkSrc, sizes: "256x256", type: imgType },
+      { src: artworkSrc, sizes: "192x192", type: imgType },
+      { src: artworkSrc, sizes: "96x96",   type: imgType },
     ]
   });
 
@@ -4711,7 +4745,7 @@ function renderHomeScreen() {
     if (lastTrack) {
       const cover = lastTrack.cover || getPlaceholderCover(lastTrack.category);
       hccCover.src = cover;
-      hccCover.onerror = () => { hccCover.src = getPlaceholderCover(lastTrack.category); };
+      hccCover.onerror = () => { hccCover.onerror = null; hccCover.src = getPlaceholderCover(lastTrack.category); };
       hccTitle.textContent = lastTrack.title;
       hccArtist.textContent = lastTrack.artist;
       if (hccGlow) hccGlow.style.backgroundImage = `url(${cover})`;
@@ -5844,7 +5878,8 @@ const CarMode = (() => {
     // Pull current state from main player globals
     const title  = (typeof sheetTitle  !== 'undefined' && sheetTitle.textContent)  || '—';
     const artist = (typeof sheetArtist !== 'undefined' && sheetArtist.textContent) || '—';
-    const src    = (typeof sheetCover  !== 'undefined' && sheetCover.src)          || '';
+    const _curTrack = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined') ? playlist[currentTrackIdx] : null;
+    const src    = _curTrack?.cover || (typeof sheetCover  !== 'undefined' && sheetCover.getAttribute('src')) || '';
 
     const cTitle  = document.getElementById('carModeTitle');
     const cArtist = document.getElementById('carModeArtist');
@@ -5853,8 +5888,9 @@ const CarMode = (() => {
 
     if (cTitle)  cTitle.textContent  = title;
     if (cArtist) cArtist.textContent = artist;
-    if (cCover && src)  { cCover.src = src; }
-    if (cBgImg && src)  { cBgImg.src = src; }
+    const coverSrc = _curTrack?.cover || src;
+    if (cCover && coverSrc)  { cCover.src = coverSrc; cCover.onerror = () => { cCover.onerror = null; }; }
+    if (cBgImg && coverSrc)  { cBgImg.src = coverSrc; cBgImg.onerror = () => { cBgImg.onerror = null; }; }
 
     updateCarPlayState();
     updateCarProgress();
