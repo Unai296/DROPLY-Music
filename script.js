@@ -52,6 +52,99 @@
   );
 })();
 
+/* ══════════════════════════════════════════════════════
+   BACKGROUND AUDIO FIX
+   Problema: al bloquear la pantalla el AudioContext se
+   suspende (Chrome/Android) o el audio se pausa solo.
+   Solución:
+   1. Detectar visibilitychange → resume del AudioContext
+   2. Si el audio se pausó involuntariamente, reanudar
+   3. Mantener un AudioContext global desbloqueado
+══════════════════════════════════════════════════════ */
+(function backgroundAudioFix() {
+  // AudioContext compartido — se crea en el primer gesto del usuario
+  let _sharedCtx = null;
+
+  function _getOrCreateCtx() {
+    if (_sharedCtx) return _sharedCtx;
+    try {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (Ctor) {
+        _sharedCtx = new Ctor();
+        // Conectar el elemento <audio> al contexto para que el SO
+        // lo trate como audio activo incluso en segundo plano
+        const audioEl = document.getElementById('mainAudio');
+        if (audioEl && _sharedCtx.createMediaElementSource) {
+          try {
+            const src = _sharedCtx.createMediaElementSource(audioEl);
+            src.connect(_sharedCtx.destination);
+          } catch(_) {}
+        }
+      }
+    } catch(_) {}
+    return _sharedCtx;
+  }
+
+  // Al primer gesto del usuario creamos el contexto
+  function _onFirstGesture() {
+    _getOrCreateCtx();
+    ['touchstart', 'touchend', 'mousedown', 'click'].forEach(ev =>
+      document.removeEventListener(ev, _onFirstGesture, true)
+    );
+  }
+  ['touchstart', 'touchend', 'mousedown', 'click'].forEach(ev =>
+    document.addEventListener(ev, _onFirstGesture, { capture: true, passive: true })
+  );
+
+  // Variable para saber si el usuario había dado play voluntariamente
+  // Se sincroniza con la variable isPlaying global una vez que esté disponible
+  let _wasPlayingBeforeHide = false;
+
+  document.addEventListener('visibilitychange', function () {
+    const audioEl = document.getElementById('mainAudio');
+
+    if (document.hidden) {
+      // Guardamos el estado de reproducción ANTES de ocultarse
+      _wasPlayingBeforeHide = audioEl && !audioEl.paused;
+    } else {
+      // La app vuelve a primer plano
+
+      // 1. Reanudar el AudioContext si está suspendido
+      if (_sharedCtx && _sharedCtx.state === 'suspended') {
+        _sharedCtx.resume().catch(() => {});
+      }
+
+      // 2. Si el audio se detuvo involuntariamente mientras el usuario
+      //    había dado play, reanudamos
+      if (audioEl && _wasPlayingBeforeHide && audioEl.paused && audioEl.src) {
+        audioEl.muted = false;
+        if (audioEl.volume === 0) audioEl.volume = 1;
+        audioEl.play().catch(() => {});
+      }
+    }
+  });
+
+  // También capturamos pagehide para PWA instaladas (algunos navegadores
+  // usan pagehide en lugar de visibilitychange al bloquear pantalla)
+  window.addEventListener('pagehide', function () {
+    const audioEl = document.getElementById('mainAudio');
+    _wasPlayingBeforeHide = audioEl && !audioEl.paused;
+  }, { passive: true });
+
+  window.addEventListener('pageshow', function () {
+    const audioEl = document.getElementById('mainAudio');
+    if (_sharedCtx && _sharedCtx.state === 'suspended') {
+      _sharedCtx.resume().catch(() => {});
+    }
+    if (audioEl && _wasPlayingBeforeHide && audioEl.paused && audioEl.src) {
+      audioEl.muted = false;
+      if (audioEl.volume === 0) audioEl.volume = 1;
+      audioEl.play().catch(() => {});
+    }
+  }, { passive: true });
+
+})();
+
 
 
 
