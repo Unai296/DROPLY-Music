@@ -89,12 +89,15 @@ const CHANGELOG = [
 
 
   {
-    version: "v5.4",
-    date:    "26 de Mayo 2026",
+    version: "v8.0 DEFINITIVE",
+    date:    "05 de Junio 2026",
     title:   "Novedades Droply",
     emoji:   "🎶",
     changes: [
-      { icon: "🎵", text: "Introducido canciones de Fito y Estopa." },
+      { icon: "🔥", text: "Sincronización total del EQ con el estado de la música." },
+      { icon: "⚡", text: "Efecto Neon Trace: una línea de luz dinámica recorre toda la interfaz." },
+      { icon: "🌌", text: "Partículas ambientales y micro-visuales mejorados." },
+      { icon: "✨", text: "Rediseño ULTRA PREMIUM con animaciones fluidas." },
       { icon: "⚡", text: "Mejoras de rendimiento en la navegación entre páginas." },
       { icon: "🔧", text: "Varias correcciones tanto visuales como funcionales en el reproductor." }
     ]
@@ -3111,10 +3114,14 @@ function getPlaceholderCover(category = "music") {
 
 function updatePlayIcons(playing) {
   [sheetPlay, miniPlay].forEach(btn => {
-    btn.querySelector(".icon-play").style.display  = playing ? "none" : "";
-    btn.querySelector(".icon-pause").style.display = playing ? "" : "none";
+    if (btn) {
+      const p = btn.querySelector(".icon-play");
+      const s = btn.querySelector(".icon-pause");
+      if (p) p.style.display = playing ? "none" : "";
+      if (s) s.style.display = playing ? "" : "none";
+    }
   });
-  sheetCover.classList.toggle("playing", playing);
+  if (sheetCover) sheetCover.classList.toggle("playing", playing);
 
   // Sync "Continuar escuchando" button
   const hccBtn = document.getElementById("hccPlayBtn");
@@ -3124,6 +3131,12 @@ function updatePlayIcons(playing) {
     if (hccIconPlay)  hccIconPlay.style.display  = playing ? "none" : "";
     if (hccIconPause) hccIconPause.style.display = playing ? "" : "none";
   }
+
+  // Sync EQ Bars
+  document.querySelectorAll('.eq-container').forEach(eq => {
+    if (playing) eq.classList.remove('paused');
+    else eq.classList.add('paused');
+  });
 }
 
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
@@ -8027,6 +8040,19 @@ const MixesManager = (function() {
     const closeBtn = document.getElementById("mixDetailClose");
     if (closeBtn) closeBtn.addEventListener("click", closeMixDetail);
     renderHome();
+
+    // Topbar scroll effect
+    const homeScroll = document.getElementById('homeScroll');
+    const topbar = document.getElementById('topbar');
+    if (homeScroll && topbar) {
+      homeScroll.addEventListener('scroll', () => {
+        if (homeScroll.scrollTop > 20) {
+          topbar.classList.add('scrolled');
+        } else {
+          topbar.classList.remove('scrolled');
+        }
+      });
+    }
   }
 
   return { init, renderGrid, renderHome, openMixDetail };
