@@ -26,13 +26,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div class="neon-trace-container"><div class="neon-trace"></div></div>
-  <div class="ambient-particles"></div>
 
   <!-- ══ TOP BAR ══ -->
   <header class="topbar" id="topbar">
     <div class="topbar-inner">
-      <a href="#" class="logo">DROPLY</a>
+      <a href="#" class="logo">DROPLY MUSIC</a>
       <div class="topbar-actions">
         <button class="topbar-icon-btn" id="topbarSearchBtn" aria-label="Buscar">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
@@ -52,7 +50,6 @@
 
       <!-- ══ HOME CONTENT ══ -->
       <div class="home-scroll" id="homeScroll">
-        <div class="premium-ambiance"></div>
 
         <!-- 1. CONTINUE LISTENING -->
         <section class="home-continue-section" id="homeContinueSection" style="display:none">
@@ -63,14 +60,7 @@
             </div>
             <div class="hcc-info">
               <p class="hcc-label">Continuar escuchando</p>
-              <div style="display:flex; align-items:center; gap:0.6rem;">
-                <h2 class="hcc-title" id="hccTitle" style="margin-bottom:0">—</h2>
-                <div class="eq-container" style="height:14px; width:16px">
-                  <div class="eq-bar"></div>
-                  <div class="eq-bar"></div>
-                  <div class="eq-bar"></div>
-                </div>
-              </div>
+              <h2 class="hcc-title" id="hccTitle">—</h2>
               <p class="hcc-artist" id="hccArtist">—</p>
               <div class="hcc-progress-wrap">
                 <div class="hcc-progress-bar">
@@ -590,15 +580,7 @@
         <div class="mini-progress-fill" id="miniProgressFill"></div>
       </div>
     </div>
-    <div class="mini-player-eq">
-        <div class="eq-container">
-          <div class="eq-bar"></div>
-          <div class="eq-bar"></div>
-          <div class="eq-bar"></div>
-          <div class="eq-bar"></div>
-        </div>
-      </div>
-      <div class="mini-controls">
+    <div class="mini-controls">
       <button class="mini-ctrl" id="miniPlay" aria-label="Play/Pause">
         <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
         <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="3" width="4" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>
