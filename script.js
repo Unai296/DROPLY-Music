@@ -71,15 +71,8 @@
       const Ctor = window.AudioContext || window.webkitAudioContext;
       if (Ctor) {
         _sharedCtx = new Ctor();
-        // Conectar el elemento <audio> al contexto para que el SO
-        // lo trate como audio activo incluso en segundo plano
-        const audioEl = document.getElementById('mainAudio');
-        if (audioEl && _sharedCtx.createMediaElementSource) {
-          try {
-            const src = _sharedCtx.createMediaElementSource(audioEl);
-            src.connect(_sharedCtx.destination);
-          } catch(_) {}
-        }
+        // NO usar createMediaElementSource — desconecta el audio del elemento
+        // y lo pierde si no se enruta manualmente. El <audio> ya reproduce solo.
       }
     } catch(_) {}
     return _sharedCtx;
