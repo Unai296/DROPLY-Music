@@ -71,8 +71,8 @@
       const Ctor = window.AudioContext || window.webkitAudioContext;
       if (Ctor) {
         _sharedCtx = new Ctor();
-        // NO usar createMediaElementSource — desconecta el audio del elemento
-        // y lo pierde si no se enruta manualmente. El <audio> ya reproduce solo.
+        // NO usar createMediaElementSource — roba el audio del <audio>
+        // y lo pierde si el AudioContext se suspende. El <audio> reproduce solo.
       }
     } catch(_) {}
     return _sharedCtx;
@@ -3881,30 +3881,56 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
+
+    // Si venimos de la lock screen, el navegador puede bloquear .play() tras
+    // cambiar el src porque ya no hay un "gesto activo". Workaround:
+    // 1) El audio YA está sonando (paused=false antes del pause() de arriba) →
+    //    el navegador mantiene el permiso de reproducción en el mismo elemento.
+    // 2) Cambiamos src y llamamos play() inmediatamente — el permiso se hereda.
+    const fromLockScreen = !!window._lockScreenNav;
+    window._lockScreenNav = false;
+
     activeAudio.src = audioSrc;
     activeAudio.load(); // Necesario en Safari/iOS para forzar carga del nuevo src
     _isSwitchingTrack = false; // Permitir eventos pause reales a partir de aquí
     activeAudio.currentTime = 0;
     activeAudio.muted = false;
-    if (activeAudio.volume === 0) activeAudio.volume = 1;
     activeAudio.volume = activeAudio.volume || 1;
-    activeAudio.play()
-      .then(() => {
-        if (myToken !== _playToken) return;
-        isPlaying = true;
-        updatePlayIcons(true);
-      })
-      .catch(err => {
-        if (myToken !== _playToken) return;
-        isPlaying = false;
-        updatePlayIcons(false);
-        _isSwitchingTrack = false;
-        if (err.name === "NotAllowedError") {
-          window._droplyPendingTrack = true;
-        } else if (err.name !== "AbortError") {
-          console.warn("[DROPLY] play error:", err);
-        }
-      });
+
+    const tryPlay = () => {
+      if (myToken !== _playToken) return;
+      activeAudio.play()
+        .then(() => {
+          if (myToken !== _playToken) return;
+          isPlaying = true;
+          updatePlayIcons(true);
+        })
+        .catch(err => {
+          if (myToken !== _playToken) return;
+          // En lock screen en Android a veces el primer intento falla con AbortError
+          // por la carga asíncrona — reintentar una vez tras canPlayThrough
+          if (err.name === 'AbortError' && fromLockScreen) {
+            activeAudio.addEventListener('canplay', function onCanPlay() {
+              activeAudio.removeEventListener('canplay', onCanPlay);
+              if (myToken !== _playToken) return;
+              activeAudio.play()
+                .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
+                .catch(() => {});
+            }, { once: true });
+            return;
+          }
+          isPlaying = false;
+          updatePlayIcons(false);
+          _isSwitchingTrack = false;
+          if (err.name === "NotAllowedError") {
+            window._droplyPendingTrack = true;
+          } else if (err.name !== "AbortError") {
+            console.warn("[DROPLY] play error:", err);
+          }
+        });
+    };
+
+    tryPlay();
   }
 
   if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
@@ -4729,18 +4755,16 @@ function setupMediaSession(item) {
   // Controles de pista
   navigator.mediaSession.setActionHandler("previoustrack", () => {
     const audio = activeAudio;
-    if (audio) {
-      audio.muted = false;
-      if (audio.volume === 0) audio.volume = 1;
-    }
+    if (audio) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    // Marcar que este cambio viene de la lock screen → loadTrack debe forzar play
+    window._lockScreenNav = true;
     playPrev();
   });
-  navigator.mediaSession.setActionHandler("nexttrack",     () => {
+  navigator.mediaSession.setActionHandler("nexttrack", () => {
     const audio = activeAudio;
-    if (audio) {
-      audio.muted = false;
-      if (audio.volume === 0) audio.volume = 1;
-    }
+    if (audio) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    // Marcar que este cambio viene de la lock screen → loadTrack debe forzar play
+    window._lockScreenNav = true;
     playNext();
   });
 
