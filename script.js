@@ -52,92 +52,6 @@
   );
 })();
 
-/* ══════════════════════════════════════════════════════
-   BACKGROUND AUDIO FIX
-   Problema: al bloquear la pantalla el AudioContext se
-   suspende (Chrome/Android) o el audio se pausa solo.
-   Solución:
-   1. Detectar visibilitychange → resume del AudioContext
-   2. Si el audio se pausó involuntariamente, reanudar
-   3. Mantener un AudioContext global desbloqueado
-══════════════════════════════════════════════════════ */
-(function backgroundAudioFix() {
-  // AudioContext compartido — se crea en el primer gesto del usuario
-  let _sharedCtx = null;
-
-  function _getOrCreateCtx() {
-    if (_sharedCtx) return _sharedCtx;
-    try {
-      const Ctor = window.AudioContext || window.webkitAudioContext;
-      if (Ctor) {
-        _sharedCtx = new Ctor();
-        // NO usar createMediaElementSource — roba el audio del <audio>
-        // y lo pierde si el AudioContext se suspende. El <audio> reproduce solo.
-      }
-    } catch(_) {}
-    return _sharedCtx;
-  }
-
-  // Al primer gesto del usuario creamos el contexto
-  function _onFirstGesture() {
-    _getOrCreateCtx();
-    ['touchstart', 'touchend', 'mousedown', 'click'].forEach(ev =>
-      document.removeEventListener(ev, _onFirstGesture, true)
-    );
-  }
-  ['touchstart', 'touchend', 'mousedown', 'click'].forEach(ev =>
-    document.addEventListener(ev, _onFirstGesture, { capture: true, passive: true })
-  );
-
-  // Variable para saber si el usuario había dado play voluntariamente
-  // Se sincroniza con la variable isPlaying global una vez que esté disponible
-  let _wasPlayingBeforeHide = false;
-
-  document.addEventListener('visibilitychange', function () {
-    const audioEl = document.getElementById('mainAudio');
-
-    if (document.hidden) {
-      // Guardamos el estado de reproducción ANTES de ocultarse
-      _wasPlayingBeforeHide = audioEl && !audioEl.paused;
-    } else {
-      // La app vuelve a primer plano
-
-      // 1. Reanudar el AudioContext si está suspendido
-      if (_sharedCtx && _sharedCtx.state === 'suspended') {
-        _sharedCtx.resume().catch(() => {});
-      }
-
-      // 2. Si el audio se detuvo involuntariamente mientras el usuario
-      //    había dado play, reanudamos
-      if (audioEl && _wasPlayingBeforeHide && audioEl.paused && audioEl.src) {
-        audioEl.muted = false;
-        if (audioEl.volume === 0) audioEl.volume = 1;
-        audioEl.play().catch(() => {});
-      }
-    }
-  });
-
-  // También capturamos pagehide para PWA instaladas (algunos navegadores
-  // usan pagehide en lugar de visibilitychange al bloquear pantalla)
-  window.addEventListener('pagehide', function () {
-    const audioEl = document.getElementById('mainAudio');
-    _wasPlayingBeforeHide = audioEl && !audioEl.paused;
-  }, { passive: true });
-
-  window.addEventListener('pageshow', function () {
-    const audioEl = document.getElementById('mainAudio');
-    if (_sharedCtx && _sharedCtx.state === 'suspended') {
-      _sharedCtx.resume().catch(() => {});
-    }
-    if (audioEl && _wasPlayingBeforeHide && audioEl.paused && audioEl.src) {
-      audioEl.muted = false;
-      if (audioEl.volume === 0) audioEl.volume = 1;
-      audioEl.play().catch(() => {});
-    }
-  }, { passive: true });
-
-})();
-
 
 
 
@@ -726,7 +640,24 @@ async function fetchArtistPhotoFromWiki(artistName, imgElement, fallbackSrc) {
 }
 
 const media = [
-  {
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    {
     type:     "music",
     title:    "In Da Getto",
     artist:   "J. Balvin, Skrillex",
@@ -3019,62 +2950,6 @@ const media = [
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ];
 /* ══════════════════════════════════════════════════════
    2. STATE
@@ -3085,7 +2960,6 @@ let currentTrackIdx = -1;
 let isPlaying       = false;
 let playlist        = [];        // current PLAYBACK context (playlist, favorites, etc.)
 let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
-let singleTrackMode = false;     // true when user plays a lone track (enables infinite auto-queue)
 let shuffleMode     = false;
 let repeatMode      = false;
 
@@ -3670,7 +3544,6 @@ activeAudio.addEventListener("ended", function () {
 }, { passive: true });
 
 activeAudio.addEventListener("play", function () {
-  _isSwitchingTrack = false; // Asegurar que el flag se limpia si se disparó play
   isPlaying = true;
   updatePlayIcons(true);
   if ("mediaSession" in navigator) {
@@ -3691,8 +3564,6 @@ activeAudio.addEventListener("play", function () {
       });
     } catch(_) {}
   }
-  // Actualizar posición para la barra de pantalla de bloqueo desde el inicio
-  _updateMediaSessionPosition();
 }, { passive: true });
 
 /* ── loadedmetadata: actualiza posición en cuanto se conoce la duración real ── */
@@ -3712,36 +3583,17 @@ activeAudio.addEventListener("playing", function () {
   _updateMediaSessionPosition();
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
-    // Re-assert metadata en cada reproducción para garantizar portada y datos correctos
-    const cur = playlist[currentTrackIdx];
-    if (cur) {
-      setupMediaSession(cur);
-    }
   }
 }, { passive: true });
 
 activeAudio.addEventListener("pause", function () {
-  // Ignorar si estamos en medio de un cambio de track (pause() intencional antes de nuevo src)
-  if (_isSwitchingTrack) return;
+  // Solo actualiza si el audio está realmente pausado
+  // (evita falsos positivos por cambio de src)
   if (!this.paused) return;
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
-  }
-}, { passive: true });
-
-/* ── Audio error handler ────────────────────────────── */
-activeAudio.addEventListener("error", function () {
-  _isSwitchingTrack = false;
-  isPlaying = false;
-  updatePlayIcons(false);
-  const err = this.error;
-  if (err && err.code !== MediaError.MEDIA_ERR_ABORTED) {
-    console.warn("[DROPLY] Audio error:", err.code, err.message);
-    if (typeof showToast === 'function') {
-      showToast("Error al cargar el audio", "error");
-    }
   }
 }, { passive: true });
 
@@ -3761,8 +3613,6 @@ function animateBackgroundTransition(newCover) {
 ══════════════════════════════════════════════════════ */
 // Token para cancelar plays pendientes si llega otro loadTrack antes
 let _playToken = 0;
-// Flag para suprimir eventos pause falsos durante el cambio de src
-let _isSwitchingTrack = false;
 
 function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   if (item.type !== "music") return;
@@ -3791,15 +3641,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   /* -- Playlist context -- */
   if (!fromQueue) {
-    if (newPlaylistContext) {
-      playlist = newPlaylistContext;
-      singleTrackMode = false;  // playing within a defined context — no auto-queue
-    } else {
-      playlist = [item];        // only this track; auto-queue will extend if desired
-      singleTrackMode = true;   // lone track → enable infinite auto-queue
-    }
+    if (newPlaylistContext) playlist = newPlaylistContext;
+    else playlist = media.filter(m => m.type === "music");
     currentTrackIdx = playlist.findIndex(p => p.file === item.file);
-    if (currentTrackIdx < 0) { playlist = [item]; currentTrackIdx = 0; }
   } else {
     const idx = playlist.findIndex(p => p.file === item.file);
     if (idx >= 0) currentTrackIdx = idx;
@@ -3807,13 +3651,11 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   /* -- UI -- */
   miniCover.src = cover;
-  miniCover.onerror = () => { miniCover.onerror = null; miniCover.src = getPlaceholderCover(item.category); };
   miniTitle.textContent  = item.title;
   miniArtist.textContent = item.artist;
   miniPlayer.classList.add("visible");
 
   sheetCover.src = cover;
-  sheetCover.onerror = () => { sheetCover.onerror = null; sheetCover.src = getPlaceholderCover(item.category); };
   sheetCategory.textContent = item.category;
   sheetTitle.textContent    = item.title;
   sheetArtist.textContent   = item.artist;
@@ -3833,7 +3675,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   const hccCoverEl = document.getElementById("hccCover");
   if (hccCoverEl) {
     hccCoverEl.src = cover;
-    hccCoverEl.onerror = () => { hccCoverEl.onerror = null; hccCoverEl.src = getPlaceholderCover(item.category); };
     const hccTitleEl  = document.getElementById("hccTitle");
     const hccArtistEl = document.getElementById("hccArtist");
     const hccGlowEl   = document.getElementById("hccGlow");
@@ -3875,62 +3716,32 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
     } catch(_) {}
   }
 
-  // Pausar antes de cambiar src (flag evita que el listener de 'pause' actualice la UI)
-  _isSwitchingTrack = true;
+  // Pausar antes de cambiar src
   activeAudio.pause();
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
-
-    // Si venimos de la lock screen, el navegador puede bloquear .play() tras
-    // cambiar el src porque ya no hay un "gesto activo". Workaround:
-    // 1) El audio YA está sonando (paused=false antes del pause() de arriba) →
-    //    el navegador mantiene el permiso de reproducción en el mismo elemento.
-    // 2) Cambiamos src y llamamos play() inmediatamente — el permiso se hereda.
-    const fromLockScreen = !!window._lockScreenNav;
-    window._lockScreenNav = false;
-
     activeAudio.src = audioSrc;
-    activeAudio.load(); // Necesario en Safari/iOS para forzar carga del nuevo src
-    _isSwitchingTrack = false; // Permitir eventos pause reales a partir de aquí
     activeAudio.currentTime = 0;
     activeAudio.muted = false;
+    if (activeAudio.volume === 0) activeAudio.volume = 1;
     activeAudio.volume = activeAudio.volume || 1;
-
-    const tryPlay = () => {
-      if (myToken !== _playToken) return;
-      activeAudio.play()
-        .then(() => {
-          if (myToken !== _playToken) return;
-          isPlaying = true;
-          updatePlayIcons(true);
-        })
-        .catch(err => {
-          if (myToken !== _playToken) return;
-          // En lock screen en Android a veces el primer intento falla con AbortError
-          // por la carga asíncrona — reintentar una vez tras canPlayThrough
-          if (err.name === 'AbortError' && fromLockScreen) {
-            activeAudio.addEventListener('canplay', function onCanPlay() {
-              activeAudio.removeEventListener('canplay', onCanPlay);
-              if (myToken !== _playToken) return;
-              activeAudio.play()
-                .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
-                .catch(() => {});
-            }, { once: true });
-            return;
-          }
-          isPlaying = false;
-          updatePlayIcons(false);
-          _isSwitchingTrack = false;
-          if (err.name === "NotAllowedError") {
-            window._droplyPendingTrack = true;
-          } else if (err.name !== "AbortError") {
-            console.warn("[DROPLY] play error:", err);
-          }
-        });
-    };
-
-    tryPlay();
+    activeAudio.play()
+      .then(() => {
+        if (myToken !== _playToken) return;
+        isPlaying = true;
+        updatePlayIcons(true);
+      })
+      .catch(err => {
+        if (myToken !== _playToken) return;
+        isPlaying = false;
+        updatePlayIcons(false);
+        if (err.name === "NotAllowedError") {
+          window._droplyPendingTrack = true;
+        } else if (err.name !== "AbortError") {
+          console.warn("[DROPLY] play error:", err);
+        }
+      });
   }
 
   if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
@@ -4622,7 +4433,7 @@ searchInput.addEventListener("input", () => {
       row.addEventListener("click", e => {
         if (e.target.closest(".search-result-more-btn")) return;
         if (e.target.closest(".search-result-add-btn")) return;
-        loadTrack(item, false, null); showPage("pageHome");
+        loadTrack(item); showPage("pageHome");
       });
       row.querySelector(".search-result-add-btn").addEventListener("click", e => { e.stopPropagation(); openAddToPlaylist(item); });
       row.querySelector(".search-result-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
@@ -4706,29 +4517,20 @@ function setupMediaSession(item) {
 
   const cover = item.cover || getPlaceholderCover(item.category);
 
-  // Determinar el tipo MIME — las portadas externas suelen ser jpg/png/webp
-  let imgType = "image/jpeg";
-  let artworkSrc = cover;
-  if (cover.startsWith("data:image/svg")) {
-    // Los data:svg no se muestran en pantalla de bloqueo (iOS/Android los ignoran)
-    // Usar icono de la app como fallback
-    artworkSrc = location.origin + "/icons/icon-512.png";
-    imgType = "image/png";
-  } else if (cover.startsWith("data:image/png") || cover.match(/\.png(\?|$)/i)) {
-    imgType = "image/png";
-  } else if (cover.match(/\.webp(\?|$)/i)) {
-    imgType = "image/webp";
-  }
+  // Determinar el tipo MIME real de la imagen para mayor compatibilidad
+  const imgType = cover.startsWith("data:image/svg") ? "image/svg+xml" : "image/jpeg";
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title:  item.title,
     artist: item.artist,
     album:  item.category,
     artwork: [
-      { src: artworkSrc, sizes: "512x512", type: imgType },
-      { src: artworkSrc, sizes: "256x256", type: imgType },
-      { src: artworkSrc, sizes: "192x192", type: imgType },
-      { src: artworkSrc, sizes: "96x96",   type: imgType },
+      { src: cover, sizes: "96x96",   type: imgType },
+      { src: cover, sizes: "128x128", type: imgType },
+      { src: cover, sizes: "192x192", type: imgType },
+      { src: cover, sizes: "256x256", type: imgType },
+      { src: cover, sizes: "384x384", type: imgType },
+      { src: cover, sizes: "512x512", type: imgType },
     ]
   });
 
@@ -4755,16 +4557,18 @@ function setupMediaSession(item) {
   // Controles de pista
   navigator.mediaSession.setActionHandler("previoustrack", () => {
     const audio = activeAudio;
-    if (audio) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
-    // Marcar que este cambio viene de la lock screen → loadTrack debe forzar play
-    window._lockScreenNav = true;
+    if (audio) {
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+    }
     playPrev();
   });
-  navigator.mediaSession.setActionHandler("nexttrack", () => {
+  navigator.mediaSession.setActionHandler("nexttrack",     () => {
     const audio = activeAudio;
-    if (audio) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
-    // Marcar que este cambio viene de la lock screen → loadTrack debe forzar play
-    window._lockScreenNav = true;
+    if (audio) {
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+    }
     playNext();
   });
 
@@ -4855,7 +4659,7 @@ function renderHomeScreen() {
     if (lastTrack) {
       const cover = lastTrack.cover || getPlaceholderCover(lastTrack.category);
       hccCover.src = cover;
-      hccCover.onerror = () => { hccCover.onerror = null; hccCover.src = getPlaceholderCover(lastTrack.category); };
+      hccCover.onerror = () => { hccCover.src = getPlaceholderCover(lastTrack.category); };
       hccTitle.textContent = lastTrack.title;
       hccArtist.textContent = lastTrack.artist;
       if (hccGlow) hccGlow.style.backgroundImage = `url(${cover})`;
@@ -5139,20 +4943,6 @@ function playNext() {
   }
   if (playlist.length === 0) return;
 
-  // When in singleTrackMode (lone track played, no context), pick a similar random track
-  // instead of looping the single-item playlist
-  if (singleTrackMode && playlist.length <= 1) {
-    const seed = playlist[0];
-    const similar = _getSimilarTracks(seed, 1);
-    if (similar.length > 0) {
-      const next = similar[0];
-      playlist = [next];
-      currentTrackIdx = 0;
-      loadTrack(next, true);
-    }
-    return;
-  }
-
   const isOffline = !navigator.onLine;
   const maxTries  = playlist.length;
   let   tries     = 0;
@@ -5325,8 +5115,6 @@ function _getSimilarTracks(seedItem, count = 3) {
 }
 
 function _autoFillQueue() {
-  // Only auto-fill when the user played a lone track (not inside a playlist/genre/favorites)
-  if (!singleTrackMode) return;
   if (queue.length >= INFINITE_QUEUE_MIN) return;
   const hint = document.getElementById('queueInfiniteHint');
   const seed = playlist[currentTrackIdx] ||
@@ -5988,8 +5776,7 @@ const CarMode = (() => {
     // Pull current state from main player globals
     const title  = (typeof sheetTitle  !== 'undefined' && sheetTitle.textContent)  || '—';
     const artist = (typeof sheetArtist !== 'undefined' && sheetArtist.textContent) || '—';
-    const _curTrack = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined') ? playlist[currentTrackIdx] : null;
-    const src    = _curTrack?.cover || (typeof sheetCover  !== 'undefined' && sheetCover.getAttribute('src')) || '';
+    const src    = (typeof sheetCover  !== 'undefined' && sheetCover.src)          || '';
 
     const cTitle  = document.getElementById('carModeTitle');
     const cArtist = document.getElementById('carModeArtist');
@@ -5998,9 +5785,8 @@ const CarMode = (() => {
 
     if (cTitle)  cTitle.textContent  = title;
     if (cArtist) cArtist.textContent = artist;
-    const coverSrc = _curTrack?.cover || src;
-    if (cCover && coverSrc)  { cCover.src = coverSrc; cCover.onerror = () => { cCover.onerror = null; }; }
-    if (cBgImg && coverSrc)  { cBgImg.src = coverSrc; cBgImg.onerror = () => { cBgImg.onerror = null; }; }
+    if (cCover && src)  { cCover.src = src; }
+    if (cBgImg && src)  { cBgImg.src = src; }
 
     updateCarPlayState();
     updateCarProgress();
