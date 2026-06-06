@@ -7440,7 +7440,7 @@ const MIXES = [
     title:    "VeLDÁ",
     artist:   "Bad Bunny, Omar Courtz, Dei V",
     cover:    "https://upload.wikimedia.org/wikipedia/en/e/ef/Bad_Bunny_-_Deb%C3%AD_Tirar_M%C3%A1s_Fotos.png",
-    file:     "./Music/velada.mp3",
+    file:     "./Music/velda.mp3",
     category: "Reggaeton",
     duration: "3:55"
   },
