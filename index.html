@@ -438,73 +438,105 @@
 
 
 
-  <!-- ══ NOW PLAYING SHEET ══ -->
+  <!-- ══ NOW PLAYING SHEET — LYRICS VIEW ══ -->
   <div class="now-playing-sheet" id="nowPlayingSheet" role="dialog" aria-label="Reproduciendo ahora">
+
+    <!-- Full-screen blurred background -->
     <div class="sheet-bg-blur" id="sheetBgBlur"></div>
-    <div class="sheet-handle-wrap">
-      <div class="sheet-handle"></div>
-    </div>
-    <div class="sheet-top-row">
-      <button class="sheet-close-btn" id="sheetClose" aria-label="Cerrar">
-        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <span class="sheet-top-label">Reproduciendo ahora</span>
-      <button class="sheet-queue-btn" id="sheetQueueBtn" aria-label="Cola">
-        <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="sheet-cover-wrap">
-      <img class="sheet-cover" id="sheetCover" src="" alt="" />
-    </div>
-    <div class="sheet-info">
-      <div class="sheet-text">
-        <p class="sheet-category" id="sheetCategory"></p>
-        <h2 class="sheet-title" id="sheetTitle">—</h2>
+    <!-- Dark overlay for readability -->
+    <div class="sheet-bg-overlay"></div>
+
+    <!-- ── TOP: mini cover + track info + options ── -->
+    <div class="sheet-top-bar">
+      <div class="sheet-top-cover-wrap">
+        <img class="sheet-top-cover" id="sheetCover" src="" alt="" />
+      </div>
+      <div class="sheet-top-meta">
+        <p class="sheet-title" id="sheetTitle">—</p>
         <p class="sheet-artist" id="sheetArtist">—</p>
       </div>
-      <div class="sheet-info-actions">
-        <button class="sheet-heart" id="sheetHeart" aria-label="Me gusta">
-          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <button class="sheet-options-btn" id="sheetAddMenu" aria-label="Más opciones">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+
+    <!-- ── LYRICS CENTER ── -->
+    <div class="sheet-lyrics-area" id="sheetLyricsArea">
+      <div class="sheet-lyrics-scroll" id="sheetLyricsScroll">
+        <div class="sheet-lyrics-inner" id="sheetLyricsInner">
+          <!-- Lines injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FLOATING ACTION BUTTON (right side) ── -->
+    <button class="sheet-float-btn" id="sheetFloatBtn" aria-label="Acción rápida">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+    </button>
+
+    <!-- ── BOTTOM CONTROLS ── -->
+    <div class="sheet-bottom-wrap">
+      <!-- Progress -->
+      <div class="sheet-progress-wrap">
+        <div class="sheet-bar" id="sheetBar" role="slider" aria-label="Progreso">
+          <div class="sheet-fill" id="sheetFill"></div>
+          <div class="sheet-thumb" id="sheetThumb"></div>
+        </div>
+        <div class="sheet-times">
+          <span id="sheetCurrent">0:00</span>
+          <span id="sheetDuration">0:00</span>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="sheet-controls">
+        <button class="sheet-ctrl-btn" id="sheetPrev" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="3" height="16"/></svg>
         </button>
-        <button class="sheet-add-menu-btn" id="sheetAddMenu" aria-label="Más opciones">
-          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
+        <button class="sheet-play-btn" id="sheetPlay" aria-label="Play/Pause">
+          <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="3" width="4" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>
+        </button>
+        <button class="sheet-ctrl-btn" id="sheetNext" aria-label="Siguiente">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,20 15,12 5,4"/><rect x="16" y="4" width="3" height="16"/></svg>
+        </button>
+      </div>
+
+      <!-- Volume -->
+      <div class="sheet-volume-wrap" id="sheetVolumeWrap">
+        <svg class="vol-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        <div class="vol-track">
+          <div class="vol-fill" id="volFillVis"></div>
+        </div>
+        <svg class="vol-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="1" aria-label="Volumen" style="position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer;" />
+      </div>
+
+      <!-- Bottom icon row -->
+      <div class="sheet-bottom-icons">
+        <button class="sheet-icon-btn" id="sheetShuffle" aria-label="Aleatorio">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+        </button>
+        <button class="sheet-icon-btn" id="sheetQueueBtn" aria-label="Cola">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+        <button class="sheet-icon-btn" id="sheetRepeat" aria-label="Repetir">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         </button>
       </div>
     </div>
-    <div class="sheet-progress-wrap">
-      <div class="sheet-bar" id="sheetBar" role="slider" aria-label="Progreso">
-        <div class="sheet-fill" id="sheetFill"></div>
-        <div class="sheet-thumb" id="sheetThumb"></div>
-      </div>
-      <div class="sheet-times">
-        <span id="sheetCurrent">0:00</span>
-        <span id="sheetDuration">0:00</span>
-      </div>
-    </div>
-    <div class="sheet-controls">
-      <button class="sheet-ctrl-btn" id="sheetShuffle" aria-label="Aleatorio">
-        <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-      </button>
-      <button class="sheet-ctrl-btn sheet-skip" id="sheetPrev" aria-label="Anterior">
-        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="3" height="16"/></svg>
-      </button>
-      <button class="sheet-play-btn" id="sheetPlay" aria-label="Play/Pause">
-        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
-        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="3" width="4" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>
-      </button>
-      <button class="sheet-ctrl-btn sheet-skip" id="sheetNext" aria-label="Siguiente">
-        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,20 15,12 5,4"/><rect x="16" y="4" width="3" height="16"/></svg>
-      </button>
-      <button class="sheet-ctrl-btn" id="sheetRepeat" aria-label="Repetir">
-        <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-      </button>
-    </div>
-    <!-- Volume wrap hidden per design (JS still works via hidden element) -->
-    <div class="sheet-volume-wrap" style="display:none" aria-hidden="true">
-      <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
-      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="1" aria-label="Volumen" />
-      <svg viewBox="0 0 24 24" class="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-    </div>
+
+    <!-- Hidden elements kept for JS compatibility -->
+    <p class="sheet-category" id="sheetCategory" style="display:none"></p>
+    <button class="sheet-heart" id="sheetHeart" style="display:none" aria-label="Me gusta">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+    <button class="sheet-close-btn" id="sheetClose" style="display:none" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
     <audio id="mainAudio" preload="metadata"></audio>
   </div>
 

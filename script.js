@@ -3720,10 +3720,73 @@ sheetBar.addEventListener("touchstart", e => { barDragging = true; const r = she
 sheetBar.addEventListener("touchmove",  e => { if (!barDragging) return; const r = sheetBar.getBoundingClientRect(); seekToPercent((e.touches[0].clientX - r.left) / r.width); }, { passive:true });
 sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passive:true });
 
-/* ── Swipe down to close player sheet ───────────────── */
-let sheetTouchStartY = 0;
-nowPlayingSheet.addEventListener("touchstart", e => { sheetTouchStartY = e.touches[0].clientY; }, { passive:true });
-nowPlayingSheet.addEventListener("touchend",   e => { if (e.changedTouches[0].clientY - sheetTouchStartY > 80) nowPlayingSheet.classList.remove("open"); }, { passive:true });
+/* ── Swipe-down-to-close: drag sheet with finger ─────── */
+(function sheetSwipeDismiss() {
+  const sheet = nowPlayingSheet;
+  const THRESHOLD    = 120;
+  const VELOCITY_MIN = 0.5;
+  let startY = 0, startX = 0, dy = 0, startTime = 0;
+  let dragging = false, locked = false;
+
+  sheet.addEventListener('touchstart', e => {
+    const lyricsScroll = document.getElementById('sheetLyricsScroll');
+    const atTop = !lyricsScroll || lyricsScroll.scrollTop < 4;
+    const touchY = e.touches[0].clientY;
+    const touchX = e.touches[0].clientX;
+    const relY = touchY - sheet.getBoundingClientRect().top;
+    const inTopZone = relY < sheet.clientHeight * 0.25;
+    if (!inTopZone && !atTop) return;
+    startY = touchY; startX = touchX;
+    startTime = Date.now(); dy = 0;
+    dragging = false; locked = false;
+    sheet.style.transition = 'none';
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', e => {
+    if (locked) return;
+    const curY = e.touches[0].clientY;
+    const curX = e.touches[0].clientX;
+    const ddx  = Math.abs(curX - startX);
+    const ddy  = curY - startY;
+    if (!dragging) {
+      if (Math.abs(ddy) < 6 && ddx < 6) return;
+      if (ddx > Math.abs(ddy)) { locked = true; return; }
+      if (ddy < 0) { locked = true; return; }
+      dragging = true;
+    }
+    dy = Math.max(0, ddy);
+    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.25;
+    sheet.style.transform = `translateY(${t}px)`;
+    sheet.style.opacity   = String(1 - Math.min(1, dy / (THRESHOLD * 2)) * 0.28);
+    if (dy > 10) e.preventDefault();
+  }, { passive: false });
+
+  sheet.addEventListener('touchend', () => {
+    if (!dragging) {
+      sheet.style.transition = '';
+      sheet.style.transform  = '';
+      sheet.style.opacity    = '';
+      return;
+    }
+    const velocity = dy / Math.max(1, Date.now() - startTime);
+    sheet.style.transition = 'transform .38s cubic-bezier(.32,0,.67,0), opacity .32s ease';
+    if (dy > THRESHOLD || velocity > VELOCITY_MIN) {
+      sheet.style.transform = 'translateY(100%)';
+      sheet.style.opacity   = '0';
+      setTimeout(() => {
+        sheet.classList.remove('open');
+        sheet.style.transition = '';
+        sheet.style.transform  = '';
+        sheet.style.opacity    = '';
+      }, 380);
+    } else {
+      sheet.style.transform = '';
+      sheet.style.opacity   = '';
+      setTimeout(() => { sheet.style.transition = ''; }, 380);
+    }
+    dragging = false; locked = false; dy = 0;
+  }, { passive: true });
+})();
 
 /* ══════════════════════════════════════════════════════
    13. LIKES
@@ -7880,4 +7943,282 @@ const MixesManager = (function() {
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', endDrag, { passive: false });
 })();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   DROPLY — Lyrics Engine  (LRCLIB real fetch + vol visual)
+   Apple Music–style synced lyrics view
+═══════════════════════════════════════════════════════════ */
+(function LyricsEngine() {
+
+  /* ── DOM refs ─────────────────────────────────────────────── */
+  const lyricsInner  = document.getElementById('sheetLyricsInner');
+  const lyricsScroll = document.getElementById('sheetLyricsScroll');
+  const volFillVis   = document.getElementById('volFillVis');
+  const volSliderEl  = document.getElementById('volSlider');
+
+  /* ── State ────────────────────────────────────────────────── */
+  let activeLyrics  = [];
+  let activeLine    = -1;
+  let rafId         = null;
+  let lineEls       = [];
+  let lyricsReady   = false;
+  let fetchAbort    = null;   // AbortController for in-flight requests
+  const lyricsCache = {};     // key → lines array (persists session)
+
+  /* ── Volume visual sync ───────────────────────────────────── */
+  function syncVolVisual() {
+    if (!volSliderEl || !volFillVis) return;
+    volFillVis.style.width = (parseFloat(volSliderEl.value || 1) * 100) + '%';
+  }
+  if (volSliderEl) {
+    volSliderEl.addEventListener('input', syncVolVisual);
+    syncVolVisual();
+  }
+
+  /* ── Parse LRC text → [{t, l}] ───────────────────────────── */
+  function parseLRC(lrcText) {
+    const lines = [];
+    const re    = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/g;
+    let m;
+    while ((m = re.exec(lrcText)) !== null) {
+      const t = parseInt(m[1]) * 60 + parseInt(m[2]) + parseInt(m[3]) / (m[3].length === 3 ? 1000 : 100);
+      const l = m[4].trim();
+      if (l) lines.push({ t, l });
+    }
+    return lines.sort((a, b) => a.t - b.t);
+  }
+
+  /* ── Fetch from LRCLIB ────────────────────────────────────── */
+  async function fetchLRCLIB(title, artist) {
+    // LRCLIB public API — no key required
+    const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`;
+    const res  = await fetch(url, { signal: fetchAbort.signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+
+    // Prefer synced, fall back to plain
+    for (const entry of data) {
+      if (entry.syncedLyrics) {
+        const lines = parseLRC(entry.syncedLyrics);
+        if (lines.length > 2) return { synced: true, lines };
+      }
+    }
+    // Plain lyrics — split into "lines" evenly across duration
+    for (const entry of data) {
+      if (entry.plainLyrics) {
+        const raw   = entry.plainLyrics.split('\n').map(l => l.trim()).filter(Boolean);
+        const dur   = entry.duration || 180;
+        const step  = dur / raw.length;
+        const lines = raw.map((l, i) => ({ t: i * step, l }));
+        return { synced: false, lines };
+      }
+    }
+    return null;
+  }
+
+  /* ── Load lyrics for track ────────────────────────────────── */
+  async function loadLyricsForTrack(item) {
+    activeLyrics = [];
+    activeLine   = -1;
+    lyricsReady  = false;
+    lineEls      = [];
+    if (!lyricsInner) return;
+
+    // Cancel any pending fetch
+    if (fetchAbort) { try { fetchAbort.abort(); } catch (_) {} }
+    fetchAbort = new AbortController();
+
+    const cacheKey = (item.file || '') + '|' + item.title + '|' + item.artist;
+    if (lyricsCache[cacheKey]) {
+      applyLines(lyricsCache[cacheKey]);
+      return;
+    }
+
+    // Show loading state
+    showState('loading');
+
+    try {
+      const result = await fetchLRCLIB(item.title, item.artist);
+      if (result && result.lines.length > 1) {
+        lyricsCache[cacheKey] = result.lines;
+        applyLines(result.lines);
+      } else {
+        showState('not-found');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') showState('not-found');
+    }
+  }
+
+  function applyLines(lines) {
+    activeLyrics = lines;
+    renderLyricLines();
+    lyricsReady = true;
+    const audio = document.getElementById('mainAudio');
+    updateActiveLine(audio ? audio.currentTime : 0, true);
+    startTick();
+  }
+
+  /* ── Render DOM lines ─────────────────────────────────────── */
+  function renderLyricLines() {
+    if (!lyricsInner) return;
+    lyricsInner.innerHTML = '';
+    lineEls = [];
+    activeLyrics.forEach((line, i) => {
+      const el = document.createElement('p');
+      el.className = 'lyric-line';
+      el.textContent = line.l;
+      el.dataset.text = line.l;
+      el.addEventListener('click', () => {
+        const audio = document.getElementById('mainAudio');
+        if (audio && activeLyrics[i]) audio.currentTime = activeLyrics[i].t;
+      });
+      lyricsInner.appendChild(el);
+      lineEls.push(el);
+    });
+  }
+
+  /* ── Update active line ───────────────────────────────────── */
+  function updateActiveLine(currentTime, force) {
+    if (!lyricsReady || !activeLyrics.length) return;
+    let newLine = 0;
+    for (let i = activeLyrics.length - 1; i >= 0; i--) {
+      if (currentTime >= activeLyrics[i].t) { newLine = i; break; }
+    }
+    if (newLine === activeLine && !force) return;
+    activeLine = newLine;
+
+    lineEls.forEach((el, i) => {
+      el.classList.remove('active','prev-1','prev-2','next-1','next-2');
+      el.style.removeProperty('--lyric-fill');   // reset fill al cambiar de línea
+      const d = i - newLine;
+      if      (d ===  0) el.classList.add('active');
+      else if (d === -1) el.classList.add('prev-1');
+      else if (d === -2) el.classList.add('prev-2');
+      else if (d ===  1) el.classList.add('next-1');
+      else if (d ===  2) el.classList.add('next-2');
+    });
+
+    scrollToActive(newLine, force);
+  }
+
+  /* ── Smooth scroll ────────────────────────────────────────── */
+  function scrollToActive(idx, instant) {
+    if (!lyricsScroll || !lineEls[idx]) return;
+    const containerH   = lyricsScroll.clientHeight;
+    const targetScroll = lineEls[idx].offsetTop - containerH * 0.32 + lineEls[idx].offsetHeight / 2;
+    if (instant) {
+      lyricsScroll.scrollTop = Math.max(0, targetScroll);
+    } else {
+      lyricsScroll.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+    }
+  }
+
+  /* ── rAF ticker ───────────────────────────────────────────── */
+  function tick() {
+    const audio = document.getElementById('mainAudio');
+    if (audio && !audio.paused) {
+      updateActiveLine(audio.currentTime, false);
+      /* ── Fill animation en la línea activa ── */
+      if (lyricsReady && activeLine >= 0 && lineEls[activeLine]) {
+        const lineStart = activeLyrics[activeLine].t;
+        const lineEnd   = activeLyrics[activeLine + 1] ? activeLyrics[activeLine + 1].t : lineStart + 4;
+        const duration  = lineEnd - lineStart;
+        const elapsed   = audio.currentTime - lineStart;
+        const pct       = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 100;
+        lineEls[activeLine].style.setProperty('--lyric-fill', pct + '%');
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+  function startTick() { if (!rafId) rafId = requestAnimationFrame(tick); }
+  function stopTick()  { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
+
+  /* ── UI states ────────────────────────────────────────────── */
+  function showState(state) {
+    if (!lyricsInner) return;
+    lineEls = []; lyricsReady = false;
+    const msgs = {
+      'idle':      ['Reproduce una canción', 'para ver la letra aquí'],
+      'loading':   ['Buscando letra…', ''],
+      'not-found': ['Sin letra disponible', 'para esta canción'],
+    };
+    const [line1, line2] = msgs[state] || msgs['idle'];
+    lyricsInner.innerHTML = `
+      <div class="lyrics-placeholder">
+        <p>${line1}</p>
+        ${line2 ? `<p style="opacity:.45;font-size:1.05rem;margin-top:.25rem">${line2}</p>` : ''}
+      </div>`;
+  }
+  showState('idle');
+
+  /* ── Audio event hooks ────────────────────────────────────── */
+  (function hookAudio() {
+    const audio = document.getElementById('mainAudio');
+    if (!audio) return;
+    audio.addEventListener('play',  startTick, { passive: true });
+    audio.addEventListener('pause', stopTick,  { passive: true });
+    audio.addEventListener('ended', stopTick,  { passive: true });
+    audio.addEventListener('seeked', () => {
+      if (lyricsReady) {
+        updateActiveLine(audio.currentTime, true);
+        /* sync fill inmediato tras seek */
+        if (activeLine >= 0 && lineEls[activeLine]) {
+          const lineStart = activeLyrics[activeLine].t;
+          const lineEnd   = activeLyrics[activeLine + 1] ? activeLyrics[activeLine + 1].t : lineStart + 4;
+          const duration  = lineEnd - lineStart;
+          const elapsed   = audio.currentTime - lineStart;
+          const pct       = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 100;
+          lineEls[activeLine].style.setProperty('--lyric-fill', pct + '%');
+        }
+      }
+    }, { passive: true });
+  })();
+
+  /* ── Watch sheetTitle mutations → new track → fetch lyrics ── */
+  const titleEl = document.getElementById('sheetTitle');
+  if (titleEl) {
+    let fetchTimer = null;
+    new MutationObserver(() => {
+      clearTimeout(fetchTimer);
+      fetchTimer = setTimeout(() => {
+        const cur = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined')
+          ? playlist[currentTrackIdx] : null;
+        if (cur) loadLyricsForTrack(cur);
+        else showState('idle');
+      }, 400);
+    }).observe(titleEl, { childList: true, characterData: true, subtree: true });
+  }
+
+  /* ── Float button → like current track ───────────────────── */
+  const floatBtn = document.getElementById('sheetFloatBtn');
+  if (floatBtn) {
+    floatBtn.addEventListener('click', () => {
+      const cur = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined')
+        ? playlist[currentTrackIdx] : null;
+      if (cur && typeof toggleLike === 'function') {
+        toggleLike(cur);
+        // Brief visual feedback
+        floatBtn.style.background = 'rgba(255,255,255,.35)';
+        setTimeout(() => { floatBtn.style.background = ''; }, 300);
+      }
+    });
+  }
+
+  /* ── Open sheet → sync vol + restart ticker ──────────────── */
+  const miniExpandBtn = document.getElementById('miniPlayerExpand');
+  if (miniExpandBtn) {
+    miniExpandBtn.addEventListener('click', () => {
+      setTimeout(() => {
+        const cur = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined')
+          ? playlist[currentTrackIdx] : null;
+        if (cur && !lyricsReady) loadLyricsForTrack(cur);
+        syncVolVisual();
+        startTick();
+      }, 120);
+    });
+  }
+
 })();
