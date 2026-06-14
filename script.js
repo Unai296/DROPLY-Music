@@ -3616,6 +3616,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
   renderQueueNowPlaying(item);
   setupMediaSession(item);
 
+  /* -- Trigger lyrics pre-fetch + reset to cover view -- */
+  if (typeof window._droplyLoadLyrics === 'function') window._droplyLoadLyrics(item);
+
   /* -- Home continue card -- */
   const hccCoverEl = document.getElementById("hccCover");
   if (hccCoverEl) {
@@ -5276,6 +5279,10 @@ function closeQueuePanel() {
   }
   if (sheetClose) {
     sheetClose.addEventListener('click', () => nowPlayingSheet.classList.remove('open'));
+  }
+  const sheetDragHandle = document.getElementById('sheetDragHandle');
+  if (sheetDragHandle) {
+    sheetDragHandle.addEventListener('click', () => nowPlayingSheet.classList.remove('open'));
   }
   if (sheetHeart) {
     sheetHeart.addEventListener('click', () => {
@@ -8177,20 +8184,51 @@ const MixesManager = (function() {
     }, { passive: true });
   })();
 
-  /* ── Watch sheetTitle mutations → new track → fetch lyrics ── */
-  const titleEl = document.getElementById('sheetTitle');
-  if (titleEl) {
-    let fetchTimer = null;
-    new MutationObserver(() => {
-      clearTimeout(fetchTimer);
-      fetchTimer = setTimeout(() => {
-        const cur = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined')
-          ? playlist[currentTrackIdx] : null;
-        if (cur) loadLyricsForTrack(cur);
-        else showState('idle');
-      }, 400);
-    }).observe(titleEl, { childList: true, characterData: true, subtree: true });
+  /* ── Cover/Lyrics toggle ── */
+  const coverArea   = document.getElementById('sheetCoverArea');
+  const lyricsArea  = document.getElementById('sheetLyricsArea');
+  const coverArtImg = document.getElementById('sheetCoverArt');
+  let showingLyrics = false;
+
+  function showCoverView() {
+    showingLyrics = false;
+    if (coverArea)  coverArea.style.display  = '';
+    if (lyricsArea) lyricsArea.style.display = 'none';
   }
+  function showLyricsView() {
+    showingLyrics = true;
+    if (coverArea)  coverArea.style.display  = 'none';
+    if (lyricsArea) lyricsArea.style.display = '';
+    // Trigger scroll to active line
+    if (lyricsReady && activeLine >= 0) scrollToActive(activeLine, true);
+    const audio = document.getElementById('mainAudio');
+    if (audio && !audio.paused && !rafId) startTick();
+  }
+
+  // Tap cover art → toggle to lyrics
+  if (coverArea) {
+    coverArea.addEventListener('click', () => {
+      if (!showingLyrics) showLyricsView();
+    });
+  }
+  // Tap lyrics area → back to cover
+  if (lyricsArea) {
+    lyricsArea.addEventListener('click', (e) => {
+      // Don't collapse if clicking a lyric line (seeks audio)
+      if (e.target.classList.contains('lyric-line') || e.target.closest('.lyric-line')) return;
+      showCoverView();
+    });
+  }
+
+  /* ── Expose loadLyricsForTrack globally so loadTrack() can call it ── */
+  window._droplyLoadLyrics = function(item) {
+    // Reset to cover view whenever a new track starts
+    showCoverView();
+    // Update cover art in sheet
+    if (coverArtImg) coverArtImg.src = item.cover || '';
+    // Pre-fetch lyrics in background immediately
+    loadLyricsForTrack(item);
+  };
 
   /* ── Float button → like current track ───────────────────── */
   const floatBtn = document.getElementById('sheetFloatBtn');
@@ -8207,17 +8245,13 @@ const MixesManager = (function() {
     });
   }
 
-  /* ── Open sheet → sync vol + restart ticker ──────────────── */
+  /* ── Open sheet → sync vol + restart ticker ── */
   const miniExpandBtn = document.getElementById('miniPlayerExpand');
   if (miniExpandBtn) {
     miniExpandBtn.addEventListener('click', () => {
-      setTimeout(() => {
-        const cur = (typeof playlist !== 'undefined' && typeof currentTrackIdx !== 'undefined')
-          ? playlist[currentTrackIdx] : null;
-        if (cur && !lyricsReady) loadLyricsForTrack(cur);
-        syncVolVisual();
-        startTick();
-      }, 120);
+      syncVolVisual();
+      const audio = document.getElementById('mainAudio');
+      if (audio && !audio.paused) startTick();
     });
   }
 

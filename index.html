@@ -446,6 +446,9 @@
     <!-- Dark overlay for readability -->
     <div class="sheet-bg-overlay"></div>
 
+    <!-- ── DRAG HANDLE ── -->
+    <div class="sheet-drag-handle" id="sheetDragHandle" aria-hidden="true"><div class="sheet-drag-pill"></div></div>
+
     <!-- ── TOP: mini cover + track info + options ── -->
     <div class="sheet-top-bar">
       <div class="sheet-top-cover-wrap">
@@ -460,8 +463,16 @@
       </button>
     </div>
 
-    <!-- ── LYRICS CENTER ── -->
-    <div class="sheet-lyrics-area" id="sheetLyricsArea">
+    <!-- ── COVER ART (default view) ── -->
+    <div class="sheet-cover-area" id="sheetCoverArea">
+      <div class="sheet-cover-art-wrap" id="sheetCoverArtWrap">
+        <img class="sheet-cover-art" id="sheetCoverArt" src="" alt="" />
+      </div>
+      <p class="sheet-cover-hint">Toca la portada para ver la letra</p>
+    </div>
+
+    <!-- ── LYRICS CENTER (hidden by default) ── -->
+    <div class="sheet-lyrics-area" id="sheetLyricsArea" style="display:none">
       <div class="sheet-lyrics-scroll" id="sheetLyricsScroll">
         <div class="sheet-lyrics-inner" id="sheetLyricsInner">
           <!-- Lines injected by JS -->
