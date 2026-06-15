@@ -3458,27 +3458,29 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeContext
 
 // ── Swipe-down to dismiss ──────────────────────────
 const _ctxHandle = ctxSheet.querySelector(".ctx-sheet-handle-wrap");
-_ctxHandle.addEventListener("touchstart", e => {
-  _ctxDragStartY = e.touches[0].clientY;
-  _ctxDragging = true;
-  ctxSheet.style.transition = "none";
-}, { passive: true });
+if (_ctxHandle) {
+  _ctxHandle.addEventListener("touchstart", e => {
+    _ctxDragStartY = e.touches[0].clientY;
+    _ctxDragging = true;
+    ctxSheet.style.transition = "none";
+  }, { passive: true });
+}
 
 document.addEventListener("touchmove", e => {
   if (!_ctxDragging) return;
   const dy = Math.max(0, e.touches[0].clientY - _ctxDragStartY);
   _ctxDragCurrentY = dy;
-  ctxSheet.style.transform = `translateY(${dy}px)`;
+  if (_ctxHandle) ctxSheet.style.transform = `translateX(-50%) translateY(calc(-50% + ${dy}px))`;
 }, { passive: true });
 
 document.addEventListener("touchend", () => {
   if (!_ctxDragging) return;
   _ctxDragging = false;
-  ctxSheet.style.transition = "";
+  if (_ctxHandle) ctxSheet.style.transition = "";
   if (_ctxDragCurrentY > 100) {
     closeContextMenu();
   } else {
-    ctxSheet.style.transform = "";
+    if (_ctxHandle) ctxSheet.style.transform = "";
   }
   _ctxDragCurrentY = 0;
 }, { passive: true });
@@ -5462,6 +5464,47 @@ function renderQueueList() {
   setTimeout(_autoFillQueue, 200);
 }
 
+/* ── Render queue list inside the now-playing sheet ── */
+function renderSheetQueue() {
+  const listEl   = document.getElementById('sheetQueueList');
+  const countEl  = document.getElementById('sheetQueueAreaCount');
+  if (!listEl) return;
+
+  if (countEl) countEl.textContent = queue.length ? `${queue.length} canciones` : '';
+
+  if (queue.length === 0) {
+    listEl.innerHTML = `
+      <div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">
+        La cola está vacía
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = '';
+  queue.forEach((file, i) => {
+    const item = getTrackByFile(file);
+    if (!item) return;
+    const cover = item.cover || getPlaceholderCover(item.category);
+    const row = document.createElement('div');
+    row.className = 'sq-item';
+    row.innerHTML = `
+      <div class="sq-item-cover">
+        <img src="${cover}" alt="${item.title}" loading="lazy" />
+      </div>
+      <div class="sq-item-info">
+        <div class="sq-item-title">${item.title}</div>
+        <div class="sq-item-artist">${item.artist}</div>
+      </div>
+      <div class="sq-item-drag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+      </div>`;
+    row.addEventListener('click', () => { loadTrack(item, true); });
+    listEl.appendChild(row);
+  });
+}
+
 /* ── Open / close queue panel ───────────────────────── */
 function openQueuePanel() {
   if (!queuePanel) return;
@@ -5495,7 +5538,14 @@ function closeQueuePanel() {
   }
   const sheetDragHandle = document.getElementById('sheetDragHandle');
   if (sheetDragHandle) {
-    sheetDragHandle.addEventListener('click', () => nowPlayingSheet.classList.remove('open'));
+    sheetDragHandle.addEventListener('click', () => {
+      nowPlayingSheet.classList.remove('open');
+      // Reset queue area
+      const qa = document.getElementById('sheetQueueArea');
+      if (qa) { qa.classList.remove('active', 'visible'); }
+      const sheetQueueBtnEl = document.getElementById('sheetQueueBtn');
+      if (sheetQueueBtnEl) sheetQueueBtnEl.classList.remove('active');
+    });
   }
   if (sheetHeart) {
     sheetHeart.addEventListener('click', () => {
@@ -5523,9 +5573,44 @@ function closeQueuePanel() {
       showToast(repeatMode ? 'Repetición activada' : 'Repetición desactivada');
     });
   }
-  if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', openQueuePanel);
+  if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', () => {
+    const coverArea  = document.getElementById('sheetCoverArea');
+    const lyricsArea = document.getElementById('sheetLyricsArea');
+    const queueArea  = document.getElementById('sheetQueueArea');
+    if (!queueArea) { openQueuePanel(); return; }
+
+    const isQueueVisible = queueArea.classList.contains('active');
+    if (isQueueVisible) {
+      // Close queue → back to cover
+      queueArea.classList.remove('active');
+      setTimeout(() => queueArea.classList.remove('visible'), 320);
+      if (coverArea) {
+        coverArea.style.display = '';
+        requestAnimationFrame(() => coverArea.classList.remove('slide-out'));
+      }
+      sheetQueueBtn.classList.remove('active');
+    } else {
+      // Hide lyrics if showing
+      if (lyricsArea) {
+        lyricsArea.style.transition = 'opacity .2s ease';
+        lyricsArea.classList.add('slide-in-start');
+        lyricsArea.classList.remove('slide-in-ready');
+        setTimeout(() => { lyricsArea.style.display = 'none'; }, 220);
+      }
+      // Slide cover out
+      if (coverArea) coverArea.classList.add('slide-out');
+      setTimeout(() => { if (coverArea) coverArea.style.display = 'none'; }, 350);
+      // Show queue
+      renderSheetQueue();
+      queueArea.classList.add('visible');
+      requestAnimationFrame(() => requestAnimationFrame(() => queueArea.classList.add('active')));
+      sheetQueueBtn.classList.add('active');
+    }
+  });
   if (queueCloseBtn) queueCloseBtn.addEventListener('click', closeQueuePanel);
   if (queueOverlay)  queueOverlay.addEventListener('click', closeQueuePanel);
+  const queueDragHandle = document.getElementById('queueDragHandle');
+  if (queueDragHandle) queueDragHandle.addEventListener('click', closeQueuePanel);
   if (queueClearBtn) {
     queueClearBtn.addEventListener('click', () => {
       queue = [];
@@ -8401,27 +8486,75 @@ const MixesManager = (function() {
   const coverArea   = document.getElementById('sheetCoverArea');
   const lyricsArea  = document.getElementById('sheetLyricsArea');
   const coverArtImg = document.getElementById('sheetCoverArt');
+  const lyricsBtnEl = document.getElementById('sheetLyricsBtn');
   let showingLyrics = false;
 
   function showCoverView() {
     showingLyrics = false;
-    if (coverArea)  coverArea.style.display  = '';
-    if (lyricsArea) lyricsArea.style.display = 'none';
+    if (lyricsBtnEl) lyricsBtnEl.classList.remove('active');
+
+    // Animate lyrics out (up) then show cover
+    if (lyricsArea && !lyricsArea.classList.contains('slide-in-start')) {
+      lyricsArea.style.transition = 'opacity .28s ease, transform .32s cubic-bezier(.4,0,.2,1)';
+      lyricsArea.classList.add('slide-in-start');
+      lyricsArea.classList.remove('slide-in-ready');
+    }
+    if (coverArea) {
+      coverArea.style.display = '';
+      // Force reflow then remove slide-out
+      requestAnimationFrame(() => {
+        coverArea.classList.remove('slide-out');
+      });
+    }
+    // Hide lyrics area after animation
+    setTimeout(() => {
+      if (!showingLyrics && lyricsArea) lyricsArea.style.display = 'none';
+    }, 350);
   }
+
   function showLyricsView() {
     showingLyrics = true;
-    if (coverArea)  coverArea.style.display  = 'none';
-    if (lyricsArea) lyricsArea.style.display = '';
+    if (lyricsBtnEl) lyricsBtnEl.classList.add('active');
+
+    // Animate cover out (up)
+    if (coverArea) {
+      coverArea.classList.add('slide-out');
+    }
+    // Show lyrics (animate in from below)
+    if (lyricsArea) {
+      lyricsArea.style.display = '';
+      lyricsArea.classList.add('slide-in-start');
+      lyricsArea.classList.remove('slide-in-ready');
+      // Trigger animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          lyricsArea.classList.remove('slide-in-start');
+          lyricsArea.classList.add('slide-in-ready');
+        });
+      });
+    }
+    // Hide cover after animation completes
+    setTimeout(() => {
+      if (showingLyrics && coverArea) coverArea.style.display = 'none';
+    }, 420);
     // Trigger scroll to active line
     if (lyricsReady && activeLine >= 0) scrollToActive(activeLine, true);
     const audio = document.getElementById('mainAudio');
     if (audio && !audio.paused && !rafId) startTick();
   }
 
-  // Tap cover art → toggle to lyrics
+  // Lyrics button → toggle
+  if (lyricsBtnEl) {
+    lyricsBtnEl.addEventListener('click', () => {
+      if (!showingLyrics) showLyricsView(); else showCoverView();
+    });
+  }
+
+  // Tap cover art → toggle to lyrics (keep for backwards compat)
   if (coverArea) {
     coverArea.addEventListener('click', () => {
-      if (!showingLyrics) showLyricsView();
+      // only fire if it's not already animating out
+      if (!showingLyrics && !coverArea.classList.contains('slide-out')) showLyricsView();
     });
   }
   // Tap lyrics area → back to cover
@@ -8436,7 +8569,17 @@ const MixesManager = (function() {
   /* ── Expose loadLyricsForTrack globally so loadTrack() can call it ── */
   window._droplyLoadLyrics = function(item) {
     // Reset to cover view whenever a new track starts
-    showCoverView();
+    showingLyrics = false;
+    if (lyricsBtnEl) lyricsBtnEl.classList.remove('active');
+    if (lyricsArea) {
+      lyricsArea.style.display = 'none';
+      lyricsArea.classList.add('slide-in-start');
+      lyricsArea.classList.remove('slide-in-ready');
+    }
+    if (coverArea) {
+      coverArea.style.display = '';
+      coverArea.classList.remove('slide-out');
+    }
     // Update cover art in sheet
     if (coverArtImg) coverArtImg.src = item.cover || '';
     // Pre-fetch lyrics in background immediately

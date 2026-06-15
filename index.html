@@ -468,7 +468,6 @@
       <div class="sheet-cover-art-wrap" id="sheetCoverArtWrap">
         <img class="sheet-cover-art" id="sheetCoverArt" src="" alt="" />
       </div>
-      <p class="sheet-cover-hint">Toca la portada para ver la letra</p>
     </div>
 
     <!-- ── LYRICS CENTER (hidden by default) ── -->
@@ -478,6 +477,15 @@
           <!-- Lines injected by JS -->
         </div>
       </div>
+    </div>
+
+    <!-- ── QUEUE AREA (inside sheet) ── -->
+    <div class="sheet-queue-area" id="sheetQueueArea">
+      <div class="sheet-queue-area-header">
+        <span class="sheet-queue-area-label">A continuación</span>
+        <span class="sheet-queue-area-sublabel" id="sheetQueueAreaCount"></span>
+      </div>
+      <div class="sheet-queue-list" id="sheetQueueList"></div>
     </div>
 
     <!-- ── FLOATING ACTION BUTTON (right side) ── -->
@@ -527,6 +535,9 @@
 
       <!-- Bottom icon row -->
       <div class="sheet-bottom-icons">
+        <button class="sheet-icon-btn" id="sheetLyricsBtn" aria-label="Letra">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
         <button class="sheet-icon-btn" id="sheetShuffle" aria-label="Aleatorio">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
         </button>
@@ -555,6 +566,11 @@
   <div class="queue-panel" id="queuePanel" role="complementary" aria-label="Cola de reproducción">
     <!-- Ambient glow bg -->
     <div class="queue-ambient" id="queueAmbient"></div>
+
+    <!-- Drag handle -->
+    <div class="queue-drag-handle" id="queueDragHandle">
+      <div class="queue-drag-pill"></div>
+    </div>
 
     <!-- Header -->
     <div class="queue-panel-header">
@@ -700,9 +716,6 @@
   <!-- ══ TRACK CONTEXT BOTTOM SHEET ══ -->
   <div class="ctx-sheet-overlay" id="ctxSheetOverlay"></div>
   <div class="ctx-sheet" id="ctxSheet" role="dialog" aria-modal="true" aria-label="Opciones de canción">
-    <div class="ctx-sheet-handle-wrap">
-      <div class="ctx-sheet-handle"></div>
-    </div>
     <div class="ctx-sheet-track-info" id="ctxSheetTrackInfo">
       <div class="ctx-sheet-cover-wrap">
         <img class="ctx-sheet-cover" id="ctxSheetCover" src="" alt="" />
@@ -712,35 +725,34 @@
         <div class="ctx-sheet-artist" id="ctxSheetArtist"></div>
       </div>
     </div>
-    <div class="ctx-sheet-divider"></div>
     <div class="ctx-sheet-actions">
-      <button class="ctx-sheet-item" id="ctxSheetPlayNow">
-        <span class="ctx-sheet-item-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" style="fill:currentColor;stroke:none"><polygon points="5,3 19,12 5,21"/></svg>
+      <button class="ctx-sheet-item" id="ctxSheetLike">
+        <span class="ctx-sheet-item-icon" id="ctxSheetLikeIcon">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </span>
-        <span class="ctx-sheet-item-label">Reproducir ahora</span>
+        <span class="ctx-sheet-item-label" id="ctxSheetLikeLabel">Me gusta</span>
       </button>
       <button class="ctx-sheet-item" id="ctxSheetAddQueue">
         <span class="ctx-sheet-item-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3.5" y1="18" x2="3.5" y2="18" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="12" x2="3.5" y2="12" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="6" x2="3.5" y2="6" stroke-width="2.5" stroke-linecap="round"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3.5" y1="18" x2="3.5" y2="18" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="12" x2="3.5" y2="12" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="6" x2="3.5" y2="6" stroke-width="2.5" stroke-linecap="round"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>
         </span>
         <span class="ctx-sheet-item-label">Añadir a la cola</span>
       </button>
       <button class="ctx-sheet-item" id="ctxSheetAddPlaylist">
         <span class="ctx-sheet-item-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15.9A5 5 0 1 0 15 21"/><path d="M21 8H9M21 12H9M14 16H9"/><circle cx="18" cy="18" r="3"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/><line x1="3.5" y1="6" x2="3.5" y2="6" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="12" x2="3.5" y2="12" stroke-width="2.5" stroke-linecap="round"/><line x1="3.5" y1="18" x2="3.5" y2="18" stroke-width="2.5" stroke-linecap="round"/></svg>
         </span>
-        <span class="ctx-sheet-item-label">Añadir a playlist</span>
+        <span class="ctx-sheet-item-label">Añadir a la playlist</span>
       </button>
-      <button class="ctx-sheet-item" id="ctxSheetLike">
-        <span class="ctx-sheet-item-icon" id="ctxSheetLikeIcon">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <button class="ctx-sheet-item" id="ctxSheetPlayNow">
+        <span class="ctx-sheet-item-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" style="fill:currentColor;stroke:none"><polygon points="5,3 19,12 5,21"/></svg>
         </span>
-        <span class="ctx-sheet-item-label" id="ctxSheetLikeLabel">Me gusta</span>
+        <span class="ctx-sheet-item-label">Reproducir ahora</span>
       </button>
       <button class="ctx-sheet-item" id="ctxSheetOffline">
         <span class="ctx-sheet-item-icon" id="ctxSheetOfflineIcon">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </span>
         <span class="ctx-sheet-item-label" id="ctxSheetOfflineLabel">Guardar sin conexión</span>
       </button>
