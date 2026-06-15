@@ -2799,21 +2799,6 @@ const media = [
     category: "Pop",
     duration: "4:18"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
            {
     type:     "music",
     title:    "VOY A LLeVARTE PA PR",
@@ -2850,6 +2835,234 @@ const media = [
     category: "Reggaeton",
     duration: "3:48"
   },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             {
+    type:     "music",
+    title:    "MANSORY",
+    artist:   "DYSTINCT, Morad",
+    cover:    "https://tse2.mm.bing.net/th/id/OIP.iF1O-kFkUZ9zEOFYwfkvAAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
+    file:     "./Music/mansory.mp3",
+    category: "Reggaeton",
+    duration: "3:46"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+             {
+    type:     "music",
+    title:    "La Última Vez",
+    artist:   "Bad Bunny, Anuel AA",
+    cover:    "https://i.pinimg.com/originals/36/cb/d2/36cbd28f0110e8fedfeb1bad5f4bd4ec.jpg",
+    file:     "./Music/laultimavez.mp3",
+    category: "Reggaeton",
+    duration: "5:00"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "LOCO",
+    artist:   "Lossa, GIMS",
+    cover:    "https://tse2.mm.bing.net/th/id/OIP.OdOswB7hBDsEfd5BThfK7AAAAA?rs=1&pid=ImgDetMain&o=7&rm=3",
+    file:     "./Music/loco.mp3",
+    category: "Reggaeton",
+    duration: "2:41"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "SI ESTÁS CON ALGUIEN",
+    artist:   "Omar Courtz",
+    cover:    "https://images.genius.com/f201d42444f05535e679524c12538736.1000x1000x1.png",
+    file:     "./Music/siestasconalguien.mp3",
+    category: "Reggaeton",
+    duration: "4:11"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               {
+    type:     "music",
+    title:    "$UELTA GATITA $UELTA",
+    artist:   "Omar Courtz, Dei V, Clarent",
+    cover:    "https://images.genius.com/f201d42444f05535e679524c12538736.1000x1000x1.png",
+    file:     "./Music/sueltagatitasuelta.mp3",
+    category: "Reggaeton",
+    duration: "3:51"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
