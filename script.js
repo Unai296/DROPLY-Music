@@ -3338,7 +3338,7 @@ function showPage(pageId) {
   if (pageId === "pageFavoritos") renderFavoritos();
   if (pageId === "pagePlaylists") renderPlaylists();
   if (pageId === "pageEventos")   EventosManager.render();
-  if (pageId === "pageMixes")     MixesManager.renderGrid();
+  if (pageId === "pageMixes") { /* Mixes removed */ } else
   if (pageId === "pageDownloads") {
     if (typeof OfflineManager !== 'undefined') OfflineManager.renderDownloadsList();
     if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
@@ -3596,6 +3596,7 @@ function renderGrid() {
     card.dataset.file = item.file;
     if (item.file === currentFile) card.classList.add("is-playing");
     const liked = likedTracks.has(item.file);
+    const isDownloaded = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
 
     card.innerHTML = `
       <div class="card-cover">
@@ -3608,9 +3609,9 @@ function renderGrid() {
         <div class="card-liked-dot ${liked ? 'visible' : ''}">
           <svg viewBox="0 0 24 24"><path fill="#fff" stroke="none" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
-        <button class="card-download-btn" data-file="${item.file}" title="Descargar para offline" aria-label="Descargar">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
+        <div class="card-downloaded-badge ${isDownloaded ? 'visible' : ''}" title="Disponible sin conexión">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        </div>
       </div>
       <div class="card-body">
         <p class="card-category">${item.category}</p>
@@ -3631,23 +3632,11 @@ function renderGrid() {
       </div>`;
 
     card.querySelector(".card-play-btn").addEventListener("click", e => { e.stopPropagation(); loadTrack(item); });
-    card.addEventListener("click", e => { if (!e.target.closest(".card-more-btn--footer") && !e.target.closest(".card-download-btn")) loadTrack(item); });
+    card.addEventListener("click", e => { if (!e.target.closest(".card-more-btn--footer")) loadTrack(item); });
     card.querySelector(".card-more-btn--footer").addEventListener("click", e => {
       e.stopPropagation();
       e.preventDefault();
       openContextMenu(item);
-    });
-    card.querySelector(".card-download-btn").addEventListener("click", e => {
-      e.stopPropagation();
-      if (typeof OfflineManager !== 'undefined') {
-        if (OfflineManager.isDownloaded(item.file)) {
-          if (typeof showToast === 'function') showToast(`"${item.title}" ya está guardada offline`, 'default');
-        } else {
-          OfflineManager.downloadTrack(item);
-        }
-      } else {
-        if (typeof showToast === 'function') showToast('Módulo offline no disponible', 'error');
-      }
     });
     if (mediaGrid) mediaGrid.appendChild(card);
   });
@@ -3801,8 +3790,14 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   /* -- Playlist context -- */
   if (!fromQueue) {
-    if (newPlaylistContext) playlist = newPlaylistContext;
-    else playlist = media.filter(m => m.type === "music");
+    if (newPlaylistContext) {
+      playlist = newPlaylistContext;
+    } else {
+      // Preserve the current playlist context if the track exists in it;
+      // only fall back to all-media if it's not found in the current context.
+      const idxInCurrent = playlist.findIndex(p => p.file === item.file);
+      if (idxInCurrent < 0) playlist = media.filter(m => m.type === "music");
+    }
     currentTrackIdx = playlist.findIndex(p => p.file === item.file);
   } else {
     const idx = playlist.findIndex(p => p.file === item.file);
@@ -4124,10 +4119,12 @@ function renderPlaylists() {
     card.className = "playlist-card fade-in";
     const trackImgs = pl.tracks.slice(0, 4).map(f => getTrackByFile(f)?.cover || "").filter(Boolean);
     const coverHTML = buildPlaylistCoverHTML(trackImgs, "playlist-card-cover");
+    const allDownloaded = pl.tracks.length > 0 && (typeof OfflineManager !== 'undefined') &&
+      pl.tracks.every(f => OfflineManager.isDownloaded(f));
     card.innerHTML = `
       ${coverHTML}
       <div class="playlist-card-body">
-        <div class="playlist-card-name">${pl.name}</div>
+        <div class="playlist-card-name">${pl.name}${allDownloaded ? ' <span class="dl-badge-circle" title="Playlist descargada"><svg viewBox="0 0 24 24" width="10" height="10" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>' : ''}</div>
         <div class="playlist-card-count">${pl.tracks.length} cancion${pl.tracks.length !== 1 ? "es" : ""}</div>
       </div>`;
     card.addEventListener("click", () => openPlaylistDetail(pl.id));
@@ -4203,10 +4200,11 @@ function openPlaylistDetail(id) {
 
       const div = document.createElement("div");
       div.className = "playlist-detail-item" + (isPlaying ? " playing" : "");
+      const isDownloaded = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
       div.innerHTML = `
         <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'">
         <div class="playlist-detail-info">
-          <div class="playlist-detail-track">${item.title}</div>
+          <div class="playlist-detail-track">${item.title}${isDownloaded ? ' <span class="dl-badge-circle" title="Disponible sin conexión"><svg viewBox="0 0 24 24" width="10" height="10" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>' : ''}</div>
           <div class="playlist-detail-artist">${item.artist} · <span style="color:var(--accent);font-size:.68rem">${item.category}</span></div>
         </div>
         <span style="font-size:.72rem;color:var(--text-soft);flex-shrink:0;font-variant-numeric:tabular-nums">${item.duration || ""}</span>
@@ -4349,6 +4347,43 @@ if (btnShufflePlaylist) {
     loadTrack(plItems[0], false, plItems);
     btnShufflePlaylist.classList.add("active");
     showToast("Reproducción aleatoria activada", "success");
+  });
+}
+
+// Download all playlist tracks
+const btnDownloadPlaylist = document.getElementById("btnDownloadPlaylist");
+if (btnDownloadPlaylist) {
+  btnDownloadPlaylist.addEventListener("click", async () => {
+    if (!openPlaylistId) return;
+    const pl = playlists.find(p => p.id === openPlaylistId);
+    if (!pl || pl.tracks.length === 0) { showToast("La playlist está vacía"); return; }
+
+    if (typeof OfflineManager === 'undefined') {
+      showToast("Descarga offline no disponible", "default");
+      return;
+    }
+
+    const plItems = pl.tracks.map(f => getTrackByFile(f)).filter(Boolean);
+    const toDownload = plItems.filter(item => !OfflineManager.isDownloaded(item.file));
+
+    if (toDownload.length === 0) {
+      showToast("Todas las canciones ya están descargadas ✓", "success");
+      return;
+    }
+
+    showToast(`Descargando ${toDownload.length} canciones…`, "default");
+    btnDownloadPlaylist.disabled = true;
+
+    let done = 0;
+    for (const item of toDownload) {
+      try {
+        await OfflineManager.downloadTrack(item);
+        done++;
+      } catch (_) {}
+    }
+
+    btnDownloadPlaylist.disabled = false;
+    showToast(`${done} de ${toDownload.length} canciones descargadas ✓`, "success");
   });
 }
 
@@ -4918,12 +4953,17 @@ function renderHomeScreen() {
       const trackImgs = pl.tracks.slice(0, 4).map(f => getTrackByFile(f)?.cover || "").filter(Boolean);
       const card = document.createElement("div");
       card.className = "home-pl-card";
+      const allDownloaded = pl.tracks.length > 0 && typeof OfflineManager !== 'undefined' &&
+        pl.tracks.every(f => OfflineManager.isDownloaded(f));
+      const dlBadge = allDownloaded ? `<span class="home-pl-dl-badge" title="Playlist descargada">
+        <svg viewBox="0 0 24 24" width="8" height="8" fill="#22c55e" stroke="none"><circle cx="12" cy="12" r="10"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      </span>` : '';
       const coverHTML = trackImgs.length === 0
         ? `<div class="home-pl-cover home-pl-cover--empty"><svg viewBox="0 0 24 24" width="24" height="24" style="opacity:.25"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>`
         : trackImgs.length === 1
           ? `<div class="home-pl-cover"><img src="${trackImgs[0]}" alt=""></div>`
           : `<div class="home-pl-cover home-pl-cover--grid">${trackImgs.slice(0,4).map(s=>`<img src="${s}" alt="">`).join("")}</div>`;
-      card.innerHTML = `${coverHTML}<p class="home-pl-name">${pl.name}</p><p class="home-pl-count">${pl.tracks.length} canciones</p>`;
+      card.innerHTML = `${coverHTML}<p class="home-pl-name">${pl.name}${dlBadge}</p><p class="home-pl-count">${pl.tracks.length} canciones</p>`;
       card.addEventListener("click", () => openPlaylistDetail(pl.id));
       plGrid.appendChild(card);
     });
@@ -5019,6 +5059,7 @@ function renderHomeScreen() {
     const picks = shuffleArray(allMusic).slice(0, 12);
     picks.forEach(item => {
       const cover = item.cover || getPlaceholderCover(item.category);
+      const isDl = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
       const card = document.createElement("div");
       card.className = "home-track-card";
       card.innerHTML = `
@@ -5030,10 +5071,11 @@ function renderHomeScreen() {
           <button class="home-track-more-btn" aria-label="Más opciones">
             <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
           </button>
+          ${isDl ? `<span class="home-track-dl-badge" title="Disponible sin conexión"><svg viewBox="0 0 24 24" width="9" height="9" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>` : ''}
         </div>
         <p class="home-track-title">${item.title}</p>
         <p class="home-track-artist">${item.artist}</p>`;
-      card.addEventListener("click", e => { if (!e.target.closest(".home-track-more-btn")) loadTrack(item, false, allMusic); });
+      card.addEventListener("click", e => { if (!e.target.closest(".home-track-more-btn")) loadTrack(item, false, allMusic); }); // featured: queue = all music
       card.querySelector(".home-track-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       featuredGrid.appendChild(card);
     });
@@ -5394,12 +5436,31 @@ function renderQueueList() {
     if (!item) return;
     const cover = item.cover || getPlaceholderCover(item.category);
     const isNew = !prevItems.has(file);
+
+    // ── Wrapper for swipe-to-delete ──
+    const wrap = document.createElement('div');
+    wrap.className = 'queue-item-wrap';
+    wrap.style.cssText = 'position:relative;overflow:hidden;border-radius:12px;margin-bottom:2px;';
+
+    // Red delete bg revealed on left swipe
+    const delBg = document.createElement('div');
+    delBg.className = 'queue-item-del-bg';
+    delBg.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
+    delBg.style.cssText = `
+      position:absolute;top:0;bottom:0;right:0;width:90px;
+      display:flex;align-items:center;justify-content:center;gap:.35rem;
+      background:#e94f4f;color:#fff;border-radius:12px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
+
     const row = document.createElement('div');
     row.className = 'queue-item' + (isNew ? ' queue-item-new' : '');
     row.dataset.file = file;
     row.dataset.index = i;
     if (isNew) row.style.animationDelay = (i * 30) + 'ms';
     row.draggable = true;
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
     row.innerHTML = `
       <div class="queue-item-drag" title="Arrastrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
@@ -5418,15 +5479,57 @@ function renderQueueList() {
         </button>
       </div>`;
 
+    const SWIPE_THRESHOLD = 80;
+    let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
+
+    function _removeItem() {
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
+      row.style.transition = 'transform .28s cubic-bezier(.4,0,1,1), opacity .28s';
+      row.style.transform = 'translateX(-110%)';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        const idx = queue.indexOf(file);
+        if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderQueueList(); }
+      }, 280);
+    }
+
+    row.addEventListener('touchstart', e => {
+      _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
+      _dx = 0; _swiping = false; _locked = false;
+    }, { passive: true });
+
+    row.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - _sx;
+      const dy = e.touches[0].clientY - _sy;
+      if (!_locked) {
+        if (Math.abs(dy) > Math.abs(dx) + 4) { _locked = true; return; }
+        if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
+      }
+      if (!_swiping) return;
+      e.preventDefault();
+      _dx = Math.min(0, dx);
+      row.style.transition = 'none';
+      row.style.transform = `translateX(${_dx}px)`;
+      const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
+      delBg.style.opacity = ratio > 0.15 ? String(ratio) : '0';
+    }, { passive: false });
+
+    row.addEventListener('touchend', () => {
+      if (!_swiping) return;
+      if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
+        _removeItem();
+      } else {
+        row.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)';
+        row.style.transform = 'translateX(0)';
+        delBg.style.opacity = '0';
+      }
+      _dx = 0; _swiping = false;
+    });
+
     // Click to play
     row.addEventListener('click', e => {
-      if (e.target.closest('[data-action="remove"]')) {
-        queue.splice(i, 1);
-        saveQueue();
-        renderQueueList();
-        if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-        return;
-      }
+      if (e.target.closest('[data-action="remove"]')) { _removeItem(); return; }
+      if (Math.abs(_dx) > 5) return;
       loadTrack(item, true);
     });
 
@@ -5457,7 +5560,9 @@ function renderQueueList() {
       if (typeof navigator.vibrate === 'function') navigator.vibrate(20);
     });
 
-    queueList.appendChild(row);
+    wrap.appendChild(delBg);
+    wrap.appendChild(row);
+    queueList.appendChild(wrap);
   });
 
   // Trigger auto-fill if queue is running low
@@ -5627,24 +5732,7 @@ function closeQueuePanel() {
   if (ctxLike) ctxLike.addEventListener('click', () => { if (contextTarget) { toggleLike(contextTarget); closeContextMenu(); } });
 })();
 
-/* ══════════════════════════════════════════════════════
-   20. INIT
-══════════════════════════════════════════════════════ */
-(function init() {
-  playlist = media.filter(m => m.type === "music");
-  playlistSource = "library";
-  buildCategoryPills();
-  renderGrid();
-  buildGenreGrid();
-  renderQueueList();
-  renderHomeScreen();
-  initChangelog();
-
-  // Hook progress update
-  if (audioEl) {
-    audioEl.addEventListener("timeupdate", updateHomeContinueProgress, { passive: true });
-  }
-})();/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    DROPLY — premium.js  v1.0
    Módulos: Offline/Descargas · Modo Coche · Transferencia · Cloud Sync
    
@@ -5844,28 +5932,24 @@ const OfflineManager = (() => {
 
   /* ─── UI helpers ──────────────────────────────── */
   function getCardDownloadBtn(file) {
-    return document.querySelector(`.card-download-btn[data-file="${CSS.escape(file)}"]`);
+    // Legacy: returns null since card-download-btn no longer exists
+    return null;
   }
 
   function updateCardDownloadBtn(file, state) {
-    const btn = getCardDownloadBtn(file);
-    if (!btn) return;
-    btn.classList.remove('downloaded', 'downloading', 'error');
-    const svgDownload = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-    const svgDone     = `<svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>`;
-    const svgSpin     = `<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`;
-    if (state === 'done')        { btn.classList.add('downloaded'); btn.innerHTML = svgDone; btn.title = 'Guardado offline'; }
-    else if (state === 'downloading') { btn.classList.add('downloading'); btn.innerHTML = svgSpin; btn.title = 'Descargando...'; }
-    else if (state === 'error')  { btn.innerHTML = svgDownload; btn.title = 'Reintentar descarga'; }
-    else                         { btn.innerHTML = svgDownload; btn.title = 'Descargar para offline'; }
+    // Update the new green badge on media cards
+    document.querySelectorAll(`.media-card[data-file="${CSS.escape(file)}"] .card-downloaded-badge`).forEach(badge => {
+      badge.classList.toggle('visible', state === 'done');
+    });
   }
 
   function updateAllCardDownloadButtons() {
-    document.querySelectorAll('.card-download-btn').forEach(btn => {
-      const file = btn.dataset.file;
+    document.querySelectorAll('.media-card').forEach(card => {
+      const file = card.dataset.file;
       if (!file) return;
-      const state = downloadStates.get(file) || 'none';
-      updateCardDownloadBtn(file, state);
+      const isDone = downloadedKeys.has(file);
+      const badge = card.querySelector('.card-downloaded-badge');
+      if (badge) badge.classList.toggle('visible', isDone);
     });
   }
 
@@ -6651,67 +6735,6 @@ function injectPremiumDOM() {
       <span class="badge-text">Sin conexión — modo offline</span>
     </div>`);
 
-  /* ── Car mode suggest toast ───────────────────── */
-  document.body.insertAdjacentHTML('beforeend', `
-    <div class="car-suggest-toast" id="carSuggestToast">
-      <div class="car-suggest-row">
-        <div class="car-suggest-icon">
-          <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <div class="car-suggest-info">
-          <div class="car-suggest-title">¿Estás en el coche?</div>
-          <div class="car-suggest-sub">Activa el modo coche para una experiencia más segura</div>
-        </div>
-      </div>
-      <div class="car-suggest-actions">
-        <button class="car-suggest-btn primary" id="carSuggestActivate">Activar modo coche</button>
-        <button class="car-suggest-btn secondary" id="carSuggestDismiss">No, gracias</button>
-      </div>
-    </div>`);
-
-  /* ── Car mode full-screen panel ───────────────── */
-  document.body.insertAdjacentHTML('beforeend', `
-    <div class="car-mode-panel" id="carModePanel" role="dialog" aria-label="Modo Coche">
-      <div class="car-mode-bg">
-        <img class="car-mode-bg-img" id="carModeBgImg" src="" alt="" aria-hidden="true" />
-      </div>
-      <div class="car-mode-header">
-        <span class="car-mode-logo">DROPLY</span>
-        <span class="car-mode-time" id="carModeTime">00:00</span>
-        <button class="car-mode-exit-btn" id="carModeExitBtn">Salir</button>
-      </div>
-      <div class="car-mode-cover-section">
-        <div class="car-mode-cover" id="carModeCover">
-          <img id="carModeCoverImg" src="" alt="Portada" />
-        </div>
-        <div class="car-mode-info">
-          <h2 class="car-mode-title" id="carModeTitle">—</h2>
-          <p class="car-mode-artist" id="carModeArtist">—</p>
-        </div>
-      </div>
-      <div class="car-mode-progress-wrap">
-        <div class="car-mode-bar" id="carModeBar" role="slider" aria-label="Progreso">
-          <div class="car-mode-bar-fill" id="carModeBarFill"></div>
-        </div>
-        <div class="car-mode-times">
-          <span id="carModeCurrent">0:00</span>
-          <span id="carModeDuration">0:00</span>
-        </div>
-      </div>
-      <div class="car-mode-controls">
-        <button class="car-ctrl-btn secondary" id="carPrevBtn" aria-label="Anterior">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="3" height="16"/></svg>
-        </button>
-        <button class="car-ctrl-btn primary" id="carPlayBtn" aria-label="Play/Pause">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
-        </button>
-        <button class="car-ctrl-btn secondary" id="carNextBtn" aria-label="Siguiente">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,20 15,12 5,4"/><rect x="16" y="4" width="3" height="16"/></svg>
-        </button>
-      </div>
-      <p class="car-swipe-hint">← Desliza para cambiar canción →</p>
-    </div>`);
-
   /* ── Transfer panel (removed) ─────────────────── */
 
   /* ── Cloud sync indicator ─────────────────────── */
@@ -6722,12 +6745,6 @@ function injectPremiumDOM() {
         <svg class="sync-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
         <span class="sync-text"></span>
       </div>`);
-
-    /* ── Car mode topbar button ─────────────────── */
-    topbarActions.insertAdjacentHTML('afterbegin', `
-      <button class="car-mode-topbar-btn topbar-icon-btn" id="carModeTopbarBtn" title="Modo Coche" aria-label="Modo Coche">
-        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>
-      </button>`);
   }
 
   /* ── Transfer button in now-playing sheet ─────── */
@@ -6742,77 +6759,8 @@ function injectPremiumDOM() {
       </div>`);
   }
 
-  /* ── Downloads page ───────────────────────────── */
-  const pagesContainer = document.getElementById('pagesContainer');
-  if (pagesContainer) {
-    pagesContainer.insertAdjacentHTML('beforeend', `
-      <div class="page" id="pageDownloads">
-        <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
-          <h2 class="library-title">
-            <svg viewBox="0 0 24 24" width="22" height="22" style="display:inline;margin-right:.4rem;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Offline
-          </h2>
-          <button class="offline-clear-btn" id="offlineClearAllBtn">Liberar espacio</button>
-        </div>
-
-        <!-- ── Connectivity banner ── -->
-        <div class="offline-status-banner is-online" id="offlineStatusBanner">
-          <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
-          <span id="offlineStatusText">Conectado — escucha también sin internet</span>
-        </div>
-
-        <!-- ── Offline playlist ── -->
-        <div class="offline-playlist-section">
-          <div class="offline-playlist-header">
-            <div>
-              <div class="offline-playlist-title">Mis canciones guardadas</div>
-              <div class="offline-playlist-count" id="offlinePlaylistCount">0 canciones</div>
-            </div>
-            <div class="offline-playlist-controls">
-              <button class="offline-shuffle-btn" id="offlineShuffleBtn" title="Aleatorio">
-                <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                Aleatorio
-              </button>
-              <button class="offline-play-all-btn" id="offlinePlayAllBtn">
-                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-                Reproducir todo
-              </button>
-            </div>
-          </div>
-          <div class="offline-track-list" id="offlineTrackList">
-            <div class="offline-empty-playlist">
-              <strong>Sin canciones guardadas</strong>
-              <p>Descarga canciones pulsando el botón <svg viewBox="0 0 24 24" width="13" height="13" style="display:inline;vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> en cualquier canción para escucharlas sin conexión.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Storage ── -->
-        <div class="page-offline-downloads">
-          <div class="offline-storage-bar">
-            <div class="offline-storage-label">
-              <span class="offline-storage-title">Almacenamiento usado</span>
-              <span class="offline-storage-size" id="offlineStorageSize">—</span>
-            </div>
-            <div class="offline-storage-track">
-              <div class="offline-storage-fill" id="offlineStorageFill" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
-      </div>`);
-  }
-
-  /* ── Offline tab in bottom nav ────────────────── */
-  const bottomNav = document.getElementById('bottomNav');
-  if (bottomNav) {
-    bottomNav.insertAdjacentHTML('beforeend', `
-      <button class="bnav-btn" data-page="pageDownloads" aria-label="Descargas offline">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>Offline</span>
-        <span class="nav-badge" id="bnavDownloadsBadge"></span>
-      </button>`);
-  }
 }
+
 
 
 /* ══════════════════════════════════════════════════════
@@ -6820,131 +6768,31 @@ function injectPremiumDOM() {
 ══════════════════════════════════════════════════════ */
 function patchExistingFunctions() {
 
-  /* ── Patch renderGrid to add download buttons ─── */
-  const origRenderGrid = typeof renderGrid === 'function' ? renderGrid : null;
-  if (origRenderGrid) {
-    // Override by wrapping via MutationObserver on mediaGrid
-    const mediaGrid = document.getElementById('mediaGrid');
-    if (mediaGrid) {
-      const observer = new MutationObserver(() => {
-        mediaGrid.querySelectorAll('.media-card:not([data-dl-patched])').forEach(card => {
-          card.dataset.dlPatched = '1';
-          const cover = card.querySelector('.card-cover');
-          if (!cover) return;
-          // Find track by cover src or title
-          const img = card.querySelector('.card-cover img');
-          const titleEl = card.querySelector('.card-title');
-          if (!img || !titleEl) return;
-          const title = titleEl.textContent.trim();
-          const track = typeof media !== 'undefined' ? media.find(m => m.title === title) : null;
-          if (!track) return;
-
-          const btn = document.createElement('button');
-          btn.className = 'card-download-btn';
-          btn.dataset.file = track.file;
-          btn.title = 'Descargar para offline';
-          btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-          btn.addEventListener('click', async e => {
-            e.stopPropagation();
-            if (OfflineManager.isDownloaded(track.file)) {
-              // Already downloaded: show toast
-              if (typeof showToast === 'function') showToast(`"${track.title}" ya está guardada`, 'default');
-              return;
-            }
-            let lastPct = 0;
-            await OfflineManager.downloadTrack(track, pct => {
-              if (Math.abs(pct - lastPct) > 0.05) {
-                lastPct = pct;
-                btn.title = `Descargando ${Math.round(pct*100)}%`;
-              }
-            });
-          });
-          cover.appendChild(btn);
-          // Apply current state
-          const state = OfflineManager.isDownloaded(track.file) ? 'done' : 'none';
-          if (state === 'done') {
-            btn.classList.add('downloaded');
-            btn.innerHTML = `<svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>`;
-            btn.title = 'Guardado offline';
-          }
-        });
-      });
-      observer.observe(mediaGrid, { childList: true });
-    }
-  }
-
-  /* ── Patch loadTrack — car mode sync only (offline handled inside loadTrack) ── */
+  /* ── Patch loadTrack — car mode sync removed; just cloud sync ── */
   const origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
   if (origLoadTrack) {
     window.loadTrack = function(item, fromQueue, newPlaylistContext) {
       origLoadTrack.call(this, item, fromQueue, newPlaylistContext);
-      setTimeout(() => CarMode.syncToPlayer(), 200);
     };
   }
 
-  /* ── Patch togglePlay, playNext, playPrev to update car mode ── */
+  /* ── Patch togglePlay, playNext, playPrev to sync cloud ── */
   ['togglePlay', 'playNext', 'playPrev'].forEach(fn => {
     const orig = typeof window[fn] === 'function' ? window[fn] : null;
     if (!orig) return;
     window[fn] = function(...args) {
       const result = orig.apply(this, args);
-      setTimeout(() => {
-        CarMode.syncToPlayer();
-        CloudSync.markDirty();
-      }, 100);
+      setTimeout(() => { CloudSync.markDirty(); }, 100);
       return result;
     };
   });
-
-  /* ── Hook audio timeupdate for car mode progress ── */
-  const audio = typeof audioEl !== 'undefined' ? audioEl : null;
-  if (audio) {
-    let _carRafPending = false;
-    audio.addEventListener('timeupdate', () => {
-      if (!CarMode.isActive() || _carRafPending) return;
-      _carRafPending = true;
-      requestAnimationFrame(() => { _carRafPending = false; CarMode.updateProgress(); });
-    }, { passive: true });
-    audio.addEventListener('play',   () => { CarMode.updatePlayState(); }, { passive: true });
-    audio.addEventListener('pause',  () => { CarMode.updatePlayState(); }, { passive: true });
-  }
 }
 
 
 /* ══════════════════════════════════════════════════════
-   EVENT LISTENERS — Car mode, Transfer, Downloads
+   EVENT LISTENERS — Downloads
 ══════════════════════════════════════════════════════ */
 function setupPremiumEvents() {
-
-  /* ── Car mode ──────────────────────────────────── */
-  document.getElementById('carModeTopbarBtn')?.addEventListener('click', () => CarMode.toggle());
-  document.getElementById('carModeExitBtn')?.addEventListener('click', () => CarMode.deactivate());
-
-  document.getElementById('carPlayBtn')?.addEventListener('click', () => {
-    if (typeof togglePlay === 'function') togglePlay();
-    if (typeof hapticFeedback === 'function') hapticFeedback('medium');
-  });
-  document.getElementById('carPrevBtn')?.addEventListener('click', () => {
-    if (typeof playPrev === 'function') playPrev();
-    if (typeof hapticFeedback === 'function') hapticFeedback('light');
-  });
-  document.getElementById('carNextBtn')?.addEventListener('click', () => {
-    if (typeof playNext === 'function') playNext();
-    if (typeof hapticFeedback === 'function') hapticFeedback('light');
-  });
-
-  /* Car suggest */
-  document.getElementById('carSuggestActivate')?.addEventListener('click', () => {
-    CarMode.activate();
-  });
-  document.getElementById('carSuggestDismiss')?.addEventListener('click', () => {
-    CarMode.hideSuggest();
-    CarMode.setSuggestDismissed();
-  });
-
-  /* Setup car mode gestures */
-  const carPanel = document.getElementById('carModePanel');
-  if (carPanel) CarMode.setup(carPanel);
 
   /* ── Transfer panel (removed) ─────────────────────── */
 
@@ -8611,4 +8459,23 @@ const MixesManager = (function() {
     });
   }
 
+})();
+
+/* ══════════════════════════════════════════════════════
+   20. INIT
+══════════════════════════════════════════════════════ */
+(function init() {
+  playlist = media.filter(m => m.type === "music");
+  playlistSource = "library";
+  buildCategoryPills();
+  renderGrid();
+  buildGenreGrid();
+  renderQueueList();
+  renderHomeScreen();
+  initChangelog();
+
+  // Hook progress update
+  if (audioEl) {
+    audioEl.addEventListener("timeupdate", updateHomeContinueProgress, { passive: true });
+  }
 })();

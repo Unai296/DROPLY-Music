@@ -75,35 +75,6 @@
           </div>
         </section>
 
-        <!-- 2. QUICK ACCESS -->
-        <section class="home-section">
-          <div class="home-quick-grid">
-            <button class="home-quick-item" id="quickFavoritos" data-page="pageFavoritos">
-              <div class="home-quick-icon home-quick-icon--heart">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </div>
-              <span>Likes</span>
-            </button>
-            <button class="home-quick-item" id="quickPlaylists" data-page="pagePlaylists">
-              <div class="home-quick-icon home-quick-icon--list">
-                <svg viewBox="0 0 24 24" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              </div>
-              <span>Playlists</span>
-            </button>
-            <button class="home-quick-item" id="quickDownloads">
-              <div class="home-quick-icon home-quick-icon--dl">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </div>
-              <span>Descargas</span>
-            </button>
-            <button class="home-quick-item" id="quickHistory">
-              <div class="home-quick-icon home-quick-icon--hist">
-                <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-              </div>
-              <span>Buscar</span>
-            </button>
-          </div>
-        </section>
 
         <!-- 3. YOUR PLAYLISTS -->
         <section class="home-section" id="homePlSection" style="display:none">
@@ -116,16 +87,6 @@
           </div>
         </section>
 
-        <!-- 3b. MIXES -->
-        <section class="home-section" id="homeMixesSection">
-          <div class="home-section-header">
-            <h2 class="home-section-title">Mixes</h2>
-            <button class="home-section-link" data-page="pageMixes">Ver todo</button>
-          </div>
-          <div class="home-hscroll-wrap">
-            <div class="home-hscroll home-mixes-row" id="homeMixesRow"></div>
-          </div>
-        </section>
 
         <!-- 4. RECENTLY PLAYED -->
         <section class="home-section" id="homeRecentSection" style="display:none">
@@ -250,14 +211,6 @@
 
 
 
-    <!-- PAGE: MIXES -->
-    <div class="page" id="pageMixes">
-      <div class="library-header mixes-page-header">
-        <h2 class="library-title">Mixes</h2>
-      </div>
-      <div id="mixesGrid" class="mixes-grid"></div>
-    </div>
-
     <!-- PAGE: PLAYLISTS -->
     <div class="page" id="pagePlaylists">
       <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
@@ -318,6 +271,9 @@
         </button>
         <button class="playlist-page-play-btn" id="btnPlayPlaylist" aria-label="Reproducir">
           <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
+        <button class="playlist-page-shuffle-btn" id="btnDownloadPlaylist" aria-label="Descargar todo" title="Descargar toda la playlist">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
       </div>
 
@@ -669,10 +625,6 @@
       <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       <span>Playlists</span>
     </button>
-    <button class="bnav-btn" data-page="pageMixes" aria-label="Mixes">
-      <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      <span>Mixes</span>
-    </button>
   </nav>
 
 
@@ -750,12 +702,7 @@
         </span>
         <span class="ctx-sheet-item-label">Reproducir ahora</span>
       </button>
-      <button class="ctx-sheet-item" id="ctxSheetOffline">
-        <span class="ctx-sheet-item-icon" id="ctxSheetOfflineIcon">
-          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </span>
-        <span class="ctx-sheet-item-label" id="ctxSheetOfflineLabel">Guardar sin conexión</span>
-      </button>
+      <!-- ctxSheetOffline removed -->
     </div>
     <div class="ctx-sheet-cancel-wrap">
       <button class="ctx-sheet-cancel" id="ctxSheetCancel">Cancelar</button>
