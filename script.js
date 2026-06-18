@@ -3119,7 +3119,7 @@ let isPlaying       = false;
 let playlist        = [];        // current PLAYBACK context (playlist, favorites, etc.)
 let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
 let shuffleMode     = false;
-let repeatMode      = false;
+let repeatMode      = loadRepeatMode(); // 'off' | 'one' | 'all'
 
 // ── PERSISTENCE KEYS ──
 const LIKED_KEY    = "droply_liked_v2";
@@ -3127,6 +3127,37 @@ const QUEUE_KEY    = "droply_queue_v2";
 const PL_KEY       = "droply_playlists_v2";
 const HIST_KEY     = "droply_history_v2";
 const PLAYS_KEY    = "droply_plays_v2";
+const REPEAT_KEY   = "droply_repeat_v1";
+
+function loadRepeatMode() {
+  try {
+    const v = localStorage.getItem(REPEAT_KEY);
+    if (v === "off" || v === "one" || v === "all") return v;
+    return "off";
+  } catch (_) { return "off"; }
+}
+function saveRepeatMode() {
+  try { localStorage.setItem(REPEAT_KEY, repeatMode); } catch (_) {}
+}
+function updateRepeatUI() {
+  if (!sheetRepeat) return;
+  sheetRepeat.classList.toggle("active", repeatMode !== "off");
+  sheetRepeat.classList.toggle("repeat-one", repeatMode === "one");
+  sheetRepeat.classList.toggle("repeat-all", repeatMode === "all");
+  const labels = { off: "Repetir", one: "Repetir canción", all: "Repetir playlist" };
+  sheetRepeat.setAttribute("aria-label", labels[repeatMode] || labels.off);
+}
+function cycleRepeatMode() {
+  repeatMode = repeatMode === "off" ? "one" : repeatMode === "one" ? "all" : "off";
+  saveRepeatMode();
+  updateRepeatUI();
+  const msgs = { off: "Repetición desactivada", one: "Repetir canción", all: "Repetir playlist" };
+  showToast(msgs[repeatMode]);
+  if (typeof CloudSync !== "undefined") CloudSync.markDirty();
+}
+
+// Live events catalog (extend as needed)
+const events = [];
 
 // ── LIKED ──
 function loadLiked() { try { return new Set(JSON.parse(localStorage.getItem(LIKED_KEY) || "[]")); } catch(_) { return new Set(); } }
@@ -3286,6 +3317,30 @@ function updatePlayIcons(playing) {
 
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
 
+function downloadedEmojiHtml(isDownloaded) {
+  return isDownloaded ? '<span class="track-dl-emoji" title="Descargada">📥</span>' : '';
+}
+
+function syncDownloadedEmoji(file, isDownloaded) {
+  document.querySelectorAll(`[data-file="${CSS.escape(file)}"]`).forEach(el => {
+    const titleSel = '.card-title, .library-track-title, .playlist-detail-track, .home-track-title, .search-result-title';
+    const titleEl = el.matches(titleSel) ? el : el.querySelector(titleSel);
+    if (!titleEl) return;
+    let emoji = titleEl.querySelector('.track-dl-emoji');
+    if (isDownloaded) {
+      if (!emoji) {
+        emoji = document.createElement('span');
+        emoji.className = 'track-dl-emoji';
+        emoji.title = 'Descargada';
+        emoji.textContent = '📥';
+        titleEl.appendChild(emoji);
+      }
+    } else if (emoji) {
+      emoji.remove();
+    }
+  });
+}
+
 /* ══════════════════════════════════════════════════════
    5. TOAST NOTIFICATIONS
 ══════════════════════════════════════════════════════ */
@@ -3331,23 +3386,30 @@ function showToast(msg, type = "default") {
 function showPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   const target = document.getElementById(pageId);
-  if (target) target.classList.add("active");
+  if (!target) return;
+  target.classList.add("active");
   bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.page === pageId);
   });
-  if (pageId === "pageFavoritos") renderFavoritos();
   if (pageId === "pagePlaylists") renderPlaylists();
-  if (pageId === "pageEventos")   EventosManager.render();
-  if (pageId === "pageMixes") { /* Mixes removed */ } else
-  if (pageId === "pageDownloads") {
-    if (typeof OfflineManager !== 'undefined') OfflineManager.renderDownloadsList();
-    if (typeof renderOfflinePlaylist === 'function') renderOfflinePlaylist();
-    if (typeof updateOfflineStatusBanner === 'function') updateOfflineStatusBanner();
-  }
+  if (pageId === "pageEventos" && typeof EventosManager !== "undefined") EventosManager.render();
+  if (pageId === "pageMixes") { /* Mixes removed */ }
   closeContextMenu();
-  
-  // Animar slider glassmorphic
   updateBottomNavSlider();
+  try {
+    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists" };
+    const hash = hashMap[pageId];
+    if (hash !== undefined && location.hash !== "#" + hash) {
+      history.replaceState(null, "", hash ? "#" + hash : location.pathname + location.search);
+    }
+  } catch (_) {}
+}
+
+function handleHashRoute() {
+  const route = (location.hash || "").slice(1).toLowerCase();
+  const map = { search: "pageSearch", playlists: "pagePlaylists", home: "pageHome", "": "pageHome" };
+  const pageId = map[route];
+  if (pageId) showPage(pageId);
 }
 
 function updateBottomNavSlider() {
@@ -3365,6 +3427,7 @@ bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
 });
 topbarSearchBtn.addEventListener("click", () => showPage("pageSearch"));
 window.addEventListener("resize", updateBottomNavSlider);
+window.addEventListener("hashchange", handleHashRoute);
 
 /* ══════════════════════════════════════════════════════
    7. CONTEXT MENU — Bottom Sheet (mobile-first)
@@ -3609,13 +3672,10 @@ function renderGrid() {
         <div class="card-liked-dot ${liked ? 'visible' : ''}">
           <svg viewBox="0 0 24 24"><path fill="#fff" stroke="none" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
-        <div class="card-downloaded-badge ${isDownloaded ? 'visible' : ''}" title="Disponible sin conexión">
-          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-        </div>
       </div>
       <div class="card-body">
         <p class="card-category">${item.category}</p>
-        <h3 class="card-title">${item.title}</h3>
+        <h3 class="card-title">${item.title}${downloadedEmojiHtml(isDownloaded)}</h3>
         <p class="card-artist">${item.artist}</p>
       </div>
       <div class="card-footer">
@@ -3681,7 +3741,7 @@ activeAudio.addEventListener("timeupdate", function () {
 
 activeAudio.addEventListener("ended", function () {
   isPlaying = false;
-  if (repeatMode) {
+  if (repeatMode === "one") {
     this.currentTime = 0;
     this.play()
       .then(() => { isPlaying = true; updatePlayIcons(true); })
@@ -3762,9 +3822,18 @@ function animateBackgroundTransition(newCover) {
 ══════════════════════════════════════════════════════ */
 // Token para cancelar plays pendientes si llega otro loadTrack antes
 let _playToken = 0;
+let _currentBlobUrl = null;
 
-function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
+function _revokeBlobUrl() {
+  if (_currentBlobUrl) {
+    try { URL.revokeObjectURL(_currentBlobUrl); } catch (_) {}
+    _currentBlobUrl = null;
+  }
+}
+
+function loadTrack(item, fromQueue = false, newPlaylistContext = null, options = {}) {
   if (item.type !== "music") return;
+  const { autoPlay = true, silent = false } = options;
 
   // ── Comprobación offline ──────────────────────────────────────────────────
   // Si no hay conexión y la canción no está descargada, avisar y salir
@@ -3777,16 +3846,16 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   const cover = item.cover || getPlaceholderCover(item.category);
 
-  /* -- History -- */
-  historyTracks.unshift({ file: item.file, timestamp: Date.now() });
-  historyTracks = historyTracks
-    .filter((v, i, arr) => arr.findIndex(x => x.file === v.file) === i)
-    .slice(0, 100);
-  saveHistory();
-
-  /* -- Play counts -- */
-  playCounts[item.file] = (playCounts[item.file] || 0) + 1;
-  savePlayCounts();
+  /* -- History & stats (skip on silent session restore) -- */
+  if (!silent) {
+    historyTracks.unshift({ file: item.file, timestamp: Date.now() });
+    historyTracks = historyTracks
+      .filter((v, i, arr) => arr.findIndex(x => x.file === v.file) === i)
+      .slice(0, 100);
+    saveHistory();
+    playCounts[item.file] = (playCounts[item.file] || 0) + 1;
+    savePlayCounts();
+  }
 
   /* -- Playlist context -- */
   if (!fromQueue) {
@@ -3879,11 +3948,18 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
+    _revokeBlobUrl();
+    if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
     activeAudio.src = audioSrc;
     activeAudio.currentTime = 0;
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
     activeAudio.volume = activeAudio.volume || 1;
+    if (!autoPlay) {
+      isPlaying = false;
+      updatePlayIcons(false);
+      return;
+    }
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -3902,7 +3978,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null) {
       });
   }
 
-  if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
+  if (item._offlineSrc) {
+    _doPlay(item._offlineSrc);
+  } else if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
     OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
       _doPlay(blobUrl || item.file);
     }).catch(() => _doPlay(item.file));
@@ -4051,13 +4129,14 @@ function renderFavoritos() {
 function buildLibraryRow(item, num, cover, onClick, itemForCtx) {
   const row = document.createElement("div");
   row.className = "library-item fade-in";
+  row.dataset.file = item.file;
   const isCurrentTrack = playlist[currentTrackIdx]?.file === item.file;
   if (isCurrentTrack) row.classList.add("playing");
   row.innerHTML = `
     <span class="library-item-num">${num}</span>
     <div class="library-thumb"><img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'" /></div>
     <div class="library-info">
-      <span class="library-track-title">${item.title}</span>
+      <span class="library-track-title">${item.title}${downloadedEmojiHtml((typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file))}</span>
       <span class="library-track-artist">${item.artist}</span>
     </div>
     <div class="library-item-actions">
@@ -4124,7 +4203,7 @@ function renderPlaylists() {
     card.innerHTML = `
       ${coverHTML}
       <div class="playlist-card-body">
-        <div class="playlist-card-name">${pl.name}${allDownloaded ? ' <span class="dl-badge-circle" title="Playlist descargada"><svg viewBox="0 0 24 24" width="10" height="10" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>' : ''}</div>
+        <div class="playlist-card-name">${pl.name}${allDownloaded ? ' <span class="track-dl-emoji" title="Playlist descargada">📥</span>' : ''}</div>
         <div class="playlist-card-count">${pl.tracks.length} cancion${pl.tracks.length !== 1 ? "es" : ""}</div>
       </div>`;
     card.addEventListener("click", () => openPlaylistDetail(pl.id));
@@ -4200,11 +4279,12 @@ function openPlaylistDetail(id) {
 
       const div = document.createElement("div");
       div.className = "playlist-detail-item" + (isPlaying ? " playing" : "");
+      div.dataset.file = item.file;
       const isDownloaded = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
       div.innerHTML = `
         <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'">
         <div class="playlist-detail-info">
-          <div class="playlist-detail-track">${item.title}${isDownloaded ? ' <span class="dl-badge-circle" title="Disponible sin conexión"><svg viewBox="0 0 24 24" width="10" height="10" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>' : ''}</div>
+          <div class="playlist-detail-track">${item.title}${isDownloaded ? ' <span class="track-dl-emoji" title="Descargada">📥</span>' : ''}</div>
           <div class="playlist-detail-artist">${item.artist} · <span style="color:var(--accent);font-size:.68rem">${item.category}</span></div>
         </div>
         <span style="font-size:.72rem;color:var(--text-soft);flex-shrink:0;font-variant-numeric:tabular-nums">${item.duration || ""}</span>
@@ -4384,6 +4464,9 @@ if (btnDownloadPlaylist) {
 
     btnDownloadPlaylist.disabled = false;
     showToast(`${done} de ${toDownload.length} canciones descargadas ✓`, "success");
+    if (openPlaylistId) openPlaylistDetail(openPlaylistId);
+    renderPlaylists();
+    if (typeof renderHomeScreen === 'function') renderHomeScreen();
   });
 }
 
@@ -4597,6 +4680,8 @@ function buildGenreGrid() {
     shuffleBtn.addEventListener("click", () => {
       if (!currentGenreTracks.length) return;
       const shuffled = shuffleArray([...currentGenreTracks]);
+      shuffleMode = true;
+      if (sheetShuffle) sheetShuffle.classList.add("active");
       loadTrack(shuffled[0], false, shuffled);
       if (typeof showToast === "function") showToast("Reproducción aleatoria activada", "success");
     });
@@ -4676,10 +4761,12 @@ searchInput.addEventListener("input", () => {
 
       const row = document.createElement("div");
       row.className = "search-result-row";
+      row.dataset.file = item.file;
+      const isDl = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
       row.innerHTML = `
         <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'" />
         <div class="search-result-info">
-          <span class="search-result-title">${item.title}</span>
+          <span class="search-result-title">${item.title}${downloadedEmojiHtml(isDl)}</span>
           <span class="search-result-artist">${item.artist}</span>
         </div>
         <div class="search-result-actions">
@@ -4955,9 +5042,7 @@ function renderHomeScreen() {
       card.className = "home-pl-card";
       const allDownloaded = pl.tracks.length > 0 && typeof OfflineManager !== 'undefined' &&
         pl.tracks.every(f => OfflineManager.isDownloaded(f));
-      const dlBadge = allDownloaded ? `<span class="home-pl-dl-badge" title="Playlist descargada">
-        <svg viewBox="0 0 24 24" width="8" height="8" fill="#22c55e" stroke="none"><circle cx="12" cy="12" r="10"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
-      </span>` : '';
+      const dlBadge = allDownloaded ? `<span class="track-dl-emoji" title="Playlist descargada">📥</span>` : '';
       const coverHTML = trackImgs.length === 0
         ? `<div class="home-pl-cover home-pl-cover--empty"><svg viewBox="0 0 24 24" width="24" height="24" style="opacity:.25"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>`
         : trackImgs.length === 1
@@ -5055,9 +5140,18 @@ function renderHomeScreen() {
   /* ── 6. Featured tracks (always visible) ── */
   const featuredGrid = document.getElementById("homeFeaturedGrid");
   if (featuredGrid && featuredGrid.innerHTML === "") {
-    const allMusic = media.filter(m => m.type === "music");
-    const picks = shuffleArray(allMusic).slice(0, 12);
-    picks.forEach(item => {
+    featuredGrid.innerHTML = Array.from({ length: 6 }, () =>
+      `<div class="home-track-card home-track-skeleton" aria-hidden="true">
+        <div class="home-track-cover skeleton" style="aspect-ratio:1;border-radius:12px"></div>
+        <div class="skeleton" style="height:.75rem;width:75%;margin-top:.55rem;border-radius:4px"></div>
+        <div class="skeleton" style="height:.65rem;width:50%;margin-top:.35rem;border-radius:4px"></div>
+      </div>`
+    ).join("");
+    requestAnimationFrame(() => {
+      const allMusic = media.filter(m => m.type === "music");
+      const picks = shuffleArray(allMusic).slice(0, 12);
+      featuredGrid.innerHTML = "";
+      picks.forEach(item => {
       const cover = item.cover || getPlaceholderCover(item.category);
       const isDl = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
       const card = document.createElement("div");
@@ -5071,13 +5165,13 @@ function renderHomeScreen() {
           <button class="home-track-more-btn" aria-label="Más opciones">
             <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></svg>
           </button>
-          ${isDl ? `<span class="home-track-dl-badge" title="Disponible sin conexión"><svg viewBox="0 0 24 24" width="9" height="9" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><polyline points="8,12 12,16 16,8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></span>` : ''}
         </div>
-        <p class="home-track-title">${item.title}</p>
+        <p class="home-track-title">${item.title}${isDl ? downloadedEmojiHtml(true) : ''}</p>
         <p class="home-track-artist">${item.artist}</p>`;
       card.addEventListener("click", e => { if (!e.target.closest(".home-track-more-btn")) loadTrack(item, false, allMusic); }); // featured: queue = all music
       card.querySelector(".home-track-more-btn").addEventListener("click", e => { e.stopPropagation(); openContextMenu(item); });
       featuredGrid.appendChild(card);
+    });
     });
   }
 
@@ -5215,12 +5309,29 @@ function playNext() {
   const maxTries  = playlist.length;
   let   tries     = 0;
 
+  // Stop at end of playlist unless repeat-all or queue has items
+  if (!shuffleMode && repeatMode !== "all" && queue.length === 0 && currentTrackIdx >= playlist.length - 1) {
+    isPlaying = false;
+    updatePlayIcons(false);
+    return;
+  }
+
   let nextIdx = currentTrackIdx;
   do {
     if (shuffleMode) {
-      nextIdx = Math.floor(Math.random() * playlist.length);
+      if (playlist.length > 1) {
+        do { nextIdx = Math.floor(Math.random() * playlist.length); }
+        while (nextIdx === currentTrackIdx && tries++ < maxTries * 2);
+      } else {
+        nextIdx = 0;
+      }
     } else {
       nextIdx = (nextIdx + 1) % playlist.length;
+      if (repeatMode !== "all" && queue.length === 0 && currentTrackIdx === playlist.length - 1 && nextIdx === 0) {
+        isPlaying = false;
+        updatePlayIcons(false);
+        return;
+      }
     }
     tries++;
     const candidate = playlist[nextIdx];
@@ -5530,7 +5641,13 @@ function renderQueueList() {
     row.addEventListener('click', e => {
       if (e.target.closest('[data-action="remove"]')) { _removeItem(); return; }
       if (Math.abs(_dx) > 5) return;
+      const qIdx = queue.indexOf(file);
+      if (qIdx >= 0) {
+        queue.splice(0, qIdx + 1);
+        saveQueue();
+      }
       loadTrack(item, true);
+      renderQueueList();
     });
 
     // Drag & Drop
@@ -5668,14 +5785,15 @@ function closeQueuePanel() {
     sheetShuffle.addEventListener('click', () => {
       shuffleMode = !shuffleMode;
       sheetShuffle.classList.toggle('active', shuffleMode);
+      hapticFeedback('light');
       showToast(shuffleMode ? 'Aleatorio activado' : 'Aleatorio desactivado');
+      if (typeof CloudSync !== 'undefined') CloudSync.markDirty();
     });
   }
   if (sheetRepeat) {
     sheetRepeat.addEventListener('click', () => {
-      repeatMode = !repeatMode;
-      sheetRepeat.classList.toggle('active', repeatMode);
-      showToast(repeatMode ? 'Repetición activada' : 'Repetición desactivada');
+      cycleRepeatMode();
+      hapticFeedback('light');
     });
   }
   if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', () => {
@@ -5937,28 +6055,19 @@ const OfflineManager = (() => {
   }
 
   function updateCardDownloadBtn(file, state) {
-    // Update the new green badge on media cards
-    document.querySelectorAll(`.media-card[data-file="${CSS.escape(file)}"] .card-downloaded-badge`).forEach(badge => {
-      badge.classList.toggle('visible', state === 'done');
-    });
+    syncDownloadedEmoji(file, state === 'done');
   }
 
   function updateAllCardDownloadButtons() {
     document.querySelectorAll('.media-card').forEach(card => {
       const file = card.dataset.file;
       if (!file) return;
-      const isDone = downloadedKeys.has(file);
-      const badge = card.querySelector('.card-downloaded-badge');
-      if (badge) badge.classList.toggle('visible', isDone);
+      syncDownloadedEmoji(file, downloadedKeys.has(file));
     });
   }
 
   function updateDownloadsBadge() {
-    const badge = document.querySelector('#bnavDownloads .nav-badge');
-    if (!badge) return;
-    const count = downloadedKeys.size;
-    badge.textContent  = count > 99 ? '99+' : count;
-    badge.classList.toggle('visible', count > 0);
+    /* Sin pestaña Offline en la barra inferior */
   }
 
   /* ─── Render downloads page ───────────────────── */
@@ -6374,7 +6483,7 @@ const TransferManager = (() => {
       isPlaying:   typeof isPlaying !== 'undefined' ? isPlaying : false,
       volume:      audio?.volume ?? 1,
       shuffleMode: typeof shuffleMode !== 'undefined' ? shuffleMode : false,
-      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : false,
+      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : 'off',
       queue:       typeof queue !== 'undefined' ? [...queue] : [],
     };
   }
@@ -6567,7 +6676,7 @@ const CloudSync = (() => {
       isPlaying:   typeof isPlaying !== 'undefined' ? isPlaying : false,
       volume:      audio?.volume ?? 1,
       shuffleMode: typeof shuffleMode !== 'undefined' ? shuffleMode : false,
-      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : false,
+      repeatMode:  typeof repeatMode  !== 'undefined' ? repeatMode  : 'off',
       queue:       typeof queue !== 'undefined' ? [...queue] : [],
       playlists:   typeof playlists !== 'undefined' ? playlists : [],
       liked:       typeof likedTracks !== 'undefined' ? [...likedTracks] : [],
@@ -6600,33 +6709,47 @@ const CloudSync = (() => {
   async function restoreLastSession() {
     const state = loadSavedState();
     if (!state?.file) return;
-    // Only restore if recent (< 7 days)
     if (Date.now() - (state.ts || 0) > 7 * 24 * 3600 * 1000) return;
     const track = typeof media !== 'undefined' ? media.find(m => m.file === state.file) : null;
     if (!track) return;
 
-    // Restore volume
     const audio = typeof audioEl !== 'undefined' ? audioEl : null;
     if (audio && state.volume != null) audio.volume = state.volume;
     if (typeof volSlider !== 'undefined') volSlider.value = state.volume ?? 1;
 
-    // Load track silently (paused)
+    if (state.shuffleMode != null) shuffleMode = !!state.shuffleMode;
+    if (state.repeatMode === true) repeatMode = 'one';
+    else if (state.repeatMode === 'one' || state.repeatMode === 'all' || state.repeatMode === 'off') repeatMode = state.repeatMode;
+    if (typeof sheetShuffle !== 'undefined' && sheetShuffle) sheetShuffle.classList.toggle('active', shuffleMode);
+    if (typeof updateRepeatUI === 'function') updateRepeatUI();
+
+    if (Array.isArray(state.queue) && typeof queue !== 'undefined') {
+      queue.length = 0;
+      queue.push(...state.queue);
+      if (typeof saveQueue === 'function') saveQueue();
+      if (typeof renderQueueList === 'function') renderQueueList();
+    }
+
     if (typeof loadTrack === 'function') {
-      loadTrack(track);
-      // Seek without autoplay
+      loadTrack(track, false, null, { autoPlay: false, silent: true });
       if (audio) {
+        const seekTo = state.currentTime || 0;
         const trySeek = () => {
-          if (audio.readyState >= 2) {
-            audio.currentTime = state.currentTime || 0;
+          if (audio.readyState >= 1) {
+            audio.currentTime = seekTo;
             audio.pause();
+            isPlaying = false;
+            updatePlayIcons(false);
           } else {
-            audio.addEventListener('canplay', () => {
-              audio.currentTime = state.currentTime || 0;
+            audio.addEventListener('loadedmetadata', () => {
+              audio.currentTime = seekTo;
               audio.pause();
+              isPlaying = false;
+              updatePlayIcons(false);
             }, { once: true });
           }
         };
-        setTimeout(trySeek, 400);
+        setTimeout(trySeek, 500);
       }
     }
   }
@@ -6771,8 +6894,8 @@ function patchExistingFunctions() {
   /* ── Patch loadTrack — car mode sync removed; just cloud sync ── */
   const origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
   if (origLoadTrack) {
-    window.loadTrack = function(item, fromQueue, newPlaylistContext) {
-      origLoadTrack.call(this, item, fromQueue, newPlaylistContext);
+    window.loadTrack = function(item, fromQueue, newPlaylistContext, options) {
+      origLoadTrack.call(this, item, fromQueue, newPlaylistContext, options);
     };
   }
 
@@ -6808,25 +6931,6 @@ function setupPremiumEvents() {
     }
   });
 
-  /* ── Nav tab for downloads ─────────────────────── */
-  document.querySelectorAll('.bnav-btn[data-page="pageDownloads"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (typeof showPage === 'function') showPage('pageDownloads');
-      OfflineManager.renderDownloadsList();
-      renderOfflinePlaylist();
-      updateOfflineStatusBanner();
-    });
-  });
-
-  /* ── Downloads badge target ────────────────────── */
-  const badge = document.getElementById('bnavDownloadsBadge');
-  if (badge) badge.id = 'bnavDownloads'; // fix the id for OfflineManager to find .nav-badge inside it
-  // Reattach badge correctly
-  const offlineNavBtn = document.querySelector('.bnav-btn[data-page="pageDownloads"]');
-  if (offlineNavBtn) {
-    const b = offlineNavBtn.querySelector('span:last-child');
-    if (b) b.className = 'nav-badge';
-  }
 }
 
 
@@ -6868,17 +6972,15 @@ function renderOfflinePlaylist() {
     return;
   }
 
-  // Get current playing track title to highlight it
-  const currentTitleEl = document.getElementById('sheetTitle') || document.getElementById('miniTitle');
-  const currentTitle   = currentTitleEl ? currentTitleEl.textContent.trim() : '';
+  const currentFile = playlist[currentTrackIdx]?.file;
 
   container.innerHTML = downloaded.map((track, i) => {
-    const isPlaying = track.title === currentTitle && currentTitle !== '—';
+    const trackPlaying = track.file === currentFile && isPlaying;
     return `
-      <div class="offline-track-row${isPlaying ? ' playing' : ''}"
+      <div class="offline-track-row${trackPlaying ? ' playing' : ''}"
            data-file="${track.file}" data-index="${i}" role="button" tabindex="0"
            aria-label="Reproducir ${track.title}">
-        <span class="offline-track-num">${isPlaying
+        <span class="offline-track-num">${trackPlaying
           ? `<svg viewBox="0 0 24 24" width="12" height="12" style="color:var(--accent)"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>`
           : i + 1}</span>
         <div class="offline-track-thumb">
@@ -6907,18 +7009,10 @@ function renderOfflinePlaylist() {
     const play = async () => {
       const track = downloaded[i];
       if (!track) return;
-      // Build an offline queue starting from this track
-      const queue = [...downloaded.slice(i), ...downloaded.slice(0, i)];
-      // Use existing loadTrack if available — it will pick offline src automatically
+      const offlineQueue = [...downloaded.slice(i), ...downloaded.slice(0, i)];
       if (typeof loadTrack === 'function') {
-        // Set up queue
-        if (typeof window.playQueue !== 'undefined') {
-          window.playQueue = queue;
-          window.playQueueIndex = 0;
-        }
-        loadTrack(track, false);
+        loadTrack(track, false, offlineQueue);
       }
-      // Re-render to update highlight
       setTimeout(() => renderOfflinePlaylist(), 300);
     };
     row.addEventListener('click', e => {
@@ -6944,11 +7038,7 @@ function renderOfflinePlaylist() {
     playAllBtn.onclick = () => {
       if (downloaded.length === 0) return;
       if (typeof loadTrack === 'function') {
-        if (typeof window.playQueue !== 'undefined') {
-          window.playQueue = [...downloaded];
-          window.playQueueIndex = 0;
-        }
-        loadTrack(downloaded[0], false);
+        loadTrack(downloaded[0], false, [...downloaded]);
       }
       setTimeout(() => renderOfflinePlaylist(), 300);
     };
@@ -6958,16 +7048,13 @@ function renderOfflinePlaylist() {
   if (shuffleBtn) {
     shuffleBtn.onclick = () => {
       if (downloaded.length === 0) return;
-      const shuffled = [...downloaded].sort(() => Math.random() - 0.5);
+      const shuffled = shuffleArray([...downloaded]);
+      shuffleMode = true;
+      if (sheetShuffle) sheetShuffle.classList.add('active');
       if (typeof loadTrack === 'function') {
-        if (typeof window.playQueue !== 'undefined') {
-          window.playQueue = shuffled;
-          window.playQueueIndex = 0;
-        }
-        loadTrack(shuffled[0], false);
-        // Enable shuffle mode if possible
-        if (typeof window.shuffleOn !== 'undefined') window.shuffleOn = true;
+        loadTrack(shuffled[0], false, shuffled);
       }
+      showToast('Aleatorio activado', 'success');
       setTimeout(() => renderOfflinePlaylist(), 300);
     };
   }
@@ -7026,6 +7113,7 @@ const EventosManager = (() => {
 
   /* ── Helpers ───────────────────────────── */
   function sortedEvents() {
+    if (!Array.isArray(events) || events.length === 0) return [];
     return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
   }
 
@@ -7471,7 +7559,7 @@ function bootPremium() {
   CloudSync.init();
 
   // Render offline playlist (after IDB is ready, slight delay)
-  setTimeout(() => { renderOfflinePlaylist(); updateOfflineStatusBanner(); }, 400);
+  setTimeout(() => { updateOfflineStatusBanner(); }, 400);
 
   // Ensure bottom nav slider recalculates after premium DOM (offline tab) is injected
   setTimeout(() => { try { if (typeof updateBottomNavSlider === 'function') updateBottomNavSlider(); } catch(_){} }, 500);
@@ -7620,7 +7708,7 @@ const MIXES = [
 
 
   {
-    id: "reggaeton",
+    id: "dtmf-album",
     name: "Album DtMF ",
     cover: "https://upload.wikimedia.org/wikipedia/en/e/ef/Bad_Bunny_-_Deb%C3%AD_Tirar_M%C3%A1s_Fotos.png",
     tracks: [
@@ -7964,7 +8052,7 @@ const MixesManager = (function() {
   const slider = document.getElementById("bnavGlassSlider");
   const nav = document.getElementById("bottomNav");
   if (!slider || !nav) return;
-  const NAV_DEBUG = true; // set to false to disable debug logs
+  const NAV_DEBUG = false;
   
   // Posicionar en el primer botón activo
   const activeBtn = nav.querySelector(".bnav-btn.active");
@@ -8473,8 +8561,9 @@ const MixesManager = (function() {
   renderQueueList();
   renderHomeScreen();
   initChangelog();
+  updateRepeatUI();
+  handleHashRoute();
 
-  // Hook progress update
   if (audioEl) {
     audioEl.addEventListener("timeupdate", updateHomeContinueProgress, { passive: true });
   }

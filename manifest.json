@@ -80,14 +80,14 @@
       "name": "Buscar",
       "short_name": "Buscar",
       "description": "Busca música",
-      "url": "#search",
+      "url": "./#search",
       "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Mis Playlists",
       "short_name": "Playlists",
       "description": "Accede a tus playlists",
-      "url": "#playlists",
+      "url": "./#playlists",
       "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],

@@ -86,7 +86,7 @@ input { font-family: inherit; }
 
 /* ── Touch feedback ─────────────────────────────────── */
 @media (hover: none) {
-  button:active { opacity: .7; transform: scale(.97); }
+  button:active:not(.sheet-icon-btn):not(.bnav-btn):not(.mini-ctrl) { opacity: .7; transform: scale(.97); }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -396,19 +396,16 @@ input { font-family: inherit; }
 .card-liked-dot.visible { display: flex; }
 .card-liked-dot svg { width: 10px; height: 10px; fill: #fff; stroke: none; }
 
-/* Card downloaded badge (small green dot bottom-left when offline available) */
-.card-downloaded-badge {
-  position: absolute; bottom: 8px; left: 8px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: #22c55e;
-  display: none; align-items: center; justify-content: center;
-  box-shadow: 0 0 6px rgba(34,197,94,.5);
-  z-index: 2;
+.track-dl-emoji {
+  display: inline-block;
+  margin-left: .25rem;
+  font-size: .72rem;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: .9;
 }
-.card-downloaded-badge.visible { display: flex; }
-.card-downloaded-badge svg { width: 10px; height: 10px; fill: #fff; }
 
-/* Inline green circle badge for downloaded tracks/playlists */
+/* Inline green circle badge for downloaded tracks/playlists (legacy) */
 .dl-badge-circle {
   display: inline-flex;
   align-items: center;
@@ -1392,6 +1389,19 @@ input { font-family: inherit; }
 .sheet-icon-btn svg { width: 20px; height: 20px; }
 .sheet-icon-btn:active { transform: scale(.88); }
 .sheet-icon-btn.active { color: rgba(255,255,255,.9); }
+.sheet-icon-btn.repeat-one { color: var(--accent); }
+.sheet-icon-btn.repeat-one::after {
+  content: '1';
+  position: absolute;
+  bottom: 3px;
+  right: 5px;
+  font-size: .52rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.sheet-icon-btn.repeat-all { color: var(--accent); }
+.sheet-icon-btn { position: relative; flex-shrink: 0; }
 
 /* Hidden compat elements */
 .sheet-heart { display: none !important; }
@@ -1915,9 +1925,11 @@ input { font-family: inherit; }
 
 .mini-controls { display: flex; align-items: center; gap: .1rem; padding-right: .65rem; flex-shrink: 0; position: relative; z-index: 1; }
 .mini-ctrl {
-  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px;
+  display: flex; align-items: center; justify-content: center;
   color: var(--text); border-radius: 50%;
   transition: color var(--t), transform .2s var(--ease-spring), background var(--t);
+  flex-shrink: 0;
 }
 .mini-ctrl:hover { color: var(--accent); background: rgba(255,255,255,.06); }
 .mini-ctrl:active { transform: scale(.88); }
@@ -1996,12 +2008,13 @@ input { font-family: inherit; }
 }
 .bnav-btn {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .18rem;
-  padding: .58rem 0 .58rem;
+  gap: .14rem;
+  padding: .48rem .08rem .48rem;
   color: rgba(255,255,255,.82);
   transition: color var(--t), transform .2s var(--ease-spring);
   position: relative;
@@ -2010,7 +2023,7 @@ input { font-family: inherit; }
 }
 .bnav-btn:hover { color: #fff; }
 .bnav-btn svg { width: 22px; height: 22px; transition: stroke-width var(--t), color var(--t); }
-.bnav-btn span { font-size: .58rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
+.bnav-btn span:not(.nav-badge) { font-size: .58rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
 .bnav-btn.active {
   color: #fff;
 }
