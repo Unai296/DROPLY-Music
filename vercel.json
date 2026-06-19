@@ -33,7 +33,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_vercel|sw\\.js|manifest\\.json|icons|style\\.css|script\\.js|droply\\.png).*)",
+      "source": "/((?!api|_vercel|sw\\.js|manifest\\.json|icons|Music|style\\.css|script\\.js|droply\\.png).*)",
       "destination": "/index.html"
     }
   ]
