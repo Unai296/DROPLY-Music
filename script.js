@@ -3888,6 +3888,13 @@ function _armPlaybackWatchdog() {
   }, 4000);
 }
 
+/* Detección de iOS reutilizable fuera de _doPlay (Safari/PWA standalone en
+   iPhone/iPad, incluido iPadOS que se identifica como Mac con touch).      */
+function isIOSForOfflineCheck() {
+  return /iP(hone|ad|od)/.test(navigator.userAgent) ||
+         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
 /* Cancela cualquier watchdog/retry pendiente del track anterior. Se llama
    al arrancar loadTrack() para garantizar que ningún timer fantasma del
    track viejo pueda interferir con el nuevo (causa real de los "errores
@@ -4236,14 +4243,16 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         });
     }
 
-    // iOS Safari exige que play() se llame de forma síncrona dentro del
-    // mismo gesto de usuario (el botón previoustrack/nexttrack del
-    // lockscreen). Cualquier setTimeout, incluso de 0ms, rompe esa cadena
-    // de "user activation" y Safari deniega el audio en silencio — por eso
-    // el título/portada cambiaban pero no sonaba nada. Solo en este caso
-    // (iOS + lockscreen) llamamos a play() ya, sin pasar por setTimeout.
-    // Android sigue igual que siempre, con su delay para el load del src.
-    if (isIOS && isLockscreenCall) {
+    // iOS Safari exige que play() se llame de forma SÍNCRONA dentro del
+    // mismo gesto/callback (botón previoustrack/nexttrack, tanto desde el
+    // lockscreen como con la app abierta en PWA standalone). Cualquier
+    // setTimeout, incluso de 0ms, rompe esa cadena de "user activation" y
+    // Safari deniega el audio en silencio — el título/portada cambian pero
+    // no suena nada. Por eso en iOS llamamos a play() siempre ya, sin pasar
+    // por setTimeout, sin depender de si detectamos lockscreen o no (esa
+    // detección puede fallar en standalone PWA). Android sigue con su
+    // delay para darle tiempo al load() del src en background.
+    if (isIOS) {
       _attemptPlay();
     } else {
       setTimeout(_attemptPlay, playDelay);
@@ -4255,9 +4264,40 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
   if (item._offlineSrc) {
     _doPlay(item._offlineSrc);
   } else if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
-    OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
-      _doPlay(blobUrl || item.file);
-    }).catch(() => _doPlay(item.file));
+    // En iOS NO podemos esperar a IndexedDB antes de play(): getOfflineSrc()
+    // es una operación async real (no microtask), y esperarla aquí rompe la
+    // cadena de gesto de usuario en Safari — el play() que llega después ya
+    // no cuenta como gesto válido y el audio se deniega en silencio. Por eso
+    // en iOS arrancamos YA con la URL de red (sigue siendo el mismo archivo,
+    // simplemente no se sirve desde el blob cacheado) y, si existe blob
+    // offline, lo intercambiamos en caliente sin perder la reproducción.
+    if (isIOSForOfflineCheck() && navigator.onLine) {
+      // Solo usamos el atajo de "red primero, blob después" si HAY conexión.
+      // Si no hay red, item.file fallaría igualmente, así que es mejor
+      // esperar el blob offline (la única opción real) aunque eso implique
+      // pasar por una promesa async antes de play().
+      _doPlay(item.file);
+      OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
+        if (!blobUrl) return;
+        if (myToken !== _playToken) return; // ya se cambió de canción
+        const wasPlaying = !activeAudio.paused;
+        const resumeAt = activeAudio.currentTime || 0;
+        _revokeBlobUrl();
+        _currentBlobUrl = blobUrl;
+        activeAudio.src = blobUrl;
+        try { activeAudio.load(); } catch(_) {}
+        activeAudio.addEventListener("loadedmetadata", function _onReady() {
+          activeAudio.removeEventListener("loadedmetadata", _onReady);
+          if (myToken !== _playToken) return;
+          try { activeAudio.currentTime = resumeAt; } catch(_) {}
+          if (wasPlaying) activeAudio.play().catch(() => {});
+        }, { once: true });
+      }).catch(() => {});
+    } else {
+      OfflineManager.getOfflineSrc(item.file).then(blobUrl => {
+        _doPlay(blobUrl || item.file);
+      }).catch(() => _doPlay(item.file));
+    }
   } else {
     _doPlay(item.file);
   }
@@ -5199,16 +5239,25 @@ function setupMediaSession(item) {
     updatePlayIcons(false);
   });
 
-  // Controles de pista — cuando vienen del lockscreen, document.hidden === true.
-  // Forzamos muted=false y volume antes de cambiar de canción, y marcamos
-  // window._droplyFromLockscreen para que _doPlay lo tenga en cuenta.
+  // Controles de pista — cuando vienen del lockscreen, document.hidden === true
+  // normalmente, PERO en iOS (PWA standalone añadida a pantalla de inicio)
+  // document.hidden no siempre refleja el estado real al pulsar desde la
+  // pantalla bloqueada o desde Control Center. Si nos fiamos solo de
+  // document.hidden, _doPlay cae al setTimeout() en vez de llamar a play()
+  // de forma síncrona, y en iOS eso basta para que Safari deniegue el
+  // audio en silencio (la app cambia de título/portada pero no suena).
+  // Por eso en iOS SIEMPRE tratamos los handlers de MediaSession como
+  // "llamada crítica de gesto" — cuesta cero en Android/desktop y evita
+  // el silencio en iOS.
+  const _isIOSDevice = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+                        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   navigator.mediaSession.setActionHandler("previoustrack", () => {
     const audio = activeAudio;
     if (audio) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
-    window._droplyFromLockscreen = document.hidden;
+    window._droplyFromLockscreen = _isIOSDevice ? true : document.hidden;
     playPrev();
   });
   navigator.mediaSession.setActionHandler("nexttrack", () => {
@@ -5217,7 +5266,7 @@ function setupMediaSession(item) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
-    window._droplyFromLockscreen = document.hidden;
+    window._droplyFromLockscreen = _isIOSDevice ? true : document.hidden;
     playNext();
   });
 
