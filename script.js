@@ -4135,13 +4135,11 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     // setTimeout(0) es el truco clave: separa el play() del load() para que
     // el navegador tenga tiempo de procesar el nuevo src antes de intentar
     // reproducir — crítico en Android Chrome en background.
-    // IMPORTANTE: si venimos de pantalla bloqueada (nexttrack/previoustrack)
-    // NO metemos delay extra. Android Chrome solo concede permiso de
-    // reproducción en background si el play() llega pegado al gesto físico
-    // del botón; cualquier retraso adicional (250ms) hace que el sistema
-    // revoque ese permiso y play() falle en silencio con NotAllowedError,
-    // dejando el lockscreen "colgado" en estado reproduciendo sin sonido.
-    const playDelay = 0;
+    // Cuando venimos de la pantalla bloqueada NO metemos delay: el gesto
+    // físico del botón del lockscreen solo es válido si play() llega en el
+    // mismo tick; un retraso de 250ms hacía que Android lo revocara y
+    // devolviera NotAllowedError en silencio.
+    const playDelay = window._droplyFromLockscreen ? 0 : 0;
     window._droplyFromLockscreen = false;
     setTimeout(() => {
       if (myToken !== _playToken) return;
@@ -4167,25 +4165,29 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
           isPlaying = false;
           updatePlayIcons(false);
           if (err.name === "NotAllowedError") {
-            // NotAllowedError desde lockscreen: el gesto de usuario ya se
-            // perdió, así que esperar no lo recupera — al contrario, cuanto
-            // más tarde el reintento, menos probable que el SO lo conceda.
-            // Reintentamos ya, sin retraso adicional.
+            // NotAllowedError desde lockscreen: el SO SÍ dio gesto válido,
+            // pero el browser lo perdió. Reintentamos con load() explícito
+            // porque a veces el src no se cargó correctamente en background.
             window._droplyPendingTrack = true;
-            if (myToken === _playToken) {
+            const retryLoad = () => {
+              if (myToken !== _playToken) return;
               try { activeAudio.load(); } catch(_) {}
-              activeAudio.play()
-                .then(() => {
-                  if (myToken !== _playToken) return;
-                  isPlaying = true;
-                  updatePlayIcons(true);
-                  window._droplyPendingTrack = null;
-                })
-                .catch(() => {
-                  isPlaying = false;
-                  updatePlayIcons(false);
-                });
-            }
+              setTimeout(() => {
+                if (myToken !== _playToken) return;
+                activeAudio.play()
+                  .then(() => {
+                    if (myToken !== _playToken) return;
+                    isPlaying = true;
+                    updatePlayIcons(true);
+                    window._droplyPendingTrack = null;
+                  })
+                  .catch(() => {
+                    isPlaying = false;
+                    updatePlayIcons(false);
+                  });
+              }, 100);
+            };
+            setTimeout(retryLoad, 500);
           } else {
             console.warn("[DROPLY] play error:", err.name, err.message);
           }
