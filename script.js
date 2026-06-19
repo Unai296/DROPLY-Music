@@ -3823,7 +3823,11 @@ activeAudio.addEventListener("error", function () {
   setTimeout(() => {
     if (myToken !== _playToken) return; // ya se cargó otra cosa, no interferir
     if (!activeAudio.src) return;
-    activeAudio.play().catch(() => {});
+    try { activeAudio.load(); } catch(_) {}
+    setTimeout(() => {
+      if (myToken !== _playToken) return;
+      activeAudio.play().catch(() => {});
+    }, 100);
   }, 800);
 }, { passive: true });
 
@@ -3843,15 +3847,18 @@ function _armPlaybackWatchdog() {
     if (stuck) {
       // Reintento real: recargar el mismo src y volver a pedir play()
       try { activeAudio.load(); } catch(_) {}
-      activeAudio.play()
-        .then(() => { isPlaying = true; updatePlayIcons(true); })
-        .catch(() => {
-          isPlaying = false;
-          updatePlayIcons(false);
-          if ("mediaSession" in navigator) {
-            try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
-          }
-        });
+      setTimeout(() => {
+        if (myToken !== _playToken) return;
+        activeAudio.play()
+          .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
+          .catch(() => {
+            isPlaying = false;
+            updatePlayIcons(false);
+            if ("mediaSession" in navigator) {
+              try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+            }
+          });
+      }, 100);
     }
   }, 4000);
 }
@@ -4092,60 +4099,99 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     } catch(_) {}
   }
 
-  // Pausar antes de cambiar src
-  activeAudio.pause();
+  // Pausar antes de cambiar src, pero solo si hay src activo.
+  // En background (pantalla bloqueada) NO pausamos de forma síncrona porque
+  // Android Chrome puede quedarse bloqueado: pause() + src change + play()
+  // en el mismo tick a veces genera un AbortError irrecuperable.
+  if (!document.hidden) {
+    activeAudio.pause();
+  } else {
+    // En background: pause silencioso sin bloquear el flujo de play siguiente
+    try { activeAudio.pause(); } catch(_) {}
+  }
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
+
+    // Secuencia correcta para background/lockscreen en Android e iOS:
+    // 1. Asignar src
+    // 2. Llamar load() — fuerza al navegador a empezar la carga aunque esté en background
+    // 3. Asegurar volumen/muted
+    // 4. play() — en un setTimeout(0) para separarlo del pause() anterior
+    //    y evitar el AbortError por "interrupted by a new load request"
     activeAudio.src = audioSrc;
-    // load() es necesario en iOS/Android cuando la app está en background
-    // (pantalla de bloqueo). Sin él, el navegador no inicia la carga del
-    // nuevo src y play() falla silenciosamente o no suena.
     try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
-    activeAudio.volume = activeAudio.volume || 1;
+
     if (!autoPlay) {
       isPlaying = false;
       updatePlayIcons(false);
       return;
     }
-    activeAudio.play()
-      .then(() => {
-        if (myToken !== _playToken) return;
-        isPlaying = true;
-        updatePlayIcons(true);
-      })
-      .catch(err => {
-        if (myToken !== _playToken) return;
-        isPlaying = false;
-        updatePlayIcons(false);
-        if (err.name === "NotAllowedError") {
-          // OJO: cuando esto se origina en nexttrack/previoustrack del lockscreen,
-          // SÍ hay gesto de usuario válido (lo dio el SO), así que merece un
-          // reintento inmediato en vez de esperar a un tap dentro de la página
-          // (que en background nunca llega).
-          window._droplyPendingTrack = true;
-          setTimeout(() => {
-            if (myToken !== _playToken) return;
-            // Segundo intento con load() explícito por si el navegador
-            // descartó el src al pasar a background
-            try { activeAudio.load(); } catch(_) {}
-            activeAudio.play()
-              .then(() => {
+
+    // setTimeout(0) es el truco clave: separa el play() del load() para que
+    // el navegador tenga tiempo de procesar el nuevo src antes de intentar
+    // reproducir — crítico en Android Chrome en background.
+    // Cuando venimos de la pantalla bloqueada usamos un delay mayor porque
+    // el navegador necesita más tiempo para despertar la pipa de audio.
+    const playDelay = window._droplyFromLockscreen ? 250 : 0;
+    window._droplyFromLockscreen = false;
+    setTimeout(() => {
+      if (myToken !== _playToken) return;
+      activeAudio.play()
+        .then(() => {
+          if (myToken !== _playToken) return;
+          isPlaying = true;
+          updatePlayIcons(true);
+        })
+        .catch(err => {
+          if (myToken !== _playToken) return;
+          if (err.name === "AbortError") {
+            // AbortError = el load() interrumpió un play() anterior.
+            // Reintentamos una vez: el src ya está asignado, solo hace falta play().
+            setTimeout(() => {
+              if (myToken !== _playToken) return;
+              activeAudio.play()
+                .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
+                .catch(() => { isPlaying = false; updatePlayIcons(false); });
+            }, 150);
+            return;
+          }
+          isPlaying = false;
+          updatePlayIcons(false);
+          if (err.name === "NotAllowedError") {
+            // NotAllowedError desde lockscreen: el SO SÍ dio gesto válido,
+            // pero el browser lo perdió. Reintentamos con load() explícito
+            // porque a veces el src no se cargó correctamente en background.
+            window._droplyPendingTrack = true;
+            const retryLoad = () => {
+              if (myToken !== _playToken) return;
+              try { activeAudio.load(); } catch(_) {}
+              setTimeout(() => {
                 if (myToken !== _playToken) return;
-                isPlaying = true;
-                updatePlayIcons(true);
-                window._droplyPendingTrack = null;
-              })
-              .catch(() => {});
-          }, 400);
-        } else if (err.name !== "AbortError") {
-          console.warn("[DROPLY] play error:", err);
-        }
-      });
+                activeAudio.play()
+                  .then(() => {
+                    if (myToken !== _playToken) return;
+                    isPlaying = true;
+                    updatePlayIcons(true);
+                    window._droplyPendingTrack = null;
+                  })
+                  .catch(() => {
+                    isPlaying = false;
+                    updatePlayIcons(false);
+                  });
+              }, 100);
+            };
+            setTimeout(retryLoad, 500);
+          } else {
+            console.warn("[DROPLY] play error:", err.name, err.message);
+          }
+        });
+    }, playDelay);
+
     _armPlaybackWatchdog();
   }
 
@@ -5096,21 +5142,25 @@ function setupMediaSession(item) {
     updatePlayIcons(false);
   });
 
-  // Controles de pista
+  // Controles de pista — cuando vienen del lockscreen, document.hidden === true.
+  // Forzamos muted=false y volume antes de cambiar de canción, y marcamos
+  // window._droplyFromLockscreen para que _doPlay lo tenga en cuenta.
   navigator.mediaSession.setActionHandler("previoustrack", () => {
     const audio = activeAudio;
     if (audio) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
+    window._droplyFromLockscreen = document.hidden;
     playPrev();
   });
-  navigator.mediaSession.setActionHandler("nexttrack",     () => {
+  navigator.mediaSession.setActionHandler("nexttrack", () => {
     const audio = activeAudio;
     if (audio) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
+    window._droplyFromLockscreen = document.hidden;
     playNext();
   });
 
