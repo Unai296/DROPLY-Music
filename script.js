@@ -4243,20 +4243,11 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         });
     }
 
-    // iOS Safari exige que play() se llame de forma SÍNCRONA dentro del
-    // mismo gesto/callback (botón previoustrack/nexttrack, tanto desde el
-    // lockscreen como con la app abierta en PWA standalone). Cualquier
-    // setTimeout, incluso de 0ms, rompe esa cadena de "user activation" y
-    // Safari deniega el audio en silencio — el título/portada cambian pero
-    // no suena nada. Por eso en iOS llamamos a play() siempre ya, sin pasar
-    // por setTimeout, sin depender de si detectamos lockscreen o no (esa
-    // detección puede fallar en standalone PWA). Android sigue con su
-    // delay para darle tiempo al load() del src en background.
-    if (isIOS) {
-      _attemptPlay();
-    } else {
-      setTimeout(_attemptPlay, playDelay);
-    }
+    // Todos los navegadores móviles exigen que play() se llame de forma SÍNCRONA
+    // dentro del mismo gesto/callback (botón previoustrack/nexttrack).
+    // Cualquier setTimeout rompe esa cadena de "user activation" y el audio
+    // se deniega en silencio (la UI avanza pero no hay sonido).
+    _attemptPlay();
 
     _armPlaybackWatchdog();
   }
