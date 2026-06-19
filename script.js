@@ -3807,24 +3807,45 @@ activeAudio.addEventListener("pause", function () {
   }
 }, { passive: true });
 
+/* ── Lock compartido para que el handler "error" y el watchdog nunca
+   reintenten carga al mismo tiempo sobre el mismo track. Sin esto, los
+   dos disparaban load()+play() en paralelo y el resultado era audio
+   mudo/roto justo al pasar de canción.                                    ── */
+let _retryInFlight = false;
+
 /* ── error / stalled: el audio no pudo cargar (típico en 2º plano / lockscreen) ──
-   Sin esto, la Media Session se queda mostrando "reproduciendo" para siempre
-   aunque el <audio> nunca llegó a sonar. Aquí detectamos el fallo real y
-   reflejamos el estado correcto + reintentamos cuando tiene sentido.        ── */
+   IMPORTANTE: el propio motor de audio dispara "error" de forma espuria
+   cuando hacemos src = "" o interrumpimos una carga al cambiar de track
+   (load() abortado). Si reaccionábamos a CUALQUIER evento "error" sin
+   comprobar si hay un MediaError real, acabábamos reintentando sobre el
+   track viejo justo cuando ya estaba cargando el nuevo, rompiendo el
+   cambio de canción. Ahora solo actuamos si activeAudio.error existe de
+   verdad y sigue correspondiendo al mismo src que falló.                  ── */
 activeAudio.addEventListener("error", function () {
   const myToken = _playToken;
+  const failedSrc = activeAudio.currentSrc || activeAudio.src;
+
+  // Sin código de error real (MediaError) => evento espurio por cambio de
+  // src/abort, no un fallo de carga. Ignorar.
+  if (!activeAudio.error) return;
+
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "none"; } catch(_) {}
   }
+
+  if (_retryInFlight) return; // el watchdog u otro reintento ya está en curso
+  _retryInFlight = true;
+
   // Reintento único tras un pequeño respiro (la red puede tardar en
   // "despertar" cuando Android reanuda la app desde la pantalla bloqueada)
   setTimeout(() => {
-    if (myToken !== _playToken) return; // ya se cargó otra cosa, no interferir
-    if (!activeAudio.src) return;
+    if (myToken !== _playToken) { _retryInFlight = false; return; } // ya se cargó otra cosa, no interferir
+    if (!activeAudio.src || (activeAudio.currentSrc || activeAudio.src) !== failedSrc) { _retryInFlight = false; return; }
     try { activeAudio.load(); } catch(_) {}
     setTimeout(() => {
+      _retryInFlight = false;
       if (myToken !== _playToken) return;
       activeAudio.play().catch(() => {});
     }, 100);
@@ -3837,17 +3858,21 @@ activeAudio.addEventListener("error", function () {
    en vez de dejar la Media Session "colgada" en estado playing.            */
 let _watchdogTimer = null;
 function _armPlaybackWatchdog() {
-  if (_watchdogTimer) clearTimeout(_watchdogTimer);
+  if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
   const myToken = _playToken;
   const expectedSrc = activeAudio.src;
   _watchdogTimer = setTimeout(() => {
+    _watchdogTimer = null;
     if (myToken !== _playToken) return; // se cambió de canción mientras tanto
     if (!expectedSrc || activeAudio.src !== expectedSrc) return;
+    if (_retryInFlight) return; // el handler de error ya está reintentando
     const stuck = activeAudio.paused || activeAudio.readyState < 2; // < HAVE_CURRENT_DATA
     if (stuck) {
+      _retryInFlight = true;
       // Reintento real: recargar el mismo src y volver a pedir play()
       try { activeAudio.load(); } catch(_) {}
       setTimeout(() => {
+        _retryInFlight = false;
         if (myToken !== _playToken) return;
         activeAudio.play()
           .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
@@ -3861,6 +3886,15 @@ function _armPlaybackWatchdog() {
       }, 100);
     }
   }, 4000);
+}
+
+/* Cancela cualquier watchdog/retry pendiente del track anterior. Se llama
+   al arrancar loadTrack() para garantizar que ningún timer fantasma del
+   track viejo pueda interferir con el nuevo (causa real de los "errores
+   al cambiar de canción": dos reintentos compitiendo por el mismo audioEl). */
+function _clearPendingAudioWatchers() {
+  if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
+  _retryInFlight = false;
 }
 
 /* ── Background blur transition (visual only) ─────── */
@@ -4078,6 +4112,12 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
   }
 
   /* -- Audio: hard switch limpio -- */
+  // Cancela cualquier watchdog/reintento de error que aún estuviera pendiente
+  // del track anterior. Si no se hace, ese reintento fantasma podía disparar
+  // su propio load()/play() justo cuando ya estábamos cargando la canción
+  // nueva, chocando con ella (la causa más frecuente de "falla al pasar
+  // canción" tanto en la PWA en primer plano como con pantalla bloqueada).
+  if (typeof _clearPendingAudioWatchers === 'function') _clearPendingAudioWatchers();
   const myToken = ++_playToken;
 
   // Reset UI a estado "cargando"
