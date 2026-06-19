@@ -8795,3 +8795,27 @@ const MixesManager = (function() {
     audioEl.addEventListener("timeupdate", updateHomeContinueProgress, { passive: true });
   }
 })();
+/* ══════════════════════════════════════════════════════
+   VISIBILITYCHANGE — Recuperar audio al desbloquear pantalla
+   Cuando el usuario pasa canción desde la pantalla bloqueada
+   y luego desbloquea, si el audio no arrancó en background
+   lo reintentamos aquí cuando la app vuelve a primer plano.
+══════════════════════════════════════════════════════ */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const audio = activeAudio || document.getElementById('mainAudio');
+  if (!audio) return;
+  if (audio.src && audio.paused && (isPlaying || window._droplyPendingTrack)) {
+    window._droplyPendingTrack = null;
+    audio.muted = false;
+    if (audio.volume === 0) audio.volume = 1;
+    if (audio.readyState < 2) {
+      try { audio.load(); } catch(_) {}
+    }
+    setTimeout(() => {
+      audio.play()
+        .then(() => { isPlaying = true; updatePlayIcons(true); })
+        .catch(() => { isPlaying = false; updatePlayIcons(false); });
+    }, 100);
+  }
+});
