@@ -4100,7 +4100,10 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
     activeAudio.src = audioSrc;
-    activeAudio.currentTime = 0;
+    // load() es necesario en iOS/Android cuando la app está en background
+    // (pantalla de bloqueo). Sin él, el navegador no inicia la carga del
+    // nuevo src y play() falla silenciosamente o no suena.
+    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
     activeAudio.volume = activeAudio.volume || 1;
@@ -4127,6 +4130,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
           window._droplyPendingTrack = true;
           setTimeout(() => {
             if (myToken !== _playToken) return;
+            // Segundo intento con load() explícito por si el navegador
+            // descartó el src al pasar a background
+            try { activeAudio.load(); } catch(_) {}
             activeAudio.play()
               .then(() => {
                 if (myToken !== _playToken) return;
@@ -4135,7 +4141,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
                 window._droplyPendingTrack = null;
               })
               .catch(() => {});
-          }, 300);
+          }, 400);
         } else if (err.name !== "AbortError") {
           console.warn("[DROPLY] play error:", err);
         }
@@ -5896,8 +5902,25 @@ function renderSheetQueue() {
     const item = getTrackByFile(file);
     if (!item) return;
     const cover = item.cover || getPlaceholderCover(item.category);
+
+    // ── Wrapper para swipe-to-delete ──
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;border-radius:10px;margin-bottom:2px;overflow:hidden;';
+
+    // Fondo rojo revelado al deslizar izquierda
+    const delBg = document.createElement('div');
+    delBg.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
+    delBg.style.cssText = `
+      position:absolute;top:0;bottom:0;right:0;width:80px;
+      display:flex;align-items:center;justify-content:center;gap:.3rem;
+      background:#e94f4f;color:#fff;border-radius:10px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
+
     const row = document.createElement('div');
     row.className = 'sq-item';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
     row.innerHTML = `
       <div class="sq-item-cover">
         <img src="${cover}" alt="${item.title}" loading="lazy" />
@@ -5911,8 +5934,66 @@ function renderSheetQueue() {
           <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>
         </svg>
       </div>`;
-    row.addEventListener('click', () => { loadTrack(item, true); });
-    listEl.appendChild(row);
+
+    const SWIPE_THRESHOLD = 80;
+    let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
+
+    function _removeSqItem() {
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
+      row.style.transition = 'transform .26s cubic-bezier(.4,0,1,1), opacity .26s';
+      row.style.transform = 'translateX(-110%)';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        const idx = queue.indexOf(file);
+        if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderSheetQueue(); }
+      }, 260);
+    }
+
+    row.addEventListener('touchstart', e => {
+      _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
+      _dx = 0; _swiping = false; _locked = false;
+      row.style.transition = 'none';
+    }, { passive: false });
+
+    row.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - _sx;
+      const dy = e.touches[0].clientY - _sy;
+      if (!_locked) {
+        if (Math.abs(dy) > Math.abs(dx) + 4) { _locked = true; return; }
+        if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
+      }
+      if (!_swiping) return;
+      e.preventDefault();
+      e.stopPropagation();
+      _dx = Math.min(0, dx);
+      row.style.transform = `translateX(${_dx}px)`;
+      const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
+      delBg.style.opacity = ratio > 0.1 ? String(ratio) : '0';
+    }, { passive: false });
+
+    row.addEventListener('touchend', () => {
+      if (!_swiping) return;
+      if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
+        _removeSqItem();
+      } else {
+        row.style.transition = 'transform .32s cubic-bezier(.34,1.56,.64,1)';
+        row.style.transform = 'translateX(0)';
+        delBg.style.opacity = '0';
+      }
+      _dx = 0; _swiping = false;
+    });
+
+    row.addEventListener('click', () => {
+      if (Math.abs(_dx) > 5) return;
+      const qIdx = queue.indexOf(file);
+      if (qIdx >= 0) { queue.splice(0, qIdx + 1); saveQueue(); }
+      loadTrack(item, true);
+      renderSheetQueue();
+    });
+
+    wrap.appendChild(delBg);
+    wrap.appendChild(row);
+    listEl.appendChild(wrap);
   });
 }
 
