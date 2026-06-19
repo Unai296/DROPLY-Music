@@ -4109,6 +4109,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       updatePlayIcons(false);
       return;
     }
+    // load() explícito: asegura precarga del src antes de play(),
+    // crítico en pantalla bloqueada en iOS/Android
+    activeAudio.load();
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -4119,23 +4122,39 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         if (myToken !== _playToken) return;
         isPlaying = false;
         updatePlayIcons(false);
-        if (err.name === "NotAllowedError") {
-          // OJO: cuando esto se origina en nexttrack/previoustrack del lockscreen,
-          // SÍ hay gesto de usuario válido (lo dio el SO), así que merece un
-          // reintento inmediato en vez de esperar a un tap dentro de la página
-          // (que en background nunca llega).
+        if (err.name === "NotAllowedError" || err.name === "NotSupportedError") {
+          // En pantalla bloqueada el gesto viene del SO (es válido).
+          // Esperamos a canplay para reintentar — más fiable que timeout fijo.
           window._droplyPendingTrack = true;
-          setTimeout(() => {
-            if (myToken !== _playToken) return;
+          const _token = myToken;
+          const onCanPlay = () => {
+            activeAudio.removeEventListener('canplay', onCanPlay);
+            if (_token !== _playToken) return;
             activeAudio.play()
               .then(() => {
-                if (myToken !== _playToken) return;
+                if (_token !== _playToken) return;
                 isPlaying = true;
                 updatePlayIcons(true);
                 window._droplyPendingTrack = null;
               })
+              .catch(() => {
+                setTimeout(() => {
+                  if (_token !== _playToken) return;
+                  activeAudio.play()
+                    .then(() => { isPlaying = true; updatePlayIcons(true); window._droplyPendingTrack = null; })
+                    .catch(() => {});
+                }, 400);
+              });
+          };
+          activeAudio.addEventListener('canplay', onCanPlay, { once: true });
+          // Safety net: si canplay no llega en 2s, intentar igual
+          setTimeout(() => {
+            activeAudio.removeEventListener('canplay', onCanPlay);
+            if (_token !== _playToken || !window._droplyPendingTrack) return;
+            activeAudio.play()
+              .then(() => { isPlaying = true; updatePlayIcons(true); window._droplyPendingTrack = null; })
               .catch(() => {});
-          }, 300);
+          }, 2000);
         } else if (err.name !== "AbortError") {
           console.warn("[DROPLY] play error:", err);
         }
@@ -5097,14 +5116,18 @@ function setupMediaSession(item) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
+    // Indicar "playing" antes de llamar a playPrev para que iOS/Android
+    // no cancele el permiso de audio en background antes de que empiece la nueva pista
+    try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
     playPrev();
   });
-  navigator.mediaSession.setActionHandler("nexttrack",     () => {
+  navigator.mediaSession.setActionHandler("nexttrack", () => {
     const audio = activeAudio;
     if (audio) {
       audio.muted = false;
       if (audio.volume === 0) audio.volume = 1;
     }
+    try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
     playNext();
   });
 
@@ -5759,7 +5782,7 @@ function renderQueueList() {
     row.dataset.index = i;
     if (isNew) row.style.animationDelay = (i * 30) + 'ms';
     row.draggable = true;
-    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;'; // se cambia a none al detectar swipe horizontal
     row.innerHTML = `
       <div class="queue-item-drag" title="Arrastrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
@@ -5795,6 +5818,7 @@ function renderQueueList() {
     row.addEventListener('touchstart', e => {
       _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
       _dx = 0; _swiping = false; _locked = false;
+      row.style.touchAction = 'pan-y'; // reset para cada gesto nuevo
     }, { passive: true });
 
     row.addEventListener('touchmove', e => {
@@ -5802,7 +5826,11 @@ function renderQueueList() {
       const dy = e.touches[0].clientY - _sy;
       if (!_locked) {
         if (Math.abs(dy) > Math.abs(dx) + 4) { _locked = true; return; }
-        if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
+        if (Math.abs(dx) > 6) {
+          _swiping = true; _locked = true;
+          // Forzar touch-action:none para que el navegador deje pasar el horizontal
+          row.style.touchAction = 'none';
+        }
       }
       if (!_swiping) return;
       e.preventDefault();
@@ -5814,6 +5842,7 @@ function renderQueueList() {
     }, { passive: false });
 
     row.addEventListener('touchend', () => {
+      row.style.touchAction = 'pan-y'; // restaurar scroll vertical
       if (!_swiping) return;
       if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
         _removeItem();
