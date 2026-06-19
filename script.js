@@ -4135,13 +4135,15 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     // setTimeout(0) es el truco clave: separa el play() del load() para que
     // el navegador tenga tiempo de procesar el nuevo src antes de intentar
     // reproducir — crítico en Android Chrome en background.
-    // Cuando venimos de la pantalla bloqueada NO metemos delay: el gesto
-    // físico del botón del lockscreen solo es válido si play() llega en el
-    // mismo tick; un retraso de 250ms hacía que Android lo revocara y
-    // devolviera NotAllowedError en silencio.
-    const playDelay = window._droplyFromLockscreen ? 0 : 0;
+    // Cuando venimos de la pantalla bloqueada usamos un delay mayor porque
+    // el navegador necesita más tiempo para despertar la pipa de audio.
+    const playDelay = window._droplyFromLockscreen ? 250 : 0;
+    const isLockscreenCall = window._droplyFromLockscreen;
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+                  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     window._droplyFromLockscreen = false;
-    setTimeout(() => {
+
+    function _attemptPlay() {
       if (myToken !== _playToken) return;
       activeAudio.play()
         .then(() => {
@@ -4192,7 +4194,20 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
             console.warn("[DROPLY] play error:", err.name, err.message);
           }
         });
-    }, playDelay);
+    }
+
+    // iOS Safari exige que play() se llame de forma síncrona dentro del
+    // mismo gesto de usuario (el botón previoustrack/nexttrack del
+    // lockscreen). Cualquier setTimeout, incluso de 0ms, rompe esa cadena
+    // de "user activation" y Safari deniega el audio en silencio — por eso
+    // el título/portada cambiaban pero no sonaba nada. Solo en este caso
+    // (iOS + lockscreen) llamamos a play() ya, sin pasar por setTimeout.
+    // Android sigue igual que siempre, con su delay para el load del src.
+    if (isIOS && isLockscreenCall) {
+      _attemptPlay();
+    } else {
+      setTimeout(_attemptPlay, playDelay);
+    }
 
     _armPlaybackWatchdog();
   }
