@@ -519,7 +519,27 @@ input { font-family: inherit; }
   transition: opacity .1s;
 }
 .search-result-add-bg svg { stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
-.search-result-row-wrap.swiping .search-result-add-bg { opacity: 1; }
+
+/* Fondo morado para "añadir a cola" (swipe a la derecha) — mismo patrón, lado izquierdo */
+.search-result-queue-bg {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  border-radius: var(--r-xs);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .1s;
+}
+.search-result-queue-bg svg { stroke: #fff; fill: none; }
 
 .search-result-row { display: flex; align-items: center; gap: .9rem; padding: .65rem .3rem; cursor: pointer; border-radius: var(--r-xs); transition: background var(--t), transform .05s linear; will-change: transform; position: relative; z-index: 1; touch-action: pan-y; }
 .search-result-row:hover { background: var(--bg3); }

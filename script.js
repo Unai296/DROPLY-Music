@@ -3790,6 +3790,7 @@ activeAudio.addEventListener("loadedmetadata", function () {
 /* En iOS/Safari loadedmetadata llega tarde; 'playing' es más fiable           */
 activeAudio.addEventListener("playing", function () {
   _updateMediaSessionPosition();
+  if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
   }
@@ -3806,6 +3807,55 @@ activeAudio.addEventListener("pause", function () {
   }
 }, { passive: true });
 
+/* ── error / stalled: el audio no pudo cargar (típico en 2º plano / lockscreen) ──
+   Sin esto, la Media Session se queda mostrando "reproduciendo" para siempre
+   aunque el <audio> nunca llegó a sonar. Aquí detectamos el fallo real y
+   reflejamos el estado correcto + reintentamos cuando tiene sentido.        ── */
+activeAudio.addEventListener("error", function () {
+  const myToken = _playToken;
+  isPlaying = false;
+  updatePlayIcons(false);
+  if ("mediaSession" in navigator) {
+    try { navigator.mediaSession.playbackState = "none"; } catch(_) {}
+  }
+  // Reintento único tras un pequeño respiro (la red puede tardar en
+  // "despertar" cuando Android reanuda la app desde la pantalla bloqueada)
+  setTimeout(() => {
+    if (myToken !== _playToken) return; // ya se cargó otra cosa, no interferir
+    if (!activeAudio.src) return;
+    activeAudio.play().catch(() => {});
+  }, 800);
+}, { passive: true });
+
+/* Vigila que, tras pedir reproducir (sobre todo desde nexttrack/previoustrack
+   en background), el audio realmente empiece a sonar en un tiempo razonable.
+   Si no lo hace, fuerza un reintento real de carga (re-set del mismo src)
+   en vez de dejar la Media Session "colgada" en estado playing.            */
+let _watchdogTimer = null;
+function _armPlaybackWatchdog() {
+  if (_watchdogTimer) clearTimeout(_watchdogTimer);
+  const myToken = _playToken;
+  const expectedSrc = activeAudio.src;
+  _watchdogTimer = setTimeout(() => {
+    if (myToken !== _playToken) return; // se cambió de canción mientras tanto
+    if (!expectedSrc || activeAudio.src !== expectedSrc) return;
+    const stuck = activeAudio.paused || activeAudio.readyState < 2; // < HAVE_CURRENT_DATA
+    if (stuck) {
+      // Reintento real: recargar el mismo src y volver a pedir play()
+      try { activeAudio.load(); } catch(_) {}
+      activeAudio.play()
+        .then(() => { isPlaying = true; updatePlayIcons(true); })
+        .catch(() => {
+          isPlaying = false;
+          updatePlayIcons(false);
+          if ("mediaSession" in navigator) {
+            try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
+          }
+        });
+    }
+  }, 4000);
+}
+
 /* ── Background blur transition (visual only) ─────── */
 function animateBackgroundTransition(newCover) {
   const bg = sheetBgBlur;
@@ -3816,6 +3866,105 @@ function animateBackgroundTransition(newCover) {
     bg.style.opacity = "1";
   }, 200);
 }
+
+/* ══════════════════════════════════════════════════════
+   CONTROLADOR ÚNICO DE VISTA DEL SHEET (Portada / Letra / Cola)
+   Antes había dos sistemas independientes pisándose entre sí
+   (uno para portada↔letra, otro para portada↔cola), lo que
+   provocaba transiciones rotas al alternar rápido entre las tres.
+   Ahora todo pasa por aquí: una sola fuente de verdad + un único
+   timer de "ocultar tras animar" que se cancela si cambia la vista
+   antes de que termine.
+══════════════════════════════════════════════════════ */
+let _sheetView = 'cover'; // 'cover' | 'lyrics' | 'queue'
+let _sheetViewHideTimer = null;
+
+function setSheetView(view) {
+  const coverArea  = document.getElementById('sheetCoverArea');
+  const lyricsArea = document.getElementById('sheetLyricsArea');
+  const queueArea  = document.getElementById('sheetQueueArea');
+  const lyricsBtnEl = document.getElementById('sheetLyricsBtn');
+  const queueBtnEl  = document.getElementById('sheetQueueBtn');
+
+  if (view === _sheetView) return;
+  _sheetView = view;
+
+  // Cancela cualquier "ocultar tras animar" pendiente de la transición anterior
+  if (_sheetViewHideTimer) { clearTimeout(_sheetViewHideTimer); _sheetViewHideTimer = null; }
+
+  if (lyricsBtnEl) lyricsBtnEl.classList.toggle('active', view === 'lyrics');
+  if (queueBtnEl)  queueBtnEl.classList.toggle('active',  view === 'queue');
+
+  // -- Portada --
+  if (coverArea) {
+    if (view === 'cover') {
+      coverArea.style.display = '';
+      requestAnimationFrame(() => coverArea.classList.remove('slide-out'));
+    } else {
+      coverArea.classList.add('slide-out');
+    }
+  }
+
+  // -- Letra --
+  if (lyricsArea) {
+    if (view === 'lyrics') {
+      lyricsArea.style.transition = 'opacity .28s ease, transform .32s cubic-bezier(.4,0,.2,1)';
+      lyricsArea.style.display = '';
+      lyricsArea.classList.add('slide-in-start');
+      lyricsArea.classList.remove('slide-in-ready');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        lyricsArea.classList.remove('slide-in-start');
+        lyricsArea.classList.add('slide-in-ready');
+      }));
+      if (typeof lyricsReady !== 'undefined' && lyricsReady && typeof activeLine !== 'undefined' && activeLine >= 0 && typeof scrollToActive === 'function') {
+        scrollToActive(activeLine, true);
+      }
+      const audio = document.getElementById('mainAudio');
+      if (audio && !audio.paused && typeof startTick === 'function' && !rafId) startTick();
+    } else {
+      lyricsArea.style.transition = 'opacity .2s ease';
+      lyricsArea.classList.add('slide-in-start');
+      lyricsArea.classList.remove('slide-in-ready');
+    }
+  }
+
+  // -- Cola --
+  if (queueArea) {
+    if (view === 'queue') {
+      if (typeof renderSheetQueue === 'function') renderSheetQueue();
+      queueArea.classList.add('visible');
+      requestAnimationFrame(() => requestAnimationFrame(() => queueArea.classList.add('active')));
+    } else {
+      queueArea.classList.remove('active');
+    }
+  }
+
+  // Tras la animación más larga, oculta del todo lo que ya no es la vista activa
+  _sheetViewHideTimer = setTimeout(() => {
+    if (coverArea  && view !== 'cover')  coverArea.style.display  = 'none';
+    if (lyricsArea && view !== 'lyrics') lyricsArea.style.display = 'none';
+    if (queueArea  && view !== 'queue')  queueArea.classList.remove('visible');
+    _sheetViewHideTimer = null;
+  }, 360);
+}
+
+function resetSheetViewToCover() {
+  // Fuerza estado limpio sin animación (usado al cargar una canción nueva
+  // o al cerrar el sheet) para que la próxima apertura empiece consistente
+  if (_sheetViewHideTimer) { clearTimeout(_sheetViewHideTimer); _sheetViewHideTimer = null; }
+  _sheetView = 'cover';
+  const coverArea  = document.getElementById('sheetCoverArea');
+  const lyricsArea = document.getElementById('sheetLyricsArea');
+  const queueArea  = document.getElementById('sheetQueueArea');
+  const lyricsBtnEl = document.getElementById('sheetLyricsBtn');
+  const queueBtnEl  = document.getElementById('sheetQueueBtn');
+  if (coverArea)  { coverArea.style.display = ''; coverArea.classList.remove('slide-out'); }
+  if (lyricsArea) { lyricsArea.style.display = 'none'; lyricsArea.classList.add('slide-in-start'); lyricsArea.classList.remove('slide-in-ready'); }
+  if (queueArea)  { queueArea.classList.remove('active', 'visible'); }
+  if (lyricsBtnEl) lyricsBtnEl.classList.remove('active');
+  if (queueBtnEl)  queueBtnEl.classList.remove('active');
+}
+window._droplyResetSheetView = resetSheetViewToCover;
 
 /* ══════════════════════════════════════════════════════
    LOAD TRACK
@@ -3971,11 +4120,27 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         isPlaying = false;
         updatePlayIcons(false);
         if (err.name === "NotAllowedError") {
+          // OJO: cuando esto se origina en nexttrack/previoustrack del lockscreen,
+          // SÍ hay gesto de usuario válido (lo dio el SO), así que merece un
+          // reintento inmediato en vez de esperar a un tap dentro de la página
+          // (que en background nunca llega).
           window._droplyPendingTrack = true;
+          setTimeout(() => {
+            if (myToken !== _playToken) return;
+            activeAudio.play()
+              .then(() => {
+                if (myToken !== _playToken) return;
+                isPlaying = true;
+                updatePlayIcons(true);
+                window._droplyPendingTrack = null;
+              })
+              .catch(() => {});
+          }, 300);
         } else if (err.name !== "AbortError") {
           console.warn("[DROPLY] play error:", err);
         }
       });
+    _armPlaybackWatchdog();
   }
 
   if (item._offlineSrc) {
@@ -4069,6 +4234,7 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
         sheet.style.transition = '';
         sheet.style.transform  = '';
         sheet.style.opacity    = '';
+        if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
       }, 380);
     } else {
       sheet.style.transform = '';
@@ -4759,6 +4925,12 @@ searchInput.addEventListener("input", () => {
       addBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>AÑADIR</span>`;
       wrap.appendChild(addBg);
 
+      // Purple add-to-queue background (revealed on right swipe)
+      const queueBg = document.createElement("div");
+      queueBg.className = "search-result-queue-bg";
+      queueBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><path d="M3 16l3 3 3-3"/></svg><span>EN COLA</span>`;
+      wrap.appendChild(queueBg);
+
       const row = document.createElement("div");
       row.className = "search-result-row";
       row.dataset.file = item.file;
@@ -4812,14 +4984,23 @@ searchInput.addEventListener("input", () => {
         }
         if (!_swiping) return;
 
-        _swipeDx = Math.min(0, dx); // only left
+        _swipeDx = dx; // both directions now
         row.style.transform = `translateX(${_swipeDx}px)`;
         row.classList.add("swiping");
         wrap.classList.add("swiping");
 
         const ratio = Math.min(1, Math.abs(_swipeDx) / SWIPE_THRESHOLD);
-        addBg.style.opacity = ratio;
-        addBg.style.background = ratio >= 1 ? "#16a34a" : "#22c55e";
+        if (_swipeDx < 0) {
+          // Izquierda → añadir a playlist
+          addBg.style.opacity = ratio;
+          addBg.style.background = ratio >= 1 ? "#16a34a" : "#22c55e";
+          queueBg.style.opacity = 0;
+        } else if (_swipeDx > 0) {
+          // Derecha → añadir a cola
+          queueBg.style.opacity = ratio;
+          queueBg.style.background = ratio >= 1 ? "#7c3aed" : "#8b5cf6";
+          addBg.style.opacity = 0;
+        }
       }, { passive: true });
 
       row.addEventListener("touchend", () => {
@@ -4827,17 +5008,24 @@ searchInput.addEventListener("input", () => {
         wrap.classList.remove("swiping");
         addBg.style.opacity = "";
         addBg.style.background = "";
+        queueBg.style.opacity = "";
+        queueBg.style.background = "";
 
         if (!_swiping) return;
         _swiping = false;
 
         if (Math.abs(_swipeDx) >= SWIPE_THRESHOLD) {
-          // Snap back and open add-to-playlist
           row.classList.add("snap-back");
           row.style.transform = "";
           setTimeout(() => row.classList.remove("snap-back"), 350);
           hapticFeedback("medium");
-          openAddToPlaylist(item);
+          if (_swipeDx < 0) {
+            // Izquierda → añadir a playlist
+            openAddToPlaylist(item);
+          } else {
+            // Derecha → añadir a cola
+            addToQueue(item);
+          }
         } else {
           // Snap back
           row.classList.add("snap-back");
@@ -5756,17 +5944,16 @@ function closeQueuePanel() {
     });
   }
   if (sheetClose) {
-    sheetClose.addEventListener('click', () => nowPlayingSheet.classList.remove('open'));
+    sheetClose.addEventListener('click', () => {
+      nowPlayingSheet.classList.remove('open');
+      if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
+    });
   }
   const sheetDragHandle = document.getElementById('sheetDragHandle');
   if (sheetDragHandle) {
     sheetDragHandle.addEventListener('click', () => {
       nowPlayingSheet.classList.remove('open');
-      // Reset queue area
-      const qa = document.getElementById('sheetQueueArea');
-      if (qa) { qa.classList.remove('active', 'visible'); }
-      const sheetQueueBtnEl = document.getElementById('sheetQueueBtn');
-      if (sheetQueueBtnEl) sheetQueueBtnEl.classList.remove('active');
+      if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
     });
   }
   if (sheetHeart) {
@@ -5797,38 +5984,7 @@ function closeQueuePanel() {
     });
   }
   if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', () => {
-    const coverArea  = document.getElementById('sheetCoverArea');
-    const lyricsArea = document.getElementById('sheetLyricsArea');
-    const queueArea  = document.getElementById('sheetQueueArea');
-    if (!queueArea) { openQueuePanel(); return; }
-
-    const isQueueVisible = queueArea.classList.contains('active');
-    if (isQueueVisible) {
-      // Close queue → back to cover
-      queueArea.classList.remove('active');
-      setTimeout(() => queueArea.classList.remove('visible'), 320);
-      if (coverArea) {
-        coverArea.style.display = '';
-        requestAnimationFrame(() => coverArea.classList.remove('slide-out'));
-      }
-      sheetQueueBtn.classList.remove('active');
-    } else {
-      // Hide lyrics if showing
-      if (lyricsArea) {
-        lyricsArea.style.transition = 'opacity .2s ease';
-        lyricsArea.classList.add('slide-in-start');
-        lyricsArea.classList.remove('slide-in-ready');
-        setTimeout(() => { lyricsArea.style.display = 'none'; }, 220);
-      }
-      // Slide cover out
-      if (coverArea) coverArea.classList.add('slide-out');
-      setTimeout(() => { if (coverArea) coverArea.style.display = 'none'; }, 350);
-      // Show queue
-      renderSheetQueue();
-      queueArea.classList.add('visible');
-      requestAnimationFrame(() => requestAnimationFrame(() => queueArea.classList.add('active')));
-      sheetQueueBtn.classList.add('active');
-    }
+    setSheetView(_sheetView === 'queue' ? 'cover' : 'queue');
   });
   if (queueCloseBtn) queueCloseBtn.addEventListener('click', closeQueuePanel);
   if (queueOverlay)  queueOverlay.addEventListener('click', closeQueuePanel);
@@ -8423,74 +8579,18 @@ const MixesManager = (function() {
   const lyricsArea  = document.getElementById('sheetLyricsArea');
   const coverArtImg = document.getElementById('sheetCoverArt');
   const lyricsBtnEl = document.getElementById('sheetLyricsBtn');
-  let showingLyrics = false;
 
-  function showCoverView() {
-    showingLyrics = false;
-    if (lyricsBtnEl) lyricsBtnEl.classList.remove('active');
-
-    // Animate lyrics out (up) then show cover
-    if (lyricsArea && !lyricsArea.classList.contains('slide-in-start')) {
-      lyricsArea.style.transition = 'opacity .28s ease, transform .32s cubic-bezier(.4,0,.2,1)';
-      lyricsArea.classList.add('slide-in-start');
-      lyricsArea.classList.remove('slide-in-ready');
-    }
-    if (coverArea) {
-      coverArea.style.display = '';
-      // Force reflow then remove slide-out
-      requestAnimationFrame(() => {
-        coverArea.classList.remove('slide-out');
-      });
-    }
-    // Hide lyrics area after animation
-    setTimeout(() => {
-      if (!showingLyrics && lyricsArea) lyricsArea.style.display = 'none';
-    }, 350);
-  }
-
-  function showLyricsView() {
-    showingLyrics = true;
-    if (lyricsBtnEl) lyricsBtnEl.classList.add('active');
-
-    // Animate cover out (up)
-    if (coverArea) {
-      coverArea.classList.add('slide-out');
-    }
-    // Show lyrics (animate in from below)
-    if (lyricsArea) {
-      lyricsArea.style.display = '';
-      lyricsArea.classList.add('slide-in-start');
-      lyricsArea.classList.remove('slide-in-ready');
-      // Trigger animation
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          lyricsArea.classList.remove('slide-in-start');
-          lyricsArea.classList.add('slide-in-ready');
-        });
-      });
-    }
-    // Hide cover after animation completes
-    setTimeout(() => {
-      if (showingLyrics && coverArea) coverArea.style.display = 'none';
-    }, 420);
-    // Trigger scroll to active line
-    if (lyricsReady && activeLine >= 0) scrollToActive(activeLine, true);
-    const audio = document.getElementById('mainAudio');
-    if (audio && !audio.paused && !rafId) startTick();
-  }
-
-  // Lyrics button → toggle
+  // Lyrics button → toggle (vía controlador único setSheetView)
   if (lyricsBtnEl) {
     lyricsBtnEl.addEventListener('click', () => {
-      if (!showingLyrics) showLyricsView(); else showCoverView();
+      setSheetView(_sheetView === 'lyrics' ? 'cover' : 'lyrics');
     });
   }
 
   // Tap cover art → toggle to lyrics (keep for backwards compat)
   if (coverArea) {
     coverArea.addEventListener('click', () => {
-      // only fire if it's not already animating out
-      if (!showingLyrics && !coverArea.classList.contains('slide-out')) showLyricsView();
+      if (_sheetView === 'cover') setSheetView('lyrics');
     });
   }
   // Tap lyrics area → back to cover
@@ -8498,23 +8598,18 @@ const MixesManager = (function() {
     lyricsArea.addEventListener('click', (e) => {
       // Don't collapse if clicking a lyric line (seeks audio)
       if (e.target.classList.contains('lyric-line') || e.target.closest('.lyric-line')) return;
-      showCoverView();
+      if (_sheetView === 'lyrics') setSheetView('cover');
     });
   }
 
   /* ── Expose loadLyricsForTrack globally so loadTrack() can call it ── */
   window._droplyLoadLyrics = function(item) {
     // Reset to cover view whenever a new track starts
-    showingLyrics = false;
-    if (lyricsBtnEl) lyricsBtnEl.classList.remove('active');
+    if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
     if (lyricsArea) {
       lyricsArea.style.display = 'none';
       lyricsArea.classList.add('slide-in-start');
       lyricsArea.classList.remove('slide-in-ready');
-    }
-    if (coverArea) {
-      coverArea.style.display = '';
-      coverArea.classList.remove('slide-out');
     }
     // Update cover art in sheet
     if (coverArtImg) coverArtImg.src = item.cover || '';
