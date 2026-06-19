@@ -4162,14 +4162,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
-    // Secuencia correcta para background/lockscreen en Android e iOS:
-    // 1. Asignar src
-    // 2. Llamar load() — fuerza al navegador a empezar la carga aunque esté en background
-    // 3. Asegurar volumen/muted
-    // 4. play() — en un setTimeout(0) para separarlo del pause() anterior
-    //    y evitar el AbortError por "interrupted by a new load request"
     activeAudio.src = audioSrc;
-    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
@@ -4179,75 +4172,22 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       return;
     }
 
-    // setTimeout(0) es el truco clave: separa el play() del load() para que
-    // el navegador tenga tiempo de procesar el nuevo src antes de intentar
-    // reproducir — crítico en Android Chrome en background.
-    // Cuando venimos de la pantalla bloqueada usamos un delay mayor porque
-    // el navegador necesita más tiempo para despertar la pipa de audio.
-    const playDelay = window._droplyFromLockscreen ? 250 : 0;
-    const isLockscreenCall = window._droplyFromLockscreen;
-    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-                  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     window._droplyFromLockscreen = false;
 
-    function _attemptPlay() {
-      if (myToken !== _playToken) return;
-      activeAudio.play()
-        .then(() => {
-          if (myToken !== _playToken) return;
-          isPlaying = true;
-          updatePlayIcons(true);
-        })
-        .catch(err => {
-          if (myToken !== _playToken) return;
-          if (err.name === "AbortError") {
-            // AbortError = el load() interrumpió un play() anterior.
-            // Reintentamos una vez: el src ya está asignado, solo hace falta play().
-            setTimeout(() => {
-              if (myToken !== _playToken) return;
-              activeAudio.play()
-                .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
-                .catch(() => { isPlaying = false; updatePlayIcons(false); });
-            }, 150);
-            return;
-          }
-          isPlaying = false;
-          updatePlayIcons(false);
-          if (err.name === "NotAllowedError") {
-            // NotAllowedError desde lockscreen: el SO SÍ dio gesto válido,
-            // pero el browser lo perdió. Reintentamos con load() explícito
-            // porque a veces el src no se cargó correctamente en background.
-            window._droplyPendingTrack = true;
-            const retryLoad = () => {
-              if (myToken !== _playToken) return;
-              try { activeAudio.load(); } catch(_) {}
-              setTimeout(() => {
-                if (myToken !== _playToken) return;
-                activeAudio.play()
-                  .then(() => {
-                    if (myToken !== _playToken) return;
-                    isPlaying = true;
-                    updatePlayIcons(true);
-                    window._droplyPendingTrack = null;
-                  })
-                  .catch(() => {
-                    isPlaying = false;
-                    updatePlayIcons(false);
-                  });
-              }, 100);
-            };
-            setTimeout(retryLoad, 500);
-          } else {
-            console.warn("[DROPLY] play error:", err.name, err.message);
-          }
-        });
-    }
-
-    // Todos los navegadores móviles exigen que play() se llame de forma SÍNCRONA
-    // dentro del mismo gesto/callback (botón previoustrack/nexttrack).
-    // Cualquier setTimeout rompe esa cadena de "user activation" y el audio
-    // se deniega en silencio (la UI avanza pero no hay sonido).
-    _attemptPlay();
+    // Llamada síncrona a play() para no perder el user gesture del lockscreen.
+    // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
+    activeAudio.play()
+      .then(() => {
+        if (myToken !== _playToken) return;
+        isPlaying = true;
+        updatePlayIcons(true);
+      })
+      .catch(err => {
+        if (myToken !== _playToken) return;
+        console.warn("[DROPLY] play error:", err.name, err.message);
+        isPlaying = false;
+        updatePlayIcons(false);
+      });
 
     _armPlaybackWatchdog();
   }
