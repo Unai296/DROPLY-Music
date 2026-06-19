@@ -3853,38 +3853,10 @@ function _armPlaybackWatchdog() {
           }
         });
     }
-  }, 1500);
+  }, 4000);
 }
 
-/* ── visibilitychange: recuperar reproducción al desbloquear pantalla ──────
-   iOS/Android suspenden el fetch del SW cuando la pantalla está bloqueada.
-   Al volver a primer plano, si el audio estaba "jugando" según isPlaying
-   pero el elemento está pausado/stallado, forzamos un reload + play.       ── */
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) return; // pantalla se bloquea → no hacer nada
-  // Pantalla se desbloquea / app vuelve a primer plano
-  setTimeout(() => {
-    if (!isPlaying) return; // el usuario había pausado voluntariamente
-    if (!activeAudio.src) return;
-    const isStuck = activeAudio.paused || activeAudio.readyState < 2;
-    if (isStuck) {
-      const savedToken = _playToken;
-      const savedTime = activeAudio.currentTime || 0;
-      activeAudio.load();
-      activeAudio.currentTime = savedTime;
-      activeAudio.play()
-        .then(() => {
-          if (savedToken !== _playToken) return;
-          isPlaying = true;
-          updatePlayIcons(true);
-          if ('mediaSession' in navigator) {
-            try { navigator.mediaSession.playbackState = 'playing'; } catch(_) {}
-          }
-        })
-        .catch(() => {});
-    }
-  }, 300);
-});
+/* ── Background blur transition (visual only) ─────── */
 function animateBackgroundTransition(newCover) {
   const bg = sheetBgBlur;
   bg.style.transition = "opacity .4s ease";
@@ -4137,8 +4109,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       updatePlayIcons(false);
       return;
     }
-    // load() explícito fuerza precarga antes de play() — crítico en lockscreen iOS/Android
-    activeAudio.load();
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -5822,7 +5792,6 @@ function renderQueueList() {
       }, 280);
     }
 
-    // passive:false en touchstart para poder llamar preventDefault si es swipe horizontal
     row.addEventListener('touchstart', e => {
       _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
       _dx = 0; _swiping = false; _locked = false;
@@ -5832,32 +5801,17 @@ function renderQueueList() {
     row.addEventListener('touchmove', e => {
       const dx = e.touches[0].clientX - _sx;
       const dy = e.touches[0].clientY - _sy;
-
       if (!_locked) {
-        if (Math.abs(dy) > Math.abs(dx) + 4) {
-          // Vertical: dejar pasar al scroll del contenedor
-          _locked = true;
-          return;
-        }
-        if (Math.abs(dx) > 6) {
-          _swiping = true;
-          _locked = true;
-        } else {
-          return;
-        }
+        if (Math.abs(dy) > Math.abs(dx) + 4) { _locked = true; return; }
+        if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
       }
       if (!_swiping) return;
-
-      // Bloquear scroll vertical del contenedor padre mientras swipe horizontal
       e.preventDefault();
       e.stopPropagation();
-
-      _dx = Math.min(0, dx); // solo izquierda
+      _dx = Math.min(0, dx);
       row.style.transform = `translateX(${_dx}px)`;
-
       const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
       delBg.style.opacity = ratio > 0.1 ? String(ratio) : '0';
-      delBg.style.background = ratio >= 1 ? '#c0392b' : '#e94f4f';
     }, { passive: false });
 
     row.addEventListener('touchend', () => {
@@ -5868,7 +5822,6 @@ function renderQueueList() {
         row.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)';
         row.style.transform = 'translateX(0)';
         delBg.style.opacity = '0';
-        delBg.style.background = '#e94f4f';
       }
       _dx = 0; _swiping = false;
     });
