@@ -3891,14 +3891,26 @@ function _armPlaybackWatchdog() {
 }
 
 /* ══════════════════════════════════════════════════════
-   PREFETCH DEL SIGUIENTE TRACK — FIX "se queda colgado al pasar canción"
-   Calienta la caché HTTP del navegador descargando el siguiente track en
-   segundo plano MIENTRAS suena el actual. Así, cuando el usuario pulsa
-   "siguiente" (incluso desde la pantalla bloqueada), el audio ya está
-   disponible localmente y arranca al instante en vez de esperar a que
-   empiece una descarga nueva desde cero.
+   PREFETCH DEL SIGUIENTE TRACK (v2 — ligero y seguro)
+   La v1 descargaba el archivo COMPLETO del siguiente track en cuanto
+   arrancaba el actual. Eso competía por ancho de banda con la canción
+   que estaba sonando (y con el resto de la PWA) y, si el usuario
+   saltaba de canción varias veces seguidas, se apilaban varias
+   descargas completas en paralelo → la app entera se volvía lenta.
+
+   v2 corrige eso:
+   · Solo descarga un FRAGMENTO inicial (~700KB, unos 20-30s de audio)
+     con Range request — suficiente para que el siguiente track
+     arranque al instante, sin acaparar toda la conexión.
+   · Espera unos segundos tras empezar la canción actual, y solo si
+     ya está bien bufferizada (no compite con su propia carga).
+   · Una única petición en vuelo: cualquier prefetch anterior se
+     aborta en cuanto cambia la pista (o se inicia uno nuevo).
 ══════════════════════════════════════════════════════ */
-const _prefetchedFiles = new Set();
+const _prefetchedFiles      = new Set();
+const PREFETCH_BYTES        = 700 * 1024;  // ~700KB, suficiente para arrancar al instante
+let   _prefetchController   = null;
+let   _prefetchTimer        = null;
 
 function _peekNextTrackFile() {
   // 1) Si hay cola, el siguiente es el primero de la cola
@@ -3920,27 +3932,51 @@ function _shouldSkipPrefetch() {
   if (!navigator.onLine) return true;
   const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   if (conn) {
-    if (conn.saveData) return true;                       // modo ahorro de datos activo
+    if (conn.saveData) return true;                              // modo ahorro de datos activo
     if (conn.effectiveType && /2g/.test(conn.effectiveType)) return true; // red muy lenta
   }
   return false;
 }
 
-function _prefetchNextTrack() {
-  if (_shouldSkipPrefetch()) return;
-  const nextFile = _peekNextTrackFile();
-  if (!nextFile) return;
-  if (_prefetchedFiles.has(nextFile)) return;
-  // Si ya está descargada offline, no hace falta red — ya está disponible.
-  if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(nextFile)) return;
-
-  _prefetchedFiles.add(nextFile);
-  try {
-    fetch(nextFile, { credentials: "same-origin" })
-      .then(r => { if (r.ok) return r.blob(); })   // forzamos lectura completa → entra en la caché HTTP
-      .catch(() => { _prefetchedFiles.delete(nextFile); });
-  } catch (_) { _prefetchedFiles.delete(nextFile); }
+/* Cancela cualquier prefetch programado o en curso. Se llama siempre que
+   cambia la pista (loadTrack) para que saltar canciones rápido no apile
+   descargas paralelas compitiendo por la conexión.                       */
+function _cancelPrefetch() {
+  if (_prefetchTimer) { clearTimeout(_prefetchTimer); _prefetchTimer = null; }
+  if (_prefetchController) { try { _prefetchController.abort(); } catch(_) {} _prefetchController = null; }
 }
+
+function _prefetchNextTrack() {
+  _cancelPrefetch();
+  const myToken = _playToken; // token de la pista que está sonando AHORA
+  // Esperamos a que la pista actual lleve un rato sonando bien antes de
+  // gastar ancho de banda en precargar la siguiente.
+  _prefetchTimer = setTimeout(() => {
+    _prefetchTimer = null;
+    if (myToken !== _playToken) return;            // ya cambió de pista, abortar
+    if (_shouldSkipPrefetch()) return;
+    if (activeAudio.readyState < 3) return;          // la actual aún no está bien bufferizada, no competir
+
+    const nextFile = _peekNextTrackFile();
+    if (!nextFile) return;
+    if (_prefetchedFiles.has(nextFile)) return;
+    // Si ya está descargada offline, no hace falta red — ya está disponible.
+    if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(nextFile)) return;
+
+    _prefetchedFiles.add(nextFile);
+    _prefetchController = new AbortController();
+    fetch(nextFile, {
+      credentials: "same-origin",
+      signal: _prefetchController.signal,
+      priority: "low",                               // no competir con recursos críticos (Chrome/Edge)
+      headers: { "Range": `bytes=0-${PREFETCH_BYTES - 1}` }
+    })
+      .then(r => { if (r.ok || r.status === 206) return r.blob(); })
+      .catch(() => { _prefetchedFiles.delete(nextFile); })
+      .finally(() => { if (myToken === _playToken) _prefetchController = null; });
+  }, 6000); // margen de 6s para no pisar el arranque de la pista actual
+}
+
 
 /* Detección de iOS reutilizable fuera de _doPlay (Safari/PWA standalone en
    iPhone/iPad, incluido iPadOS que se identifica como Mac con touch).      */
@@ -4179,6 +4215,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
   // nueva, chocando con ella (la causa más frecuente de "falla al pasar
   // canción" tanto en la PWA en primer plano como con pantalla bloqueada).
   if (typeof _clearPendingAudioWatchers === 'function') _clearPendingAudioWatchers();
+  if (typeof _cancelPrefetch === 'function') _cancelPrefetch();
   const myToken = ++_playToken;
 
   // Reset UI a estado "cargando"
