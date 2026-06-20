@@ -3794,6 +3794,8 @@ activeAudio.addEventListener("playing", function () {
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
   }
+  // Precargar el siguiente track en segundo plano (ver bloque PREFETCH más abajo)
+  if (typeof _prefetchNextTrack === 'function') _prefetchNextTrack();
 }, { passive: true });
 
 activeAudio.addEventListener("pause", function () {
@@ -3886,6 +3888,58 @@ function _armPlaybackWatchdog() {
       }, 100);
     }
   }, 4000);
+}
+
+/* ══════════════════════════════════════════════════════
+   PREFETCH DEL SIGUIENTE TRACK — FIX "se queda colgado al pasar canción"
+   Calienta la caché HTTP del navegador descargando el siguiente track en
+   segundo plano MIENTRAS suena el actual. Así, cuando el usuario pulsa
+   "siguiente" (incluso desde la pantalla bloqueada), el audio ya está
+   disponible localmente y arranca al instante en vez de esperar a que
+   empiece una descarga nueva desde cero.
+══════════════════════════════════════════════════════ */
+const _prefetchedFiles = new Set();
+
+function _peekNextTrackFile() {
+  // 1) Si hay cola, el siguiente es el primero de la cola
+  if (queue.length > 0) return queue[0];
+  if (!playlist.length) return null;
+
+  // En shuffle no se puede predecir con certeza el siguiente índice
+  // (se calcula aleatoriamente en el momento), así que no prefetcheamos.
+  if (shuffleMode) return null;
+
+  // Fin de playlist sin repeat-all → no hay siguiente que precargar
+  if (repeatMode !== "all" && currentTrackIdx >= playlist.length - 1) return null;
+
+  const nextIdx = (currentTrackIdx + 1) % playlist.length;
+  return playlist[nextIdx]?.file || null;
+}
+
+function _shouldSkipPrefetch() {
+  if (!navigator.onLine) return true;
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (conn) {
+    if (conn.saveData) return true;                       // modo ahorro de datos activo
+    if (conn.effectiveType && /2g/.test(conn.effectiveType)) return true; // red muy lenta
+  }
+  return false;
+}
+
+function _prefetchNextTrack() {
+  if (_shouldSkipPrefetch()) return;
+  const nextFile = _peekNextTrackFile();
+  if (!nextFile) return;
+  if (_prefetchedFiles.has(nextFile)) return;
+  // Si ya está descargada offline, no hace falta red — ya está disponible.
+  if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(nextFile)) return;
+
+  _prefetchedFiles.add(nextFile);
+  try {
+    fetch(nextFile, { credentials: "same-origin" })
+      .then(r => { if (r.ok) return r.blob(); })   // forzamos lectura completa → entra en la caché HTTP
+      .catch(() => { _prefetchedFiles.delete(nextFile); });
+  } catch (_) { _prefetchedFiles.delete(nextFile); }
 }
 
 /* Detección de iOS reutilizable fuera de _doPlay (Safari/PWA standalone en
