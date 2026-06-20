@@ -3720,6 +3720,12 @@ function renderGrid() {
 const activeAudio = audioEl;   // mainAudio del DOM — único elemento
 window.audioEl = activeAudio;
 
+/* Bandera: true cuando el motor de crossfade ya gestionó el cambio de pista
+   por sí mismo, para que el listener "ended" no dispare playNext() también
+   (evitaría saltarse una canción o duplicar el avance). Se resetea sola en
+   cada loadTrack(). */
+let _crossfadeHandledTransition = false;
+
 /* ── Audio events ────────────────────────────────────── */
 let _rafPending = false;
 activeAudio.addEventListener("timeupdate", function () {
@@ -3737,10 +3743,36 @@ activeAudio.addEventListener("timeupdate", function () {
     miniProgressFill.style.width = pct + "%";
     _updateMediaSessionPosition();
   });
+  // Comprobación de crossfade: barata, fuera del rAF de arriba para no
+  // perder ticks si el rAF anterior aún no resolvió.
+  if (typeof _checkCrossfadeStart === 'function') _checkCrossfadeStart();
 }, { passive: true });
 
 activeAudio.addEventListener("ended", function () {
   isPlaying = false;
+
+  // Si este "ended" pertenece a un track que el crossfade ya cerró y
+  // reemplazó (loadTrack ya corrió, _playToken ya avanzó), es un evento
+  // tardío del audio viejo: ignorarlo del todo, no tocar nada.
+  if (_cfMainTrackToken !== -1 && _cfMainTrackToken !== _playToken) {
+    return;
+  }
+
+  // Si hay un crossfade en curso, este "ended" nativo es justo la señal de
+  // que el audio principal ha llegado a su fin real. Puede llegar un
+  // instante antes de que nuestro propio bucle de fade (en requestAnimationFrame)
+  // detecte p>=1, así que en vez de ignorarlo a ciegas forzamos aquí mismo
+  // el cierre del crossfade (idempotente: si ya se había cerrado, no hace
+  // nada gracias al guard de token/estado dentro de _cfFinish).
+  if (_cfState === 'fading' || _cfState === 'finishing') {
+    if (typeof _cfFinish === 'function') _cfFinish(_cfStartToken, _cfMainVolumeAtStart);
+    return;
+  }
+  if (_crossfadeHandledTransition) {
+    // El motor de crossfade ya se ha encargado de avanzar a la siguiente
+    // pista. No hacer nada más aquí para no duplicar el avance.
+    return;
+  }
   if (repeatMode === "one") {
     this.currentTime = 0;
     this.play()
@@ -4026,6 +4058,261 @@ function _prefetchNextTrack() {
 }
 
 
+/* ══════════════════════════════════════════════════════
+   CROSSFADE ENGINE — solape de 10s estilo Apple Music
+   ──────────────────────────────────────────────────────
+   Reglas de seguridad (NO NEGOCIABLES):
+   · activeAudio (mainAudio) jamás se toca a medio crossfade: sigue
+     siendo el que manda en Media Session / lockscreen TODO el rato.
+   · Si algo no está 100% garantizado (offline, shuffle, fin de lista,
+     repeat-one, track ya cacheado fallando, etc.) NO se activa nada
+     y el flujo cae intacto al "ended" → playNext() de siempre.
+   · Solo se dispara cuando la canción termina sola. Saltar manualmente
+     (prev/next, click en otra canción) cancela cualquier crossfade en
+     curso y usa el hard-switch normal, sin solape.
+══════════════════════════════════════════════════════ */
+const CROSSFADE_SECONDS = 10;          // duración del solape
+const CROSSFADE_MIN_TRACK_LEN = 25;    // no intentar crossfade en tracks muy cortos
+
+const crossfadeAudioEl = document.getElementById('crossfadeAudio');
+
+let _cfState = 'idle';        // 'idle' | 'priming' | 'fading' | 'finishing'
+let _cfRafId = null;
+let _cfNextItem = null;
+let _cfStartToken = 0;        // se invalida si loadTrack() corre por cualquier otro motivo
+let _cfMainVolumeAtStart = 1;
+let _cfMainTrackToken = -1;   // _playToken del track que estaba sonando cuando arrancó el crossfade
+
+function _cfReset() {
+  if (_cfRafId) { cancelAnimationFrame(_cfRafId); _cfRafId = null; }
+  _cfState = 'idle';
+  _cfNextItem = null;
+  _cfMainTrackToken = -1;
+  if (crossfadeAudioEl) {
+    try { crossfadeAudioEl.pause(); } catch(_) {}
+    try { crossfadeAudioEl.removeAttribute('src'); crossfadeAudioEl.load(); } catch(_) {}
+  }
+  const ind = document.getElementById('crossfadeIndicator');
+  if (ind) ind.classList.remove('visible');
+}
+
+/* Llamado en cada timeupdate del audio principal. Decide si toca arrancar
+   el solape. Completamente best-effort: cualquier duda → no hacer nada. */
+function _checkCrossfadeStart() {
+  if (_cfState !== 'idle') return;
+  if (!crossfadeAudioEl) return;
+  if (repeatMode === 'one') return;          // se repite la misma, no hay "siguiente" real
+  if (shuffleMode) return;                   // el siguiente en shuffle no es predecible de antemano
+  if (!navigator.onLine) return;             // sin red no arriesgamos a cortar el audio actual
+  // El crossfade usa un segundo <audio> sin Media Session propia. En
+  // background/pantalla bloqueada, Android e iOS solo garantizan mantener
+  // vivo el audio "registrado" en la Media Session activa — si ese audio
+  // (activeAudio) se pausa aunque sea un instante mientras suena el
+  // secundario, el sistema puede matar el playback. Por eso el crossfade
+  // SOLO se activa con la app visible en primer plano; en background cae
+  // siempre al hard-switch normal de toda la vida, que es 100% fiable ahí.
+  if (document.hidden) return;
+
+  const audio = activeAudio;
+  if (!audio || audio.paused) return;
+  const dur = audio.duration, cur = audio.currentTime;
+  if (!dur || !isFinite(dur) || dur < CROSSFADE_MIN_TRACK_LEN) return;
+
+  const remaining = dur - cur;
+  if (remaining > CROSSFADE_SECONDS || remaining <= 0.3) return;
+
+  // Solo si NO es el último track (sin repeat-all no hay "siguiente" real)
+  if (repeatMode !== 'all' && queue.length === 0 && currentTrackIdx >= playlist.length - 1) return;
+
+  const nextFile = _peekNextTrackFile();
+  if (!nextFile) return;
+  const nextItem = getTrackByFile(nextFile);
+  if (!nextItem || nextItem.type !== 'music') return;
+
+  // Solo si el siguiente track puede sonar de inmediato: descargado offline,
+  // o hay red (ya comprobado arriba). Si está marcado para forzar red en iOS
+  // sin estar descargado, sigue sirviendo desde item.file con conexión, así
+  // que no hace falta más comprobación aquí.
+  if (!navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(nextFile)) return;
+
+  _cfStartCrossfade(nextItem, remaining);
+}
+
+async function _cfStartCrossfade(nextItem, fadeWindow) {
+  _cfState = 'priming';
+  const myToken = ++_cfStartToken;
+  _cfNextItem = nextItem;
+  _cfMainVolumeAtStart = activeAudio.volume;
+  _cfMainTrackToken = _playToken; // token del track actual, para descartar un "ended" tardío tras el swap
+
+  try {
+    let src = nextItem.file;
+    if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(nextItem.file)) {
+      try {
+        const blobUrl = await OfflineManager.getOfflineSrc(nextItem.file);
+        if (blobUrl) src = blobUrl;
+      } catch(_) { /* sigue con la URL de red */ }
+    }
+    if (myToken !== _cfStartToken || _cfState !== 'priming') return; // se canceló mientras cargábamos
+
+    crossfadeAudioEl.src = src;
+    crossfadeAudioEl.volume = 0;
+    crossfadeAudioEl.muted = false;
+    crossfadeAudioEl.currentTime = 0;
+    try { crossfadeAudioEl.load(); } catch(_) {}
+
+    await crossfadeAudioEl.play();
+    if (myToken !== _cfStartToken || _cfState !== 'priming') {
+      try { crossfadeAudioEl.pause(); } catch(_) {}
+      return;
+    }
+
+    _cfState = 'fading';
+    const ind = document.getElementById('crossfadeIndicator');
+    if (ind) ind.classList.add('visible');
+
+    const fadeMs = Math.max(1000, fadeWindow * 1000);
+    const t0 = performance.now();
+    const startVol = _cfMainVolumeAtStart;
+
+    const step = (now) => {
+      if (myToken !== _cfStartToken || _cfState !== 'fading') return;
+      const p = Math.min(1, (now - t0) / fadeMs);
+      // Curva equal-power aproximada para que no haya "hueco" de volumen percibido
+      const fadeOut = Math.cos(p * Math.PI / 2);
+      const fadeIn  = Math.sin(p * Math.PI / 2);
+      try { activeAudio.volume = Math.max(0, startVol * fadeOut); } catch(_) {}
+      try { crossfadeAudioEl.volume = Math.max(0, Math.min(1, startVol * fadeIn)); } catch(_) {}
+
+      if (p >= 1 || activeAudio.ended || activeAudio.paused) {
+        _cfFinish(myToken, startVol);
+        return;
+      }
+      _cfRafId = requestAnimationFrame(step);
+    };
+    _cfRafId = requestAnimationFrame(step);
+
+  } catch (err) {
+    // Cualquier fallo en la preparación: abortamos limpio, sin tocar
+    // activeAudio para nada. El "ended" normal hará el hard-switch.
+    console.warn('[DROPLY] crossfade priming abortado:', err && err.message);
+    _cfReset();
+  }
+}
+
+function _cfFinish(myToken, restoreVolume) {
+  if (myToken !== _cfStartToken) return;
+  if (_cfState === 'idle' || _cfState === 'finishing') return;
+  _cfState = 'finishing';
+  if (_cfRafId) { cancelAnimationFrame(_cfRafId); _cfRafId = null; }
+
+  const ind = document.getElementById('crossfadeIndicator');
+  if (ind) ind.classList.remove('visible');
+
+  const nextItem = _cfNextItem;
+  const resumeAt = crossfadeAudioEl ? (crossfadeAudioEl.currentTime || 0) : 0;
+
+  // Marca que este "ended" del audio principal (si llega) ya está gestionado,
+  // para que el listener de "ended" no dispare playNext() por duplicado.
+  _crossfadeHandledTransition = true;
+
+  try { activeAudio.pause(); } catch(_) {}
+  try { activeAudio.volume = restoreVolume; } catch(_) {}
+
+  if (crossfadeAudioEl) {
+    try { crossfadeAudioEl.pause(); } catch(_) {}
+  }
+
+  _cfState = 'idle';
+  _cfNextItem = null;
+  _cfMainTrackToken = -1;
+
+  if (!nextItem) return;
+
+  // Avanza el índice/cola igual que haría playNext(), pero sin volver a
+  // disparar un loadTrack "desde cero" que cortaría el audio: usamos
+  // loadTrack con autoPlay:false y luego retomamos en caliente desde
+  // resumeAt, para que no haya doble intro ni salto audible.
+  if (queue.length > 0 && queue[0] === nextItem.file) {
+    queue.shift();
+    saveQueue();
+    if (typeof renderQueueList === 'function') renderQueueList();
+  } else {
+    const idx = playlist.findIndex(p => p.file === nextItem.file);
+    if (idx >= 0) currentTrackIdx = idx;
+  }
+
+  loadTrack(nextItem, true, null, { autoPlay: false, _fromCrossfade: true });
+
+  // loadTrack ya ha puesto el src "frío" en activeAudio; lo sustituimos
+  // por el audio que YA estaba sonando (crossfadeAudioEl) para continuar
+  // sin re-bufferizar ni cortar: simplemente seguimos reproduciendo desde
+  // el propio crossfadeAudioEl un instante mientras activeAudio se pone al
+  // día, y en cuanto esté listo hacemos el swap real sin silencio audible.
+  let _finalized = false;
+  const finalize = () => {
+    if (_finalized) return;
+    _finalized = true;
+    try { activeAudio.currentTime = resumeAt; } catch(_) {}
+    activeAudio.volume = restoreVolume;
+    activeAudio.muted = false;
+    activeAudio.play().then(() => {
+      isPlaying = true;
+      updatePlayIcons(true);
+      // Ahora que el principal ya suena en el punto correcto, apagamos
+      // el secundario para no duplicar audio.
+      if (crossfadeAudioEl) {
+        try { crossfadeAudioEl.pause(); } catch(_) {}
+        try { crossfadeAudioEl.removeAttribute('src'); crossfadeAudioEl.load(); } catch(_) {}
+      }
+    }).catch(err => {
+      console.warn('[DROPLY] crossfade finalize play error:', err && err.message);
+      isPlaying = false;
+      updatePlayIcons(false);
+    });
+  };
+
+  if (activeAudio.readyState >= 1) {
+    finalize();
+  } else {
+    activeAudio.addEventListener('loadedmetadata', finalize, { once: true });
+    // Watchdog por si loadedmetadata no llega (red lenta): no dejamos
+    // crossfadeAudioEl sonando indefinidamente como único audio.
+    setTimeout(() => {
+      if (activeAudio.readyState >= 1) return; // ya resuelto por el evento
+      finalize();
+    }, 2500);
+  }
+}
+
+/* Cancela cualquier crossfade en curso/preparándose SIN tocar activeAudio.
+   Se llama al saltar manualmente de canción (prev/next/click) para que
+   esos casos sigan siendo siempre hard-switch instantáneo, tal y como
+   pediste — el crossfade solo debe darse cuando la canción acaba sola. */
+function _cancelCrossfade() {
+  _cfStartToken++;           // invalida cualquier priming/fade en curso
+  _cfReset();
+}
+
+/* Si la app pasa a background/pantalla bloqueada A MITAD de un crossfade
+   (p. ej. el usuario suelta el móvil y se bloquea solo mientras suena),
+   abortamos el solape al instante: restauramos el volumen del audio
+   principal (que sigue siendo el dueño legítimo de la Media Session) y
+   apagamos el secundario. Así nunca queda activeAudio pausado/silenciado
+   en background, que es justo el escenario que hay que evitar a toda costa. */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) return;
+  if (_cfState === 'idle') return;
+  const wasMain = activeAudio && !activeAudio.paused;
+  _cancelCrossfade();
+  try {
+    activeAudio.volume = _cfMainVolumeAtStart || 1;
+    // Si en ese instante el principal ya estaba pausado (porque el fade
+    // iba avanzado) lo retomamos para no perder el audio en background.
+    if (!wasMain && activeAudio.src) activeAudio.play().catch(() => {});
+  } catch(_) {}
+}, { passive: true });
+
 /* Detección de iOS reutilizable fuera de _doPlay (Safari/PWA standalone en
    iPhone/iPad, incluido iPadOS que se identifica como Mac con touch).      */
 function isIOSForOfflineCheck() {
@@ -4168,7 +4455,23 @@ function _revokeBlobUrl() {
 
 function loadTrack(item, fromQueue = false, newPlaylistContext = null, options = {}) {
   if (item.type !== "music") return;
-  const { autoPlay = true, silent = false } = options;
+  const { autoPlay = true, silent = false, _fromCrossfade = false } = options;
+
+  // Cualquier loadTrack que NO venga del propio motor de crossfade (es decir,
+  // un click manual, prev/next, autoplay normal de un track nuevo, etc.) debe
+  // cancelar cualquier crossfade en preparación/curso, para que el
+  // comportamiento por defecto siga siendo el hard-switch normal de siempre.
+  if (!_fromCrossfade) {
+    if (typeof _cancelCrossfade === 'function') _cancelCrossfade();
+  }
+  // La bandera de "transición ya gestionada por crossfade" solo debe seguir
+  // viva hasta el próximo "ended" real (el del track que acabamos de cargar
+  // aquí). Se resetea siempre al cargar cualquier track nuevo para que ese
+  // futuro "ended" sí dispare playNext() con normalidad si no hay otro
+  // crossfade. _cfFinish() la pone a true justo antes de llamarnos, así que
+  // aquí no perdemos esa señal: solo evitamos que se quede pegada para
+  // siempre tras la transición que la generó.
+  _crossfadeHandledTransition = false;
 
   // ── Comprobación offline ──────────────────────────────────────────────────
   // Si no hay conexión y la canción no está descargada, avisar y salir
@@ -4299,8 +4602,14 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
     if (!autoPlay) {
-      isPlaying = false;
-      updatePlayIcons(false);
+      // Si esta carga "fría" viene del propio motor de crossfade, el audio
+      // NO está realmente pausado: sigue sonando desde crossfadeAudioEl
+      // mientras activeAudio se pone al día. No tocamos isPlaying/iconos
+      // aquí para no producir un parpadeo de "pausa" falso.
+      if (!_fromCrossfade) {
+        isPlaying = false;
+        updatePlayIcons(false);
+      }
       return;
     }
 
@@ -4376,6 +4685,12 @@ volSlider.addEventListener("input", () => {
 
 function seekToPercent(pct) {
   const audio = activeAudio;
+  // Seek manual cancela cualquier crossfade en curso/preparándose: el
+  // usuario está retomando el control directo de la posición de la pista.
+  if (typeof _cancelCrossfade === 'function' && _cfState !== 'idle') {
+    _cancelCrossfade();
+    try { audio.volume = _cfMainVolumeAtStart || 1; } catch(_) {}
+  }
   if (audio.duration && isFinite(audio.duration))
     audio.currentTime = Math.max(0, Math.min(1, pct)) * audio.duration;
 }
@@ -5682,6 +5997,13 @@ function togglePlay() {
         }
       });
   } else {
+    // Si el usuario pausa manualmente a medio crossfade, lo cancelamos y
+    // restauramos el volumen del audio principal (puede estar a medio
+    // fundido) para que no quede silenciado al reanudar.
+    if (typeof _cancelCrossfade === 'function' && _cfState !== 'idle') {
+      _cancelCrossfade();
+      try { audio.volume = _cfMainVolumeAtStart || 1; } catch(_) {}
+    }
     audio.pause();
     isPlaying = false;
     updatePlayIcons(false);
