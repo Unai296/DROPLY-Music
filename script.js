@@ -3857,38 +3857,86 @@ activeAudio.addEventListener("error", function () {
 /* Vigila que, tras pedir reproducir (sobre todo desde nexttrack/previoustrack
    en background), el audio realmente empiece a sonar en un tiempo razonable.
    Si no lo hace, fuerza un reintento real de carga (re-set del mismo src)
-   en vez de dejar la Media Session "colgada" en estado playing.            */
-let _watchdogTimer = null;
+   en vez de dejar la Media Session "colgada" en estado playing.
+
+   v2 — IMPORTANTE: la versión anterior reseteaba la carga a los 4s en CIEGO,
+   sin comprobar si en realidad seguía progresando con normalidad (solo que
+   le faltaba un pelín más de tiempo, típico en redes algo lentas o en
+   background/pantalla bloqueada). Eso provocaba un bucle: carga 4s → se
+   resetea (tirando el progreso ya descargado) → vuelve a cargar otros 4s →
+   se resetea de nuevo... y la canción podía no llegar a arrancar nunca.
+   Ahora comparamos dos checkpoints (a los 4s y a los 8s): solo forzamos el
+   reinicio destructivo si entre ambos NO hubo ningún progreso real (ni en
+   readyState ni en bytes bufferizados). Si está progresando, aunque sea
+   lento, le damos más margen sin tocar nada.                              */
+let _watchdogTimer      = null;
+let _watchdogCheckpoint = null;
+
+function _bufferedEndSeconds(audio) {
+  try {
+    if (audio.buffered && audio.buffered.length) return audio.buffered.end(audio.buffered.length - 1);
+  } catch (_) {}
+  return 0;
+}
+
 function _armPlaybackWatchdog() {
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
-  const myToken = _playToken;
+  _watchdogCheckpoint = null;
+  const myToken     = _playToken;
   const expectedSrc = activeAudio.src;
-  _watchdogTimer = setTimeout(() => {
+
+  function check(isFirstCheck) {
     _watchdogTimer = null;
-    if (myToken !== _playToken) return; // se cambió de canción mientras tanto
+    if (myToken !== _playToken) return;                              // se cambió de canción mientras tanto
     if (!expectedSrc || activeAudio.src !== expectedSrc) return;
-    if (_retryInFlight) return; // el handler de error ya está reintentando
-    const stuck = activeAudio.paused || activeAudio.readyState < 2; // < HAVE_CURRENT_DATA
-    if (stuck) {
-      _retryInFlight = true;
-      // Reintento real: recargar el mismo src y volver a pedir play()
-      try { activeAudio.load(); } catch(_) {}
-      setTimeout(() => {
-        _retryInFlight = false;
-        if (myToken !== _playToken) return;
-        activeAudio.play()
-          .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
-          .catch(() => {
-            isPlaying = false;
-            updatePlayIcons(false);
-            if ("mediaSession" in navigator) {
-              try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
-            }
-          });
-      }, 100);
+    if (_retryInFlight) return;                                       // el handler de error ya está reintentando
+
+    const ready = activeAudio.readyState;
+    if (ready >= 2) return;                                           // ya tiene datos reproducibles, todo bien
+
+    const bEnd = _bufferedEndSeconds(activeAudio);
+
+    if (isFirstCheck) {
+      // Primer chequeo (4s): aún sin datos, pero puede estar simplemente
+      // tardando un poco más de lo normal. Guardamos el progreso actual
+      // y le damos otro margen ANTES de hacer nada destructivo.
+      _watchdogCheckpoint = { ready, bEnd };
+      _watchdogTimer = setTimeout(() => check(false), 4000);
+      return;
     }
-  }, 4000);
+
+    // Segundo chequeo (8s): ¿hubo progreso real desde el primer checkpoint?
+    const madeProgress = _watchdogCheckpoint &&
+      (ready > _watchdogCheckpoint.ready || bEnd > _watchdogCheckpoint.bEnd + 0.5);
+
+    if (madeProgress) {
+      // Sigue avanzando, aunque vaya lento — seguimos esperando sin resetear.
+      _watchdogCheckpoint = { ready, bEnd };
+      _watchdogTimer = setTimeout(() => check(false), 4000);
+      return;
+    }
+
+    // Cero progreso en ~8s → ahora sí está realmente atascado. Reintento real.
+    _retryInFlight = true;
+    try { activeAudio.load(); } catch (_) {}
+    setTimeout(() => {
+      _retryInFlight = false;
+      if (myToken !== _playToken) return;
+      activeAudio.play()
+        .then(() => { if (myToken !== _playToken) return; isPlaying = true; updatePlayIcons(true); })
+        .catch(() => {
+          isPlaying = false;
+          updatePlayIcons(false);
+          if ("mediaSession" in navigator) {
+            try { navigator.mediaSession.playbackState = "paused"; } catch (_) {}
+          }
+        });
+    }, 100);
+  }
+
+  _watchdogTimer = setTimeout(() => check(true), 4000);
 }
+
 
 /* ══════════════════════════════════════════════════════
    PREFETCH DEL SIGUIENTE TRACK (v2 — ligero y seguro)
