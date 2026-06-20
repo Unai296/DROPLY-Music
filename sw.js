@@ -4,7 +4,7 @@
    v3 — Rutas absolutas, scope raíz, compatibilidad Android Chrome
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'droply-v3';
+const CACHE_VERSION = 'droply-v4';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const MUSIC_CACHE   = `${CACHE_VERSION}-music`;
 const IMG_CACHE     = `${CACHE_VERSION}-images`;

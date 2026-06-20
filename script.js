@@ -4146,16 +4146,8 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     } catch(_) {}
   }
 
-  // Pausar antes de cambiar src, pero solo si hay src activo.
-  // En background (pantalla bloqueada) NO pausamos de forma síncrona porque
-  // Android Chrome puede quedarse bloqueado: pause() + src change + play()
-  // en el mismo tick a veces genera un AbortError irrecuperable.
-  if (!document.hidden) {
-    activeAudio.pause();
-  } else {
-    // En background: pause silencioso sin bloquear el flujo de play siguiente
-    try { activeAudio.pause(); } catch(_) {}
-  }
+  // El cambio de src a continuación abortará automáticamente el playback anterior
+  // sin destruir el contexto de MediaSession, lo cual es crítico para Android en background.
 
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
@@ -4163,6 +4155,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
     activeAudio.src = audioSrc;
+    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
