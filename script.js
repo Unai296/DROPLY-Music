@@ -3760,11 +3760,7 @@ activeAudio.addEventListener("play", function () {
     // Re-assert handlers on every play (some browsers drop them)
     try {
       navigator.mediaSession.setActionHandler("play", () => {
-        activeAudio.muted = false;
-        if (activeAudio.volume === 0) activeAudio.volume = 1;
-        activeAudio.play()
-          .then(() => { isPlaying = true; updatePlayIcons(true); })
-          .catch(() => {});
+        _resumeWithWatchdog();
       });
       navigator.mediaSession.setActionHandler("pause", () => {
         activeAudio.pause();
@@ -3935,6 +3931,76 @@ function _armPlaybackWatchdog() {
   }
 
   _watchdogTimer = setTimeout(() => check(true), 4000);
+}
+
+/* ── Reanudar reproducción (resume) con vigilancia de watchdog ──────────────
+   BUG QUE ARREGLA: al pulsar "play" desde pantalla bloqueada / Control
+   Center / mini-player tras una pausa, antes solo se llamaba a
+   activeAudio.play() "a pelo". Si el navegador había descartado el buffer
+   de audio durante la pausa en segundo plano (frecuente en iOS/Android tras
+   minutos con la pantalla bloqueada), play() se quedaba colgado esperando
+   datos que nunca llegaban — y como _armPlaybackWatchdog() SOLO se activaba
+   al cargar una pista nueva (loadTrack), nadie detectaba ni arreglaba ese
+   atasco. Resultado: pausas la canción y al darle a play ya no sigue.
+   Esta función centraliza TODO reanudado (togglePlay, MediaSession "play",
+   visibilitychange) y arma el watchdog también aquí, para que un resume
+   atascado se detecte y se reintente igual que una carga inicial atascada. */
+async function _resumeWithWatchdog() {
+  const audio = activeAudio;
+  if (!audio) return;
+  if (!audio.src && !audio.currentSrc) return;
+
+  audio.muted = false;
+  if (audio.volume === 0) audio.volume = 1;
+
+  const myToken = _playToken; // detecta si el usuario cambia de pista mientras esperamos
+
+  // Si el buffer se vació durante la pausa (típico tras un buen rato en
+  // segundo plano/pantalla bloqueada), readyState cae a 0 y hace falta un
+  // load() explícito para poder reproducir. OJO: load() resetea
+  // currentTime a 0, así que hay que guardar la posición y restaurarla
+  // tras recargar metadatos — si no, "reanudar" sonaba como "reiniciar".
+  if (audio.readyState === 0) {
+    const resumeAt = audio.currentTime || 0;
+    try { audio.load(); } catch (_) {}
+    _armPlaybackWatchdog(); // por si el propio load() se queda colgado sin red
+    await new Promise(resolve => {
+      const onReady = () => {
+        audio.removeEventListener("loadedmetadata", onReady);
+        resolve();
+      };
+      audio.addEventListener("loadedmetadata", onReady, { once: true });
+    });
+    if (myToken !== _playToken) return; // cambió de pista mientras cargaba
+    try { audio.currentTime = resumeAt; } catch (_) {}
+  }
+
+  try {
+    await audio.play();
+    if (myToken !== _playToken) return;
+    isPlaying = true;
+    updatePlayIcons(true);
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.playbackState = "playing"; } catch (_) {}
+    }
+  } catch (err) {
+    if (myToken !== _playToken) return;
+    if (err && err.name === "NotAllowedError") {
+      window._droplyPendingTrack = true;
+    } else {
+      console.warn("[DROPLY] resume error:", err && err.name, err && err.message);
+    }
+    isPlaying = false;
+    updatePlayIcons(false);
+    if ("mediaSession" in navigator) {
+      try { navigator.mediaSession.playbackState = "paused"; } catch (_) {}
+    }
+  } finally {
+    // Vigila que el resume realmente progrese; si se queda atascado sin
+    // buffer (típico tras una pausa larga en background/lockscreen),
+    // fuerza un reintento real en vez de dejarlo colgado para siempre.
+    if (myToken === _playToken) _armPlaybackWatchdog();
+  }
 }
 
 
@@ -5282,15 +5348,12 @@ function setupMediaSession(item) {
     ]
   });
 
-  // play — también actualiza la UI para que los iconos sean coherentes
+  // play — también actualiza la UI para que los iconos sean coherentes.
+  // Usa _resumeWithWatchdog() en vez de play() a pelo: si el buffer se
+  // vació durante la pausa en segundo plano/pantalla bloqueada, esto
+  // detecta el atasco y reintenta en vez de quedarse colgado sin sonar.
   navigator.mediaSession.setActionHandler("play", () => {
-    const audio = activeAudio;
-    if (!audio) return;
-    audio.muted = false;
-    if (audio.volume === 0) audio.volume = 1;
-    audio.play()
-      .then(() => { isPlaying = true; updatePlayIcons(true); })
-      .catch(() => {});
+    _resumeWithWatchdog();
   });
 
   // pause — también actualiza la UI
@@ -5666,21 +5729,7 @@ function togglePlay() {
   // If no source loaded yet, do nothing
   if (!audio.src && !audio.currentSrc) return;
   if (audio.paused) {
-    audio.play()
-      .then(() => {
-        isPlaying = true;
-        updatePlayIcons(true);
-        if ("mediaSession" in navigator) {
-          try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
-        }
-      })
-      .catch(err => {
-        if (err.name === 'NotAllowedError') {
-          window._droplyPendingTrack = true;
-        } else {
-          console.warn('[DROPLY] togglePlay error:', err);
-        }
-      });
+    _resumeWithWatchdog();
   } else {
     audio.pause();
     isPlaying = false;
@@ -8976,15 +9025,9 @@ document.addEventListener('visibilitychange', () => {
   if (!audio) return;
   if (audio.src && audio.paused && (isPlaying || window._droplyPendingTrack)) {
     window._droplyPendingTrack = null;
-    audio.muted = false;
-    if (audio.volume === 0) audio.volume = 1;
-    if (audio.readyState < 2) {
-      try { audio.load(); } catch(_) {}
-    }
-    setTimeout(() => {
-      audio.play()
-        .then(() => { isPlaying = true; updatePlayIcons(true); })
-        .catch(() => { isPlaying = false; updatePlayIcons(false); });
-    }, 100);
+    // _resumeWithWatchdog ya hace muted=false/volume/load-si-hace-falta y,
+    // sobre todo, arma el watchdog para reintentar si el play() se queda
+    // colgado sin buffer (el mismo caso que al reanudar tras una pausa).
+    setTimeout(() => { _resumeWithWatchdog(); }, 100);
   }
 });
