@@ -3748,7 +3748,7 @@ activeAudio.addEventListener("ended", function () {
       .catch(err => { updatePlayIcons(false); console.warn("[DROPLY] repeat:", err); });
   } else {
     updatePlayIcons(false);
-    playNext();
+    _playNextImmediate();
   }
 }, { passive: true });
 
@@ -5740,8 +5740,41 @@ function togglePlay() {
   }
 }
 
-/* ── Play next track ────────────────────────────────── */
+/* ── Debounce para next/prev ──────────────────────────
+   Pulsar "siguiente"/"anterior" varias veces seguidas muy rápido
+   (común en mini-player y swipe) lanzaba un loadTrack() completo
+   por cada pulsación. Aunque el _playToken cancela el resultado de
+   las cargas viejas, cada una ya había empezado una petición de red
+   real — varias en paralelo saturaban la conexión y la canción
+   final tardaba mucho más en sonar.
+
+   IMPORTANTE: no podemos retrasar la llamada con un setTimeout,
+   porque eso rompería la cadena de gesto de usuario que iOS exige
+   para permitir audio.play() (crítico para los controles de la
+   pantalla de bloqueo). En su lugar, simplemente IGNORAMOS pulsaciones
+   que llegan demasiado pegadas a la anterior — la primera pulsación
+   sigue ejecutándose al instante, igual que antes.                */
+let _lastSkipAt = 0;
+const SKIP_DEBOUNCE_MS = 220;
+function _skipAllowed() {
+  const now = Date.now();
+  if (now - _lastSkipAt < SKIP_DEBOUNCE_MS) return false;
+  _lastSkipAt = now;
+  return true;
+}
+
 function playNext() {
+  if (!_skipAllowed()) return;
+  _playNextImmediate();
+}
+
+function playPrev() {
+  if (!_skipAllowed()) return;
+  _playPrevImmediate();
+}
+
+/* ── Play next track ────────────────────────────────── */
+function _playNextImmediate() {
   // Check queue first
   if (queue.length > 0) {
     const nextFile = queue.shift();
@@ -5817,7 +5850,7 @@ function playNext() {
 }
 
 /* ── Play previous track ────────────────────────────── */
-function playPrev() {
+function _playPrevImmediate() {
   const audio = activeAudio || audioEl;
   // If more than 3s in, restart current track
   if (audio && audio.currentTime > 3) {
