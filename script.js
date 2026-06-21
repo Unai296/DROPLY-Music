@@ -7240,18 +7240,44 @@ const CloudSync = (() => {
       loadTrack(track, false, null, { autoPlay: false, silent: true });
       if (audio) {
         const seekTo = state.currentTime || 0;
-        const trySeek = () => {
-          if (audio.readyState >= 1) {
-            audio.currentTime = seekTo;
+        // BUG QUE ARREGLA: antes esta función SIEMPRE forzaba audio.pause()
+        // al restaurar, ignorando si state.isPlaying era true. Como una PWA
+        // en pantalla bloqueada se recarga sola en segundo plano en cuanto
+        // el sistema operativo mata la pestaña (algo normal en iOS/Android
+        // cuando el audio está pausado y no hay nada "vivo" que justifique
+        // mantener el proceso), cada vez que el usuario volvía a pulsar play
+        // —ya fuera desde dentro de la app o desde la pantalla bloqueada—
+        // se encontraba con la sesión recién restaurada y forzada a pausa,
+        // sin seguir nunca. Ahora respetamos la intención guardada.
+        const wasPlaying = !!state.isPlaying;
+        const afterSeek = () => {
+          if (wasPlaying) {
+            // Reanudar de verdad. Si el navegador bloquea el autoplay por
+            // falta de gesto reciente, _resumeWithWatchdog deja el track
+            // cargado y posicionado, con MediaSession ya registrado — así
+            // un solo toque en Play (in-app o en pantalla bloqueada)
+            // completa la reanudación al instante.
+            if (typeof _resumeWithWatchdog === 'function') {
+              _resumeWithWatchdog();
+            } else {
+              audio.play()
+                .then(() => { isPlaying = true; updatePlayIcons(true); })
+                .catch(() => { isPlaying = false; updatePlayIcons(false); });
+            }
+          } else {
             audio.pause();
             isPlaying = false;
             updatePlayIcons(false);
+          }
+        };
+        const trySeek = () => {
+          if (audio.readyState >= 1) {
+            audio.currentTime = seekTo;
+            afterSeek();
           } else {
             audio.addEventListener('loadedmetadata', () => {
               audio.currentTime = seekTo;
-              audio.pause();
-              isPlaying = false;
-              updatePlayIcons(false);
+              afterSeek();
             }, { once: true });
           }
         };

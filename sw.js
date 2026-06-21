@@ -37,13 +37,24 @@ self.addEventListener('install', event => {
 /* ── ACTIVATE ─────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key.startsWith('droply-') && !key.startsWith(CACHE_VERSION))
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => {
+      const oldKeys = keys.filter(key => key.startsWith('droply-') && !key.startsWith(CACHE_VERSION));
+      return Promise.all(oldKeys.map(key => caches.delete(key))).then(() => oldKeys.length);
+    }).then(oldKeysCount => {
+      /* Solo reclamamos el control de pestañas abiertas automáticamente en
+         la PRIMERA instalación (oldKeysCount === 0, no había ningún SW
+         previo). En una ACTUALIZACIÓN (sí había caché de una versión
+         anterior = ya había un SW controlando la página) NO reclamamos
+         solos: self.clients.claim() dispara "controllerchange" en
+         index.html, que hace location.reload() AL INSTANTE — capaz de
+         saltar en mitad de una reproducción, p.ej. justo cuando hay un
+         deploy nuevo en Vercel mientras suena música en segundo plano /
+         pantalla bloqueada. En su lugar esperamos a que el usuario pulse
+         "Actualizar" en el aviso (mensaje SKIP_WAITING más abajo), que es
+         quien realmente reclama el control y dispara el reload — con su
+         consentimiento, no a sus espaldas. */
+      if (oldKeysCount === 0) return self.clients.claim();
+    })
   );
 });
 
@@ -260,6 +271,10 @@ self.addEventListener('message', event => {
 
   if (type === 'SKIP_WAITING') {
     self.skipWaiting();
+    // El reclamo de control (y por tanto el reload automático en
+    // index.html vía "controllerchange") solo pasa AQUÍ, en respuesta al
+    // toque explícito del usuario en el toast "Actualizar" — nunca solo.
+    self.clients.claim();
   }
 
   if (type === 'CACHE_TRACK' && payload?.url) {
