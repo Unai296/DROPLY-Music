@@ -235,7 +235,6 @@ const SupabaseCloud = (() => {
 
       // Iguala la nube con el resultado fusionado (sube lo que faltara subir)
       await pushAll();
-      toast("Tu cuenta está sincronizada", "success");
     } catch (e) {
       console.warn("[DROPLY Cloud] Error fusionando datos de la nube (datos locales intactos).", e);
     }
@@ -385,6 +384,162 @@ const SupabaseCloud = (() => {
   }
 
   /* ══════════════════════════════════════════════════════
+     6b. ONBOARDING — pantalla de bienvenida tipo Spotify
+     Solo se muestra si:
+       1. Supabase está configurado (ready === true)
+       2. No hay sesión activa
+       3. El usuario no la ha descartado antes
+  ══════════════════════════════════════════════════════ */
+  const ONBOARDING_KEY = "droply_onboarding_done";
+
+  function showOnboarding() {
+    if (localStorage.getItem(ONBOARDING_KEY)) return;
+    if (currentUser) return; // ya hay sesión, no mostrar
+
+    if (document.getElementById("droplyOnboarding")) return;
+
+    document.body.insertAdjacentHTML("beforeend", `
+      <div id="droplyOnboarding" style="
+        position:fixed;inset:0;z-index:9999;
+        background:#080808;
+        display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+        padding:0 0 env(safe-area-inset-bottom,0px);
+        animation:_obFadeIn .35s ease both;
+      ">
+        <style>
+          @keyframes _obFadeIn { from { opacity:0 } to { opacity:1 } }
+          @keyframes _obSlideUp { from { transform:translateY(32px);opacity:0 } to { transform:none;opacity:1 } }
+          #droplyOnboarding .ob-art {
+            flex:1;width:100%;position:relative;overflow:hidden;
+            display:flex;align-items:center;justify-content:center;
+          }
+          #droplyOnboarding .ob-art::after {
+            content:'';position:absolute;inset:0;
+            background:linear-gradient(to bottom,transparent 40%,#080808 92%);
+            pointer-events:none;
+          }
+          #droplyOnboarding .ob-mosaic {
+            display:grid;grid-template-columns:repeat(3,1fr);gap:3px;
+            width:100%;height:100%;
+          }
+          #droplyOnboarding .ob-mosaic img {
+            width:100%;aspect-ratio:1;object-fit:cover;filter:brightness(.72);
+          }
+          #droplyOnboarding .ob-sheet {
+            width:100%;max-width:480px;
+            padding:2rem 1.75rem 2.5rem;
+            animation:_obSlideUp .5s .12s ease both;
+            display:flex;flex-direction:column;gap:.9rem;
+          }
+          #droplyOnboarding .ob-logo {
+            display:flex;align-items:center;gap:.55rem;
+            font-size:1.55rem;font-weight:800;letter-spacing:-.03em;
+            color:#f8f8f8;margin-bottom:.3rem;
+          }
+          #droplyOnboarding .ob-logo svg { flex-shrink:0; }
+          #droplyOnboarding h1 {
+            font-size:1.75rem;font-weight:800;line-height:1.2;
+            letter-spacing:-.03em;color:#f8f8f8;margin:0;
+          }
+          #droplyOnboarding p {
+            font-size:.92rem;color:#a1a1aa;line-height:1.55;margin:0;
+          }
+          #droplyOnboarding .ob-btn-primary {
+            width:100%;padding:.9rem;border-radius:99px;border:none;cursor:pointer;
+            background:var(--accent,#8b5cf6);color:#fff;
+            font-size:.95rem;font-weight:700;letter-spacing:.01em;
+            transition:opacity .2s,transform .15s;
+          }
+          #droplyOnboarding .ob-btn-primary:active { opacity:.85;transform:scale(.98); }
+          #droplyOnboarding .ob-btn-ghost {
+            width:100%;padding:.8rem;border-radius:99px;border:1.5px solid rgba(255,255,255,.15);
+            background:transparent;color:#f8f8f8;
+            font-size:.92rem;font-weight:600;cursor:pointer;
+            transition:border-color .2s,opacity .2s;
+          }
+          #droplyOnboarding .ob-btn-ghost:active { opacity:.7; }
+          #droplyOnboarding .ob-skip {
+            text-align:center;font-size:.8rem;color:#52525b;
+            background:none;border:none;cursor:pointer;padding:.4rem;
+          }
+          #droplyOnboarding .ob-skip:hover { color:#a1a1aa; }
+        </style>
+
+        <!-- Fondo mosaico de portadas -->
+        <div class="ob-art">
+          <div class="ob-mosaic" id="obMosaic"></div>
+        </div>
+
+        <!-- Hoja de bienvenida -->
+        <div class="ob-sheet">
+          <div class="ob-logo">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="8" fill="url(#og)"/>
+              <defs><linearGradient id="og" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#a78bfa"/><stop offset="1" stop-color="#6366f1"/>
+              </linearGradient></defs>
+              <path d="M9 8h5a5 5 0 0 1 0 10H9V8Z" fill="white" opacity=".95"/>
+              <circle cx="19" cy="18" r="3" fill="white" opacity=".7"/>
+            </svg>
+            DROPLY
+          </div>
+          <h1>Millones de canciones,<br>solo para ti</h1>
+          <p>Crea una cuenta gratuita para guardar tus playlists, likes e historial en todos tus dispositivos.</p>
+          <button class="ob-btn-primary" id="obSignup">Crear cuenta gratis</button>
+          <button class="ob-btn-ghost" id="obSignin">Iniciar sesión</button>
+          <button class="ob-skip" id="obSkip">Continuar sin cuenta</button>
+        </div>
+      </div>`);
+
+    // Rellenar mosaico con portadas de las canciones
+    const mosaic = document.getElementById("obMosaic");
+    if (mosaic && typeof media !== "undefined") {
+      const covers = [...new Set(media.map(m => m.cover).filter(Boolean))].slice(0, 9);
+      covers.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.loading = "lazy";
+        img.alt = "";
+        mosaic.appendChild(img);
+      });
+    }
+
+    function closeOnboarding() {
+      localStorage.setItem(ONBOARDING_KEY, "1");
+      const el = document.getElementById("droplyOnboarding");
+      if (el) {
+        el.style.transition = "opacity .3s";
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 320);
+      }
+    }
+
+    document.getElementById("obSkip")?.addEventListener("click", closeOnboarding);
+
+    document.getElementById("obSignup")?.addEventListener("click", () => {
+      closeOnboarding();
+      // Abrir el modal de auth en modo registro
+      setTimeout(() => {
+        const btn = document.getElementById("cloudAccountBtn");
+        if (btn) btn.click();
+        setTimeout(() => {
+          // Switch a signup si el modal de auth ya está abierto
+          const goSignup = document.getElementById("cloudAuthGoSignup");
+          if (goSignup) goSignup.click();
+        }, 80);
+      }, 350);
+    });
+
+    document.getElementById("obSignin")?.addEventListener("click", () => {
+      closeOnboarding();
+      setTimeout(() => {
+        const btn = document.getElementById("cloudAccountBtn");
+        if (btn) btn.click();
+      }, 350);
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════
      6. INIT — llamado desde bootPremium() en script.js
   ══════════════════════════════════════════════════════ */
   return {
@@ -395,6 +550,11 @@ const SupabaseCloud = (() => {
       if (!ok) return; // app sigue 100% funcional en modo solo-local
       try {
         watchAuthState();
+        // Mostrar onboarding solo si no hay sesión activa
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          setTimeout(showOnboarding, 700); // pequeño delay para que la app cargue primero
+        }
       } catch (e) {
         console.warn("[DROPLY Cloud] Error inicializando autenticación.", e);
       }
