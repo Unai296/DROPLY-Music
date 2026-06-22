@@ -1155,11 +1155,10 @@ input { font-family: inherit; }
 }
 
 /* ── LYRICS AREA — fills all remaining vertical space ── */
-/* ══ LYRICS AREA — Apple Music style ══ */
 .sheet-lyrics-area {
   flex: 1; min-height: 0; position: relative;
   display: flex; align-items: stretch;
-  transition: opacity .4s ease, transform .45s cubic-bezier(.4,0,.2,1);
+  transition: opacity .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
 }
 .sheet-lyrics-area.slide-in-start {
   opacity: 0;
@@ -1170,131 +1169,81 @@ input { font-family: inherit; }
   transform: translateY(0);
 }
 
-/* Fade masks top & bottom */
+/* Fade masks top & bottom of lyrics */
 .sheet-lyrics-area::before,
 .sheet-lyrics-area::after {
   content: ''; position: absolute; left: 0; right: 0;
   z-index: 3; pointer-events: none;
 }
 .sheet-lyrics-area::before {
-  top: 0; height: 90px;
-  background: linear-gradient(180deg, rgba(6,6,10,.95) 0%, transparent 100%);
+  top: 0; height: 80px;
+  background: linear-gradient(180deg, rgba(6,6,10,.85) 0%, transparent 100%);
 }
 .sheet-lyrics-area::after {
-  bottom: 0; height: 120px;
-  background: linear-gradient(0deg, rgba(6,6,10,.97) 0%, transparent 100%);
+  bottom: 0; height: 100px;
+  background: linear-gradient(0deg, rgba(6,6,10,.9) 0%, transparent 100%);
 }
 
 .sheet-lyrics-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden; position: relative;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  scrollbar-width: none; /* Firefox */
 }
 .sheet-lyrics-scroll::-webkit-scrollbar { display: none; }
-
 .sheet-lyrics-inner {
   display: flex; flex-direction: column;
   align-items: flex-start; gap: 0;
-  padding: 70px 1.6rem 130px;
+  padding: 60px 1.5rem 80px;
+  will-change: transform; transform: translateY(0);
+  transition: transform .55s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── Individual lyric lines ── */
+/* Individual lyric lines */
 .lyric-line {
-  font-size: 1.82rem;
-  font-weight: 700;
-  line-height: 1.24;
-  letter-spacing: -.028em;
-  color: rgba(255,255,255,.22);
-  padding: .3rem 0;
+  font-size: 1.72rem; font-weight: 700; line-height: 1.25;
+  letter-spacing: -.02em;
+  color: rgba(255,255,255,.18);
+  padding: .18rem 0;
   cursor: default;
-  position: relative;
-  white-space: normal;
-  word-break: break-word;
-  filter: blur(3px);
-  transform: scale(.96);
+  filter: blur(2.5px);
+  transform: scale(.97);
   transform-origin: left center;
-  opacity: .7;
-  transition:
-    color      .6s cubic-bezier(.25,0,.2,1),
-    filter     .65s cubic-bezier(.25,0,.2,1) .05s,
-    transform  .6s cubic-bezier(.34,1.2,.64,1),
-    opacity    .6s cubic-bezier(.25,0,.2,1);
-  will-change: color, filter, transform, opacity;
+  transition: color .45s ease, filter .45s ease, transform .45s ease, opacity .45s ease;
+  will-change: color, filter, transform;
 }
-
-/* Active line */
 .lyric-line.active {
-  color: rgba(255,255,255,.28);
+  color: rgba(255,255,255,.22);   /* texto "sin rellenar" — mismo tono que inactivo */
   filter: blur(0);
-  transform: scale(1.02);
-  opacity: 1;
+  transform: scale(1);
   font-weight: 700;
-  transition:
-    color      .5s cubic-bezier(.25,0,.2,1),
-    filter     .5s cubic-bezier(.25,0,.2,1),
-    transform  .55s cubic-bezier(.34,1.2,.64,1),
-    opacity    .5s cubic-bezier(.25,0,.2,1);
+  position: relative;
 }
 
-/* Fill overlay: sweeps left→right as the line plays.
-   CRITICAL: must match font/padding/whitespace of the p exactly */
+/* Capa blanca que se "llena" de izquierda a derecha */
 .lyric-line.active::before {
   content: attr(data-text);
   position: absolute;
-  /* match the p's own padding so text sits pixel-perfect */
-  top: .3rem;
-  left: 0;
-  right: 0;
-  bottom: .3rem;
+  inset: 0;
   color: #fff;
   font-size: inherit;
   font-weight: inherit;
   letter-spacing: inherit;
   line-height: inherit;
-  white-space: normal;
-  word-break: break-word;
-  /* Clip grows from left, controlled by JS --lyric-fill */
-  clip-path: inset(0 calc(100% - var(--lyric-fill, 0%)) 0 0 round 2px);
+  white-space: pre-wrap;
+  /* clip-path controlado por JS mediante --lyric-fill (0→1) */
+  clip-path: inset(0 calc(100% - var(--lyric-fill, 0%) - 0.5px) 0 0);
   pointer-events: none;
-  transition: none; /* no transition on clip-path — JS drives it frame-by-frame */
 }
-
-/* Neighbours — graduated blur/fade, Apple-accurate */
-.lyric-line.prev-1 { color: rgba(255,255,255,.72); filter: blur(0px);  transform: scale(.995); opacity: 1; }
-.lyric-line.prev-2 { color: rgba(255,255,255,.38); filter: blur(1.2px); transform: scale(.985); opacity: .85; }
-.lyric-line.next-1 { color: rgba(255,255,255,.55); filter: blur(0px);  transform: scale(.995); opacity: 1; }
-.lyric-line.next-2 { color: rgba(255,255,255,.28); filter: blur(1.8px); transform: scale(.982); opacity: .8; }
-
-/* ── Loading dots — Apple Music bounce ── */
-.lyrics-loading-dots {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 56px 1.6rem;
-}
-.lyrics-loading-dots span {
-  width: 11px; height: 11px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.6);
-  display: inline-block;
-  animation: lyric-dot-pulse 1.3s ease-in-out infinite;
-}
-.lyrics-loading-dots span:nth-child(1) { animation-delay: 0s; }
-.lyrics-loading-dots span:nth-child(2) { animation-delay: .2s; }
-.lyrics-loading-dots span:nth-child(3) { animation-delay: .4s; }
-
-@keyframes lyric-dot-pulse {
-  0%, 100% { transform: scale(1);    opacity: .38; }
-  40%       { transform: scale(1.55); opacity: 1;   }
-}
+.lyric-line.prev-1 { color: rgba(255,255,255,.45); filter: blur(1px); transform: scale(.985); }
+.lyric-line.prev-2 { color: rgba(255,255,255,.28); filter: blur(1.5px); transform: scale(.98); }
+.lyric-line.next-1 { color: rgba(255,255,255,.38); filter: blur(1px); transform: scale(.985); }
+.lyric-line.next-2 { color: rgba(255,255,255,.22); filter: blur(1.8px); transform: scale(.98); }
 
 /* No-lyrics placeholder */
 .lyrics-placeholder {
   display: flex; flex-direction: column; align-items: flex-start;
-  padding: 48px 1.6rem; gap: .45rem;
-  color: rgba(255,255,255,.3);
-  font-size: 1.08rem; font-weight: 500;
+  padding: 40px 1.5rem; gap: .4rem; color: rgba(255,255,255,.2);
 }
 /* ── QUEUE AREA — inside now playing sheet ── */
 .sheet-queue-area {

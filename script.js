@@ -3161,7 +3161,7 @@ const events = [];
 
 // ── LIKED ──
 function loadLiked() { try { return new Set(JSON.parse(localStorage.getItem(LIKED_KEY) || "[]")); } catch(_) { return new Set(); } }
-function saveLiked() { try { localStorage.setItem(LIKED_KEY, JSON.stringify([...likedTracks])); } catch(_) {} }
+function saveLiked() { try { localStorage.setItem(LIKED_KEY, JSON.stringify([...likedTracks])); } catch(_) {} if (typeof SupabaseCloud !== "undefined") SupabaseCloud.markDirty(); }
 let likedTracks = loadLiked();
 
 // ── QUEUE ──
@@ -3171,17 +3171,17 @@ let queue = loadQueue();
 
 // ── PLAYLISTS ──
 function loadPlaylists() { try { return JSON.parse(localStorage.getItem(PL_KEY) || "[]"); } catch(_) { return []; } }
-function savePlaylists() { try { localStorage.setItem(PL_KEY, JSON.stringify(playlists)); } catch(_) {} }
+function savePlaylists() { try { localStorage.setItem(PL_KEY, JSON.stringify(playlists)); } catch(_) {} if (typeof SupabaseCloud !== "undefined") SupabaseCloud.markDirty(); }
 let playlists = loadPlaylists();
 
 // ── HISTORY ──
 function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); } catch(_) { return []; } }
-function saveHistory() { try { localStorage.setItem(HIST_KEY, JSON.stringify(historyTracks.slice(0, 100))); } catch(_) {} }
+function saveHistory() { try { localStorage.setItem(HIST_KEY, JSON.stringify(historyTracks.slice(0, 100))); } catch(_) {} if (typeof SupabaseCloud !== "undefined") SupabaseCloud.markDirty(); }
 let historyTracks = loadHistory(); // [{file, timestamp}]
 
 // ── PLAY COUNTS ──
 function loadPlayCounts() { try { return JSON.parse(localStorage.getItem(PLAYS_KEY) || "{}"); } catch(_) { return {}; } }
-function savePlayCounts() { try { localStorage.setItem(PLAYS_KEY, JSON.stringify(playCounts)); } catch(_) {} }
+function savePlayCounts() { try { localStorage.setItem(PLAYS_KEY, JSON.stringify(playCounts)); } catch(_) {} if (typeof SupabaseCloud !== "undefined") SupabaseCloud.markDirty(); }
 let playCounts = loadPlayCounts();
 
 // ── Context target ──
@@ -8122,6 +8122,7 @@ function bootPremium() {
   OfflineManager.init();
   OfflineManager.setupOfflineDetection();
   CloudSync.init();
+  if (typeof SupabaseCloud !== "undefined") SupabaseCloud.init();
 
   // Render offline playlist (after IDB is ready, slight delay)
   setTimeout(() => { updateOfflineStatusBanner(); }, 400);
@@ -8132,7 +8133,7 @@ function bootPremium() {
   // Register SW
   registerServiceWorker();
 
-  console.info('[DROPLY Premium] ✓ Módulos cargados: Offline · Modo Coche · Cloud Sync');
+  console.info('[DROPLY Premium] ✓ Módulos cargados: Offline · Modo Coche · Cloud Sync · Supabase Cloud');
 }
 
 // Boot when DOM is ready
