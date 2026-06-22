@@ -214,8 +214,62 @@
       <div id="playlistsGrid" class="playlists-grid"></div>
     </div>
 
+    <!-- PAGE: FEED -->
+    <div class="page" id="pageFeed">
+      <div class="feed-scroll" id="feedScroll">
 
+        <!-- Feed header with tabs -->
+        <div class="feed-topbar">
+          <h2 class="feed-heading">Feed</h2>
+          <div class="feed-tabs">
+            <button class="feed-tab active" data-feed-tab="activity">Actividad</button>
+            <button class="feed-tab" data-feed-tab="trending">Trending</button>
+            <button class="feed-tab" data-feed-tab="discover">Descubrir</button>
+          </div>
+        </div>
 
+        <!-- TAB: ACTIVITY -->
+        <div class="feed-panel active" id="feedPanelActivity">
+
+          <!-- Story musical card (visual highlight) -->
+          <div class="feed-story-card" id="feedStoryCard">
+            <div class="feed-story-bg" id="feedStoryBg">
+              <canvas class="feed-story-canvas" id="feedStoryCanvas"></canvas>
+            </div>
+            <div class="feed-story-overlay"></div>
+            <div class="feed-story-content">
+              <div class="feed-story-label">Suena ahora mismo</div>
+              <div class="feed-story-title" id="feedStoryTitle">—</div>
+              <div class="feed-story-artist" id="feedStoryArtist">—</div>
+              <div class="feed-story-lyric" id="feedStoryLyric"></div>
+            </div>
+            <img class="feed-story-cover" id="feedStoryCover" src="" alt="" />
+          </div>
+
+          <!-- Social activity feed -->
+          <div class="feed-section-head">Actividad reciente</div>
+          <div class="feed-activity-list" id="feedActivityList"></div>
+
+        </div>
+
+        <!-- TAB: TRENDING -->
+        <div class="feed-panel" id="feedPanelTrending">
+          <div class="feed-section-head">Top en Mataró hoy</div>
+          <div class="feed-trending-list" id="feedTrendingList"></div>
+          <div class="feed-section-head" style="margin-top:1.4rem">Tu estilo</div>
+          <div class="feed-trending-list" id="feedStyleList"></div>
+        </div>
+
+        <!-- TAB: DISCOVER (TikTok vertical scroll) -->
+        <div class="feed-panel" id="feedPanelDiscover">
+          <div class="feed-discover-scroll" id="feedDiscoverScroll">
+            <!-- cards injected by JS -->
+          </div>
+        </div>
+
+        <div class="feed-bottom-spacer"></div>
+      </div>
+    </div>
 
 
 
@@ -581,7 +635,16 @@
       <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       <span>Playlists</span>
     </button>
+    <button class="bnav-btn" data-page="pageFeed" aria-label="Feed">
+      <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      <span>Feed</span>
+    </button>
   </nav>
+
+  <!-- Ghost lupa: aparece al lado del mini player cuando el nav se esconde -->
+  <button class="search-ghost" id="searchGhost" aria-label="Buscar" tabindex="-1">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+  </button>
 
 
   <!-- ══ CHANGELOG MODAL ══ -->

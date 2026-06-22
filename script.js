@@ -3260,12 +3260,13 @@ function showPage(pageId) {
     btn.classList.toggle("active", btn.dataset.page === pageId);
   });
   if (pageId === "pagePlaylists") renderPlaylists();
+  if (pageId === "pageFeed") { if (typeof Feed !== "undefined") Feed.init(); }
   if (pageId === "pageEventos" && typeof EventosManager !== "undefined") EventosManager.render();
   if (pageId === "pageMixes") { /* Mixes removed */ }
   closeContextMenu();
   updateBottomNavSlider();
   try {
-    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists" };
+    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists", pageFeed: "feed" };
     const hash = hashMap[pageId];
     if (hash !== undefined && location.hash !== "#" + hash) {
       history.replaceState(null, "", hash ? "#" + hash : location.pathname + location.search);
@@ -3275,7 +3276,7 @@ function showPage(pageId) {
 
 function handleHashRoute() {
   const route = (location.hash || "").slice(1).toLowerCase();
-  const map = { search: "pageSearch", playlists: "pagePlaylists", home: "pageHome", "": "pageHome" };
+  const map = { search: "pageSearch", playlists: "pagePlaylists", feed: "pageFeed", home: "pageHome", "": "pageHome" };
   const pageId = map[route];
   if (pageId) showPage(pageId);
 }
@@ -4124,6 +4125,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     saveHistory();
     playCounts[item.file] = (playCounts[item.file] || 0) + 1;
     savePlayCounts();
+    try { document.dispatchEvent(new CustomEvent("droply:trackchange", { detail: item })); } catch(_) {}
   }
 
   /* -- Playlist context -- */
@@ -5395,6 +5397,97 @@ document.addEventListener("keydown", e => {
 window.addEventListener("scroll", () => {
   document.getElementById("topbar").classList.toggle("scrolled", window.scrollY > 20);
 }, { passive: true });
+
+/* ── Scroll-hide bottom nav (Apple Music style) ── */
+(function() {
+  const nav       = document.getElementById("bottomNav");
+  const mini      = document.getElementById("miniPlayer");
+  const ghost     = document.getElementById("searchGhost");
+  if (!nav) return;
+
+  let lastY       = window.scrollY;
+  let hideTimer   = null;
+  let isHidden    = false;
+
+  function showGhost() {
+    if (!ghost || !mini) return;
+    ghost.classList.add("visible", "nav-at-bottom");
+    // mini baja + cede espacio a la derecha
+    mini.classList.add("ghost-companion", "nav-hidden");
+  }
+
+  function hideGhost() {
+    if (!ghost) return;
+    ghost.classList.remove("visible", "nav-at-bottom");
+    // quitar ghost-companion pero conservar nav-hidden si el nav sigue oculto
+    if (mini) {
+      mini.classList.remove("ghost-companion");
+      if (!isHidden) mini.classList.remove("nav-hidden");
+    }
+  }
+
+  function showNav() {
+    if (!isHidden) return;
+    isHidden = false;
+    nav.classList.remove("nav-hidden");
+    if (mini) mini.classList.remove("nav-hidden", "ghost-companion");
+    if (ghost) ghost.classList.remove("visible", "nav-at-bottom");
+  }
+
+  function hideNav() {
+    if (isHidden) return;
+    isHidden = true;
+    nav.classList.add("nav-hidden");
+    if (mini && mini.classList.contains("visible")) {
+      showGhost(); // mini player activo → lupa al lado
+    } else {
+      if (mini) mini.classList.add("nav-hidden"); // sin canción → solo bajar
+    }
+  }
+
+  /* Cuando el mini player aparece mientras el nav ya está oculto */
+  let miniWasVisible = mini ? mini.classList.contains("visible") : false;
+  const miniObserver = new MutationObserver(() => {
+    const nowVisible = mini && mini.classList.contains("visible");
+    if (nowVisible === miniWasVisible) return; // sin cambio real
+    miniWasVisible = nowVisible;
+    if (isHidden && nowVisible) showGhost();
+    else if (!nowVisible) hideGhost();
+  });
+  if (mini) miniObserver.observe(mini, { attributes: true, attributeFilter: ["class"] });
+
+  /* Clic en ghost → ir a búsqueda */
+  if (ghost) {
+    ghost.addEventListener("click", () => {
+      if (typeof showPage === "function") showPage("pageSearch");
+      ghost.classList.add("active");
+      setTimeout(() => ghost.classList.remove("active"), 400);
+    });
+    ghost.tabIndex = 0;
+  }
+
+  window.addEventListener("scroll", () => {
+    const y   = window.scrollY;
+    const dy  = y - lastY;
+    lastY     = y;
+
+    // En el top → siempre visible
+    if (y < 60) { showNav(); return; }
+
+    clearTimeout(hideTimer);
+
+    if (dy > 4) {
+      // Scrolleando hacia abajo → mostrar nav
+      showNav();
+    } else if (dy < -4) {
+      // Scrolleando hacia arriba → esconder nav
+      hideNav();
+    }
+
+    // Al parar 5s sin scroll → mostrar nav
+    hideTimer = setTimeout(showNav, 5000);
+  }, { passive: true });
+})();
 
 /* ══════════════════════════════════════════════════════
    19b. HERO EXPLORE fix (heroExplore now optional)
@@ -9069,3 +9162,361 @@ document.addEventListener('visibilitychange', () => {
     setTimeout(() => { _resumeWithWatchdog(); }, 100);
   }
 });
+/* ══════════════════════════════════════════════════════
+   FEED PAGE MODULE
+══════════════════════════════════════════════════════ */
+const Feed = (() => {
+  let initialized = false;
+
+  const DEMO_FRIENDS = [
+    { name: "Alex M.",    initials: "AM", ago: "hace 2 min",  type: "play"   },
+    { name: "Sara K.",    initials: "SK", ago: "hace 8 min",  type: "repeat", times: 5 },
+    { name: "Javi R.",    initials: "JR", ago: "hace 15 min", type: "play"   },
+    { name: "Noa L.",     initials: "NL", ago: "hace 22 min", type: "add"    },
+    { name: "Marc B.",    initials: "MB", ago: "hace 31 min", type: "play"   },
+    { name: "Clàudia",   initials: "CL", ago: "hace 45 min", type: "repeat", times: 3 },
+    { name: "3 usuarios cercanos", initials: "··", ago: "hace 1h", type: "zone" },
+  ];
+
+  function getTracks() {
+    return (typeof media !== "undefined" ? media : []).filter(function(m) { return m.type === "music"; });
+  }
+
+  function dailyPick(arr, n, salt) {
+    if (!arr.length) return [];
+    var seed = Math.floor(Date.now() / 86400000) + (salt || 0);
+    var shuffled = arr.slice().sort(function(a, b) {
+      var ha = (a.file + seed).split("").reduce(function(s, c) { return s + c.charCodeAt(0); }, 0);
+      var hb = (b.file + seed).split("").reduce(function(s, c) { return s + c.charCodeAt(0); }, 0);
+      return ha - hb;
+    });
+    return shuffled.slice(0, n);
+  }
+
+  /* ── TABS ── */
+  function initTabs() {
+    document.querySelectorAll(".feed-tab").forEach(function(tab) {
+      tab.addEventListener("click", function() {
+        document.querySelectorAll(".feed-tab").forEach(function(t) { t.classList.remove("active"); });
+        document.querySelectorAll(".feed-panel").forEach(function(p) { p.classList.remove("active"); });
+        tab.classList.add("active");
+        var name = tab.dataset.feedTab;
+        var panelId = "feedPanel" + name.charAt(0).toUpperCase() + name.slice(1);
+        var panel = document.getElementById(panelId);
+        if (panel) panel.classList.add("active");
+        if (name === "trending") renderTrending();
+        if (name === "discover") renderDiscover();
+      });
+    });
+  }
+
+  /* ── STORY CANVAS ── */
+  function initStory() {
+    var canvas = document.getElementById("feedStoryCanvas");
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    function resize() {
+      var card = canvas.closest(".feed-story-card");
+      if (card) { canvas.width = card.offsetWidth; canvas.height = card.offsetHeight; }
+    }
+    resize();
+    var t = 0;
+    var BARS = 52;
+    function drawFrame() {
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      var bw = w / BARS;
+      for (var i = 0; i < BARS; i++) {
+        var phase = (i / BARS) * Math.PI * 2;
+        var amp = 0.28 + 0.38 * Math.abs(Math.sin(phase * 1.4 + t * 0.55))
+                       + 0.14 * Math.abs(Math.sin(phase * 2.9 + t * 1.05));
+        var barH = amp * h * 0.8;
+        var alpha = 0.1 + amp * 0.2;
+        ctx.fillStyle = "rgba(180,150,255," + alpha + ")";
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(i * bw + bw * 0.18, (h - barH) / 2, bw * 0.64, barH, 2);
+        } else {
+          ctx.rect(i * bw + bw * 0.18, (h - barH) / 2, bw * 0.64, barH);
+        }
+        ctx.fill();
+      }
+      t += 0.016;
+      requestAnimationFrame(drawFrame);
+    }
+    drawFrame();
+    window.addEventListener("resize", resize);
+  }
+
+  function updateStory(track) {
+    var titleEl  = document.getElementById("feedStoryTitle");
+    var artistEl = document.getElementById("feedStoryArtist");
+    var coverEl  = document.getElementById("feedStoryCover");
+    var lyricEl  = document.getElementById("feedStoryLyric");
+    if (!titleEl) return;
+    if (track) {
+      titleEl.textContent  = track.title  || "—";
+      artistEl.textContent = track.artist || "—";
+      if (coverEl) coverEl.src = track.cover || "";
+      if (lyricEl) lyricEl.textContent = "";
+      /* Lyric snippet via lrclib */
+      if (lyricEl && track.title && track.artist) {
+        fetch("https://lrclib.net/api/search?track_name=" + encodeURIComponent(track.title) + "&artist_name=" + encodeURIComponent(track.artist))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var entry = Array.isArray(data) ? data[0] : null;
+            if (entry && entry.plainLyrics) {
+              var lines = entry.plainLyrics.split("\n").filter(function(l) { return l.trim().length > 4; });
+              lyricEl.textContent = lines.slice(0, 2).join(" / ");
+            }
+          }).catch(function() {});
+      }
+      var card = document.getElementById("feedStoryCard");
+      if (card) {
+        card.onclick = function() { if (typeof loadTrack === "function") loadTrack(track); };
+      }
+    } else {
+      titleEl.textContent  = "Reproduce algo para verlo aquí";
+      if (artistEl) artistEl.textContent = "";
+      if (coverEl)  coverEl.src = "";
+      if (lyricEl)  lyricEl.textContent = "";
+    }
+  }
+
+  /* ── ACTIVITY ── */
+  function renderActivity() {
+    var list = document.getElementById("feedActivityList");
+    if (!list) return;
+    var tracks = getTracks();
+    if (!tracks.length) {
+      list.innerHTML = "<p style='color:rgba(255,255,255,.25);font-size:.8rem;text-align:center;padding:2rem 0'>Reproduce música para ver actividad</p>";
+      return;
+    }
+
+    var history = [];
+    try { history = JSON.parse(localStorage.getItem("droply_history_v2") || "[]"); } catch(_) {}
+
+    var items = [];
+
+    /* Own recent plays first */
+    history.slice(0, 4).forEach(function(h) {
+      var t = tracks.find(function(m) { return m.file === h.file; });
+      if (t) items.push({ own: true, track: t, ago: "ahora mismo", type: "play" });
+    });
+
+    /* Demo friends woven in */
+    var demoTracks = dailyPick(tracks, DEMO_FRIENDS.length, 77);
+    DEMO_FRIENDS.forEach(function(friend, i) {
+      var track = demoTracks[i] || tracks[i % tracks.length];
+      items.push({ own: false, friend: friend, track: track, ago: friend.ago, type: friend.type });
+    });
+
+    list.innerHTML = "";
+    items.slice(0, 13).forEach(function(item) {
+      var el = document.createElement("div");
+      el.className = "feed-activity-item";
+      var text = "";
+      if (item.own) {
+        text = "Tú escuchaste esto";
+      } else if (item.type === "repeat") {
+        text = "<strong>" + item.friend.name + "</strong> lo ha repetido " + item.friend.times + " veces";
+      } else if (item.type === "add") {
+        text = "<strong>" + item.friend.name + "</strong> lo añadió a su playlist";
+      } else if (item.type === "zone") {
+        text = "<strong>" + item.friend.name + "</strong> están escuchando esto en tu zona";
+      } else {
+        text = "<strong>" + item.friend.name + "</strong> está escuchando esto";
+      }
+      var initials = item.own ? "Tú" : (item.friend ? item.friend.initials : "?");
+      el.innerHTML =
+        '<div class="feed-activity-avatar">' + initials + '</div>' +
+        '<img class="feed-activity-cover" src="' + (item.track.cover || "") + '" alt="" onerror="this.style.display=\'none\'" />' +
+        '<div class="feed-activity-body">' +
+          '<div class="feed-activity-text">' + text + '</div>' +
+          '<div class="feed-activity-track">' + item.track.title + ' · ' + item.track.artist + '</div>' +
+        '</div>' +
+        '<span class="feed-activity-time">' + item.ago + '</span>';
+      (function(track) {
+        el.addEventListener("click", function() {
+          if (typeof loadTrack === "function") loadTrack(track);
+        });
+      })(item.track);
+      list.appendChild(el);
+    });
+  }
+
+  /* ── TRENDING ── */
+  function renderTrending() {
+    var tracks = getTracks();
+    if (!tracks.length) return;
+
+    var zoneTracks = dailyPick(tracks, 10, 11);
+    var zoneEl = document.getElementById("feedTrendingList");
+    if (zoneEl && !zoneEl.children.length) {
+      var demoCounts = [847, 612, 534, 489, 412, 388, 299, 241, 187, 132];
+      zoneTracks.forEach(function(track, i) {
+        var item = document.createElement("div");
+        item.className = "feed-trending-item";
+        item.innerHTML =
+          '<div class="feed-trending-rank' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</div>' +
+          '<img class="feed-trending-cover" src="' + (track.cover || "") + '" alt="" onerror="this.style.display=\'none\'" />' +
+          '<div class="feed-trending-info">' +
+            '<div class="feed-trending-title">' + track.title + '</div>' +
+            '<div class="feed-trending-artist">' + track.artist + '</div>' +
+          '</div>' +
+          '<div class="feed-trending-plays"><span>' + demoCounts[i] + '</span> hoy</div>';
+        (function(t) {
+          item.addEventListener("click", function() { if (typeof loadTrack === "function") loadTrack(t); });
+        })(track);
+        zoneEl.appendChild(item);
+      });
+    }
+
+    /* My style: real playCounts */
+    var counts = {};
+    try { counts = JSON.parse(localStorage.getItem("droply_playcounts") || "{}"); } catch(_) {}
+    var styleEl = document.getElementById("feedStyleList");
+    if (styleEl && !styleEl.children.length) {
+      var sorted = tracks
+        .map(function(t) { return { track: t, count: counts[t.file] || 0 }; })
+        .sort(function(a, b) { return b.count - a.count; })
+        .slice(0, 8);
+      if (!sorted.some(function(x) { return x.count > 0; })) {
+        styleEl.innerHTML = "<p style='color:rgba(255,255,255,.25);font-size:.78rem;padding:.3rem 0'>Reproduce más canciones para ver tus tendencias</p>";
+      } else {
+        sorted.forEach(function(x, i) {
+          var item = document.createElement("div");
+          item.className = "feed-trending-item";
+          item.innerHTML =
+            '<div class="feed-trending-rank' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</div>' +
+            '<img class="feed-trending-cover" src="' + (x.track.cover || "") + '" alt="" onerror="this.style.display=\'none\'" />' +
+            '<div class="feed-trending-info">' +
+              '<div class="feed-trending-title">' + x.track.title + '</div>' +
+              '<div class="feed-trending-artist">' + x.track.artist + '</div>' +
+            '</div>' +
+            '<div class="feed-trending-plays"><span>' + x.count + '</span> tuyas</div>';
+          (function(t) {
+            item.addEventListener("click", function() { if (typeof loadTrack === "function") loadTrack(t); });
+          })(x.track);
+          styleEl.appendChild(item);
+        });
+      }
+    }
+  }
+
+  /* ── DISCOVER ── */
+  function renderDiscover() {
+    var scroll = document.getElementById("feedDiscoverScroll");
+    if (!scroll || scroll.children.length > 0) return;
+    var tracks = getTracks();
+    if (!tracks.length) return;
+    var picks = dailyPick(tracks, 10, 42);
+
+    picks.forEach(function(track) {
+      var card = document.createElement("div");
+      card.className = "feed-discover-card";
+      card.innerHTML =
+        '<div class="feed-discover-bg" style="background-image:url(\'' + (track.cover || "") + '\')"></div>' +
+        '<div class="feed-discover-overlay"></div>' +
+        '<img class="feed-discover-cover" src="' + (track.cover || "") + '" alt="" />' +
+        '<div class="feed-discover-content">' +
+          '<div class="feed-discover-title">' + track.title + '</div>' +
+          '<div class="feed-discover-artist">' + track.artist + '</div>' +
+          '<div class="feed-discover-duration">Vista previa · 30s</div>' +
+        '</div>' +
+        '<div class="feed-discover-actions">' +
+          '<button class="feed-discover-btn play-btn" aria-label="Vista previa">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>' +
+          '</button>' +
+          '<button class="feed-discover-btn add-btn" aria-label="Añadir">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="feed-discover-progress"><div class="feed-discover-progress-fill"></div></div>';
+
+      var playBtn = card.querySelector(".play-btn");
+      var addBtn  = card.querySelector(".add-btn");
+      var fill    = card.querySelector(".feed-discover-progress-fill");
+      var previewAudio = null;
+      var previewTimer = null;
+      var playing = false;
+
+      playBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        if (playing) {
+          playing = false;
+          if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+          clearInterval(previewTimer);
+          fill.style.width = "0%";
+          playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>';
+          return;
+        }
+        playing = true;
+        playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="3" width="4" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>';
+        var streamUrl = "/api/stream?title=" + encodeURIComponent(track.title) + "&artist=" + encodeURIComponent(track.artist);
+        previewAudio = new Audio(streamUrl);
+        previewAudio.volume = 0.6;
+        var elapsed = 0;
+        previewAudio.play().catch(function() {
+          if (typeof loadTrack === "function") loadTrack(track);
+          playing = false;
+          fill.style.width = "0%";
+          playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>';
+        });
+        previewTimer = setInterval(function() {
+          elapsed += 0.5;
+          fill.style.width = Math.min((elapsed / 30) * 100, 100) + "%";
+          if (elapsed >= 30) {
+            clearInterval(previewTimer);
+            if (previewAudio) previewAudio.pause();
+            fill.style.width = "0%";
+            playing = false;
+            playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>';
+          }
+        }, 500);
+      });
+
+      addBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        if (typeof openAddToPlaylist === "function") openAddToPlaylist(track);
+      });
+
+      card.addEventListener("click", function() {
+        if (typeof loadTrack === "function") loadTrack(track);
+      });
+
+      scroll.appendChild(card);
+    });
+  }
+
+  /* ── INIT ── */
+  function init() {
+    if (initialized) { refresh(); return; }
+    initialized = true;
+    initTabs();
+    initStory();
+    renderActivity();
+
+    /* Listen for track changes */
+    document.addEventListener("droply:trackchange", function(e) {
+      updateStory(e && e.detail ? e.detail : null);
+    });
+
+    /* Check current playing track from history */
+    var history = [];
+    try { history = JSON.parse(localStorage.getItem("droply_history_v2") || "[]"); } catch(_) {}
+    if (history.length) {
+      var tracks = getTracks();
+      var cur = tracks.find(function(m) { return m.file === history[0].file; }) || null;
+      updateStory(cur);
+    } else {
+      updateStory(null);
+    }
+  }
+
+  function refresh() {
+    renderActivity();
+  }
+
+  return { init: init, refresh: refresh };
+})();
