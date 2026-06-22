@@ -481,7 +481,7 @@ const SupabaseCloud = (() => {
               <path d="M9 8h5a5 5 0 0 1 0 10H9V8Z" fill="white" opacity=".95"/>
               <circle cx="19" cy="18" r="3" fill="white" opacity=".7"/>
             </svg>
-            DROPLY
+            DROPLY Music
           </div>
           <h1>Millones de canciones,<br>solo para ti</h1>
           <p>Crea una cuenta gratuita para guardar tus playlists, likes e historial en todos tus dispositivos.</p>
