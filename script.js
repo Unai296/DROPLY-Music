@@ -663,7 +663,7 @@ const media = [
     artist:   "J. Balvin, Skrillex",
     cover:    "https://i.ytimg.com/vi/7aPzYlc2RY4/maxresdefault.jpg",
     file:     "./Music/indagetto.mp3",
-    category: "Reggaeton",
+    category: "Electronic",
     duration: "2:10"
   },
   {
@@ -708,7 +708,7 @@ const media = [
     artist:   "Steve Aoki, Daddy Yankee, Play-N-Skillz & Elvis Crespo",
     cover:    "https://i.ytimg.com/vi/mGN3kfEk_P4/maxresdefault.jpg",
     file:     "./Music/azukita.mp3",
-    category: "Reggaeton",
+    category: "Dance-Pop",
     duration: "3:46"
   },
   {
@@ -780,7 +780,7 @@ const media = [
     artist:   "Moncho Chavea, Morad",
     cover:    "https://i.scdn.co/image/ab67616d0000b273c7b6b68108ab221bb07f5aa6",
     file:     "./Music/sefue.mp3",
-    category: "Reggaeton",
+    category: "Flamenco",
     duration: "2:55"
   },
   {
@@ -789,7 +789,7 @@ const media = [
     artist:   "Black Eyed Peas, J Balvin",
     cover:    "https://i.ytimg.com/vi/C9xrAJ_rmBw/maxresdefault.jpg",
     file:     "./Music/ritmo.mp3",
-    category: "Reggaeton",
+    category: "Dance-Pop",
     duration: "3:38"
   },
   {
@@ -861,7 +861,7 @@ const media = [
     artist:   "Bad Bunny, El Alfa",
     cover:    "https://i1.sndcdn.com/artworks-000287886533-fxhmn2-t500x500.jpg",
     file:     "./Music/demaga.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "3:38"
   },
   {
@@ -870,7 +870,7 @@ const media = [
     artist:   "Tempo, El Alfa",
     cover:    "https://i.scdn.co/image/ab67616d0000b2736e3e2d32da74925922b4976f",
     file:     "./Music/happy.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "2:37"
   },
   {
@@ -879,7 +879,7 @@ const media = [
     artist:   "DJ Snake, Selena Gomez, Ozuna, Cardi B",
     cover:    "https://e00-elmundo.uecdn.es/assets/multimedia/imagenes/2018/09/28/15381371183299.jpg",
     file:     "./Music/takitaki.mp3",
-    category: "Reggaeton",
+    category: "Dance-Pop",
     duration: "3:51"
   },
   {
@@ -1032,7 +1032,7 @@ const media = [
     artist:   "Danny Ocean",
     cover:    "https://cdn-images.dzcdn.net/images/cover/2312f5f5d53b0fb5238a4bc58d2f6cf6/1900x1900-000000-81-0-0.jpg",
     file:     "./Music/merehuso.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "3:25"
   },
   {
@@ -1086,7 +1086,7 @@ const media = [
     artist:   "El Bobe, Omar Montes",
     cover:    "https://i.scdn.co/image/ab67616d0000b273412a45f6d65252ae3d1fac4c",
     file:     "./Music/elconjuntito.mp3",
-    category: "Reggaeton",
+    category: "Flamenco",
     duration: "2:37"
   },
   {
@@ -1194,7 +1194,7 @@ const media = [
     artist:   "Heuss L'enfoiré, JuL",
     cover:    "https://m.media-amazon.com/images/I/51QolFGPe7L._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/moulaga.mp3",
-    category: "Reggaeton",
+    category: "Rap",
     duration: "2:56"
   },
     {
@@ -1230,7 +1230,7 @@ const media = [
     artist:   "Gente De Zona, Marc Anthony",
     cover:    "https://images.genius.com/cf43fd45336758c065537970f6a79f96.1000x1000x1.jpg",
     file:     "./Music/lagozadera.mp3",
-    category: "Reggaeton",
+    category: "Latin Pop",
     duration: "3:23"
   },
    {
@@ -1248,7 +1248,7 @@ const media = [
     artist:   "ROSALÍA, J Balvin, El Guincho",
     cover:    "https://images.genius.com/a8b0efd41e6a43091837da78850cf312.1000x1000x1.png",
     file:     "./Music/conaltura.mp3",
-    category: "Reggaeton",
+    category: "Latin Pop",
     duration: "2:44"
   },
    {
@@ -1257,7 +1257,7 @@ const media = [
     artist:   "Carlos Vives, Shakira",
     cover:    "https://i.scdn.co/image/ab67616d0000b273e588b4129b0afd8595ac55b0",
     file:     "./Music/labicicleta.mp3",
-    category: "Reggaeton",
+    category: "Latin Pop",
     duration: "3:46"
   },
    {
@@ -1320,7 +1320,7 @@ const media = [
     artist:   "El Alfa",
     cover:    "https://images.genius.com/6898ac4006eb392cc4c2fe4429fb3c57.597x597x1.png",
     file:     "./Music/sientateenesedeo.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "4:42"
   },
     {
@@ -1338,7 +1338,7 @@ const media = [
     artist:   "El Alfa, Yandel, Myke Towers",
     cover:    "https://i.scdn.co/image/ab67616d0000b273c4e2ae0d7a6ba307bdd3cc0d",
     file:     "./Music/dembowyreggaeton.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "4:11"
   },
     {
@@ -1347,7 +1347,7 @@ const media = [
     artist:   "EL ALFA, Rauw Alejandro",
     cover:    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMVwbetQqCv73bf6t9mP31J9CucAlGW_k8YA&s",
     file:     "./Music/besalo.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "2:43"
   },
    {
@@ -1401,7 +1401,7 @@ const media = [
     artist:   "Dennis DJ, Luísa Sonza, Emilia",
     cover:    "https://s.mxmcdn.net/images-storage/albums2/4/7/9/3/2/5/87523974_500_500.jpg",
     file:     "./Music/motinha.mp3",
-    category: "Reggaeton",
+    category: "Funk",
     duration: "1:58"
   },
    {
@@ -1419,7 +1419,7 @@ const media = [
     artist:   "El Alfa, Darell, Noriel",
     cover:    "https://m.media-amazon.com/images/I/41H6GkRuYiL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/4k.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "3:35"
   },
    {
@@ -1446,7 +1446,7 @@ const media = [
     artist:   "El Alfa",
     cover:    "https://m.media-amazon.com/images/I/519xrzwtqjL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/supermansincapa.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "3:50"
   },
    {
@@ -1464,7 +1464,7 @@ const media = [
     artist:   "Sebastián Yatra, Mau, Ricky",
     cover:    "https://i.scdn.co/image/ab67616d0000b273f89d8cc59e29c9d2f846e903",
     file:     "./Music/yanotienenovio.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "4:07"
   },
   {
@@ -1536,7 +1536,7 @@ const media = [
     artist:   "Alex Gaudino, Crystal Waters",
     cover:    "https://cdn-images.dzcdn.net/images/cover/3cd44e7420b88ced60beb8daea52b11a/0x1900-000000-80-0-0.jpg",
     file:     "./Music/destination.mp3",
-    category: "90s",
+    category: "Electronic",
     duration: "3:03"
   },
    {
@@ -1554,7 +1554,7 @@ const media = [
     artist:   "ABBA",
     cover:    "https://upload.wikimedia.org/wikipedia/en/a/a5/ABBA_-_Gimme%21_Gimme%21_Gimme%21_%28A_Man_After_Midnight%29.png?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
     file:     "./Music/gimme.mp3",
-    category: "90s",
+    category: "Pop",
     duration: "3:16"
   },
    {
@@ -1563,7 +1563,7 @@ const media = [
     artist:   "ABBA",
     cover:    "https://i.ebayimg.com/images/g/O4kAAOxydlFSxW0j/s-l400.jpg",
     file:     "./Music/layallyourloveonme.mp3",
-    category: "90s",
+    category: "Pop",
     duration: "4:40"
   },
    {
@@ -1572,7 +1572,7 @@ const media = [
     artist:   "Madonna",
     cover:    "https://m.media-amazon.com/images/I/81Iv8WsxUwL._UF894,1000_QL80_.jpg",
     file:     "./Music/laIslabonita.mp3",
-    category: "90s",
+    category: "Pop",
     duration: "4:01"
   },
    {
@@ -1590,7 +1590,7 @@ const media = [
     artist:   "Edward Maya, Vika Jigulina",
     cover:    "https://i.scdn.co/image/ab67616d0000b273edd7dc7bf5f7c39d3e132490",
     file:     "./Music/stereolove.mp3",
-    category: "90s",
+    category: "Electronic",
     duration: "3:06"
   },
    {
@@ -1626,7 +1626,7 @@ const media = [
     artist:   "Bee Gees",
     cover:    "https://m.media-amazon.com/images/M/MV5BZmU5M2E3M2MtM2M5My00YTI2LThkNDktNjk5MGE2NzAxNTZlXkEyXkFqcGc@._V1_.jpg",
     file:     "./Music/stayinalive.mp3",
-    category: "90s",
+    category: "Disco",
     duration: "4:09"
   },
      {
@@ -1635,7 +1635,7 @@ const media = [
     artist:   "Kiss",
     cover:    "https://i.discogs.com/ZDR0sVMA4m0HNMH-M1w8qfzxOX_9HL_t76I8QjohXcQ/rs:fit/g:sm/q:40/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Njg0/NzEtMTMzOTYwMDc2/MS0zNDU2LmpwZWc.jpeg",
     file:     "./Music/iwasmadeforlovinyou.mp3",
-    category: "90s",
+    category: "Rock",
     duration: "3:58"
   },
      {
@@ -1671,7 +1671,7 @@ const media = [
     artist:   "Elton John",
     cover:    "https://i.scdn.co/image/ab67616d0000b27373fd9802ec887972ecdacac2",
     file:     "./Music/istillstanding.mp3",
-    category: "Dance-Pop",
+    category: "Pop",
     duration: "3:02"
   },
       {
@@ -1680,7 +1680,7 @@ const media = [
     artist:   "Las Ketchup",
     cover:    "https://cdn-images.dzcdn.net/images/cover/be45674dc35c8f974a934dc3779c7b59/0x1900-000000-80-0-0.jpg",
     file:     "./Music/asereje.mp3",
-    category: "Dance-Pop",
+    category: "Latin Pop",
     duration: "3:33"
   },
       {
@@ -1707,7 +1707,7 @@ const media = [
     artist:   "Don Omar, Lucenzo",
     cover:    "https://i.scdn.co/image/ab67616d0000b2737b31a1e4b17d0c4d9a00d357",
     file:     "./Music/danzakuduro.mp3",
-    category: "Reggaeton",
+    category: "Dembow",
     duration: "3:18"
   },
   {
@@ -1779,7 +1779,7 @@ const media = [
     artist:   "LOLA ÍNDIGO, RVFV, SOOLKING",
     cover:    "https://universalmusic.es/wp-content/uploads/sites/50/2023/12/lola_indigo_top5.jpeg",
     file:     "./Music/casanova.mp3",
-    category: "Reggaeton",
+    category: "Rap",
     duration: "4:03"
   },
     {
@@ -1833,7 +1833,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://i1.sndcdn.com/artworks-000086432916-4b0kzg-t1080x1080.jpg",
     file:     "./Music/a_sky_full_of_stars.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:13"
   },
     {
@@ -1842,7 +1842,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://m.media-amazon.com/images/I/9145yafeO2L._UF894,1000_QL80_.jpg",
     file:     "./Music/viva_la_vida.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:02"
   },
     {
@@ -1851,7 +1851,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://upload.wikimedia.org/wikipedia/en/2/22/Coldplay_-_Paradise.JPG",
     file:     "./Music/paradise.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:20"
   },
     {
@@ -1860,7 +1860,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://m.media-amazon.com/images/I/41POdN+-ZcL._UF894,1000_QL80_.jpg",
     file:     "./Music/clocks.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:15"
   },
     {
@@ -1869,7 +1869,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://i.scdn.co/image/ab67616d0000b2738ff7c3580d429c8212b9a3b6",
     file:     "./Music/adventure_of_a_lifetime.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:24"
   },
     {
@@ -1878,7 +1878,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://cdn-images.dzcdn.net/images/cover/8a1a3e7c5e46b5f763328d95431ac19a/1900x1900-000000-80-0-0.jpg",
     file:     "./Music/fix_you.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:53"
   },
     {
@@ -1887,7 +1887,7 @@ const media = [
     artist:   "Coldplay",
     cover:    "https://cdn-images.dzcdn.net/images/cover/5df065fdcbaffd0f83d09789bad9d2db/1900x1900-000000-80-0-0.jpg",
     file:     "./Music/hymn_for_the_weekend.mp3",
-    category: "Dance-Pop",
+    category: "Rock",
     duration: "4:20"
   },
      {
@@ -1896,7 +1896,7 @@ const media = [
     artist:   "Gigi D'Agostino",
     cover:    "https://m.media-amazon.com/images/I/71a-IQRpEYL._UF894,1000_QL80_.jpg",
     file:     "./Music/l_amour_toujours.mp3",
-    category: "90s",
+    category: "Electronic",
     duration: "4:01"
   },
        {
@@ -1905,7 +1905,7 @@ const media = [
     artist:   "Gigi D'Agostino",
     cover:    "https://i.scdn.co/image/ab67616d0000b273d8f8af4309c24d540b6f9128",
     file:     "./Music/the_riddle.mp3",
-    category: "90s",
+    category: "Electronic",
     duration: "3:24"
   },
        {
@@ -1914,7 +1914,7 @@ const media = [
     artist:   "Gigi D'Agostino",
     cover:    "https://shop.blancoynegro.com/4924-large_default/gigi-d-agostino-another-way-marble-vinyl.jpg",
     file:     "./Music/another_way.mp3",
-    category: "90s",
+    category: "Electronic",
     duration: "6:03"
   },
          {
@@ -1959,7 +1959,7 @@ const media = [
     artist:   "Sevdaliza, Tokischa, Villano Antillano",
     cover:    "https://m.media-amazon.com/images/I/513DswxlqbL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/ride_or_die_pt_2.mp3",
-    category: "Reggaeton",
+    category: "Urban",
     duration: "2:39"
   },
          {
@@ -1977,7 +1977,7 @@ const media = [
     artist:   "Peso Pluma, Anitta",
     cover:    "https://pics.filmaffinity.com/peso_pluma_anitta_bellakeo-952115569-mmed.jpg",
     file:     "./Music/bellakeo.mp3",
-    category: "Reggaeton",
+    category: "Regional Mexicano",
     duration: "3:18"
   },
          {
@@ -1995,7 +1995,7 @@ const media = [
     artist:   "Chanel, Abraham Mateo",
     cover:    "https://images.genius.com/3a494e516ff0fce415ef807ab097ed32.1000x1000x1.jpg",
     file:     "./Music/clavaito.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "2:42"
   },
          {
@@ -2004,7 +2004,7 @@ const media = [
     artist:   "Zzoilo, Aitana",
     cover:    "https://i.scdn.co/image/ab67616d0000b2730317d0bdead0b5050f0c2656",
     file:     "./Music/monamour.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "3:00"
   },
          {
@@ -2103,7 +2103,7 @@ const media = [
     artist:   "Kendrick Lamar, SZA",
     cover:    "https://external-preview.redd.it/kendrick-lamar-sza-all-the-stars-1425x1425-v0-sg2vjFNVymrGj6SBX2YAqGRS4DpfReI4rHG4ZkO9kiQ.jpg?auto=webp&s=6f7f26782817e77656af393352807edcf6a98d19",
     file:     "./Music/allthestars.mp3",
-    category: "Dance-Pop",
+    category: "Hip-Hop",
     duration: "3:54"
   },
            {
@@ -2166,7 +2166,7 @@ const media = [
     artist:   "KEVIN DO RECIFE, MC MORENA, THIAGUINHO DO RECIFE",
     cover:    "https://images.genius.com/da50480499543acea79f42969b3225d7.640x640x1.jpg",
     file:     "./Music/cabelolorinho.mp3",
-    category: "Reggaeton",
+    category: "Funk",
     duration: "3:20"
   },
            {
@@ -2193,7 +2193,7 @@ const media = [
     artist:   "Morad, GIMS, Sativa Music",
     cover:    "https://m.media-amazon.com/images/I/41Wz9YI5AnL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/seya.mp3",
-    category: "Reggaeton",
+    category: "Rap",
     duration: "3:06"
   },
              {
@@ -2229,7 +2229,7 @@ const media = [
     artist:   "Aitana",
     cover:    "https://ih1.redbubble.net/image.6030595463.8549/fposter,small,wall_texture,square_product,600x600.jpg",
     file:     "./Music/superestrella.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "3:03"
   },
              {
@@ -2238,7 +2238,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://m.media-amazon.com/images/I/41-8AcQWaIL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/comocamaron.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "3:27"
   },
              {
@@ -2256,7 +2256,7 @@ const media = [
     artist:   "Fito & Fitipaldis",
     cover:    "https://i1.sndcdn.com/artworks-mRlMQWq12FtD-0-t500x500.jpg",
     file:     "./Music/lacasaporeltejado.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:03"
   },
              {
@@ -2265,7 +2265,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://m.media-amazon.com/images/M/MV5BOGM1MzdhODAtYTkxZS00NDE5LWJhZDktNmIyNGQ4MzQxMDEwXkEyXkFqcGc@._V1_QL75_UY190_CR29,0,190,190_.jpg",
     file:     "./Music/larajadetufalda.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "3:22"
   },
              {
@@ -2274,7 +2274,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://i.discogs.com/6EE8aWqwWRkMioZqnY_3FQUp8WpdO45EQKCYRnKbQh4/rs:fit/g:sm/q:90/h:378/w:378/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjQ2/MzctMTM2NTE3ODY1/NC03MDk5LmpwZWc.jpeg",
     file:     "./Music/partiendolapana.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "4:12"
   },
              {
@@ -2283,7 +2283,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://cdn-images.dzcdn.net/images/cover/a0d6b3649f9abcd41e1822bbaf446c11/1900x1900-000000-80-0-0.jpg",
     file:     "./Music/paseo.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "3:39"
   },
              {
@@ -2292,7 +2292,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://lastfm.freetls.fastly.net/i/u/300x300/3f64a85667484270bbe936153ab9dbe8.jpg",
     file:     "./Music/ojitosrojos.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "4:25"
   },
              {
@@ -2301,7 +2301,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://i.scdn.co/image/ab67616d0000b273769d0cf8ba5af48a1a84e6f0",
     file:     "./Music/mequedare.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "3:17"
   },
              {
@@ -2310,7 +2310,7 @@ const media = [
     artist:   "Estopa",
     cover:    "https://i.scdn.co/image/ab67616d0000b273b3e5a036a7c5875c5d7a92e6",
     file:     "./Music/eldelmediodeloschichos.mp3",
-    category: "Pop",
+    category: "Rumba",
     duration: "3:47"
   },
              {
@@ -2319,7 +2319,7 @@ const media = [
     artist:   "Fito & Fitipaldis",
     cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
     file:     "./Music/soldaditomarinero.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "3:59"
   },
              {
@@ -2328,7 +2328,7 @@ const media = [
     artist:   "Fito & Fitipaldis",
     cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
     file:     "./Music/porlabocaviveelpez.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:30"
   },
              {
@@ -2337,7 +2337,7 @@ const media = [
     artist:   "Fito & Fitipaldis",
     cover:    "https://i.scdn.co/image/ab67616d00001e02a618985542a38277dc088c3a",
     file:     "./Music/antesdequecuente10.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:41"
   },
                {
@@ -2382,7 +2382,7 @@ const media = [
     artist:   "Red Hot Chili Peppers",
     cover:    "https://i.scdn.co/image/ab67616d0000b273a9249ebb15ca7a5b75f16a90",
     file:     "./Music/californication.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "5:21"
   },
                {
@@ -2391,7 +2391,7 @@ const media = [
     artist:   "Red Hot Chili Peppers",
     cover:    "https://akamai.sscdn.co/uploadfile/letras/fotos/f/0/4/4/f044e2cbeca7631d98e3c6a3f2319e3f-tb4.jpg",
     file:     "./Music/otherside.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:17"
   },
                {
@@ -2400,7 +2400,7 @@ const media = [
     artist:   "Red Hot Chili Peppers",
     cover:    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQ-_w19IgDWMtDqJoIyvggszgtUsw3R0xbYA&s",
     file:     "./Music/scartissue.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "3:40"
   },
                {
@@ -2409,7 +2409,7 @@ const media = [
     artist:   "Nirvana",
     cover:    "https://i.scdn.co/image/ab67616d0000b273e175a19e530c898d167d39bf",
     file:     "./Music/smellsliketeenspirit.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:38"
   },
                {
@@ -2418,7 +2418,7 @@ const media = [
     artist:   "The White Stripes",
     cover:    "https://m.media-amazon.com/images/I/61sAc-wMnlL._UF894,1000_QL80_.jpg",
     file:     "./Music/sevennationarmy.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "3:58"
   },
                {
@@ -2427,7 +2427,7 @@ const media = [
     artist:   "Red Hot Chili Peppers",
     cover:    "https://m.media-amazon.com/images/M/MV5BMjE4NzA0MzY2M15BMl5BanBnXkFtZTgwODMzODI5NTE@._V1_FMjpg_UX1000_.jpg",
     file:     "./Music/snow.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "5:49"
   },
                {
@@ -2436,7 +2436,7 @@ const media = [
     artist:   "Red Hot Chili Peppers",
     cover:    "https://upload.wikimedia.org/wikipedia/en/d/d6/Dani_california.gif",
     file:     "./Music/danicalifornia.mp3",
-    category: "Pop",
+    category: "Rock",
     duration: "4:47"
   },
               {
@@ -2454,7 +2454,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/quiene.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "3:41"
   },
               {
@@ -2463,7 +2463,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/payas.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "4:35"
   },
               {
@@ -2472,7 +2472,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/mardosa.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:09"
   },
               {
@@ -2481,7 +2481,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/kikeywanillo.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:25"
   },
               {
@@ -2490,7 +2490,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/fela.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:18"
   },
               {
@@ -2499,7 +2499,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/poralgosera.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:39"
   },
               {
@@ -2508,7 +2508,7 @@ const media = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/malafarlopa.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:58"
   },
               {
@@ -2517,7 +2517,7 @@ const media = [
     artist:   "JuL",
     cover:    "https://i.scdn.co/image/ab67616d0000b2734a073de113a960b895bf838e",
     file:     "./Music/labandite.mp3",
-    category: "Reggaeton",
+    category: "Rap",
     duration: "2:46"
   },
                 {
@@ -2607,7 +2607,7 @@ const media = [
     artist:   "Ana Mena",
     cover:    "https://i.scdn.co/image/ab67616d0000b27357d3916c661917951085047c",
     file:     "./Music/madridcity.mp3",
-    category: "Reggaeton",
+    category: "Pop",
     duration: "3:10"
   },
                 {
@@ -2706,7 +2706,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/pamadrid.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:22"
   },
                 {
@@ -2715,7 +2715,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/cronicasdeunaloca.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:21"
   },
                 {
@@ -2724,7 +2724,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/eldanzardelasmariposas.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:16"
   },
                 {
@@ -2733,7 +2733,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/abremelapuerta.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:36"
   },
                 {
@@ -2742,7 +2742,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/Ángel Malherido.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:27"
   },
                 {
@@ -2751,7 +2751,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/ellicenciao.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:48"
   },
                 {
@@ -2760,7 +2760,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/quiereme.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "3:49"
   },
                 {
@@ -2769,7 +2769,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/torpecancion.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "5:01"
   },
                 {
@@ -2778,7 +2778,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/buenabonitaybarata.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:18"
   },
                 {
@@ -2787,7 +2787,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/maldeamores.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "3:23"
   },
                 {
@@ -2796,7 +2796,7 @@ const media = [
     artist:   "El Barrio",
     cover:    "https://i.scdn.co/image/ab67616d0000b273ed7a7c05d060233bb36faf71",
     file:     "./Music/amoresmanios.mp3",
-    category: "Pop",
+    category: "Flamenco",
     duration: "4:18"
   },
            {
@@ -2835,22 +2835,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:48"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
              {
     type:     "music",
     title:    "MANSORY",
@@ -2860,39 +2844,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:46"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
              {
     type:     "music",
     title:    "La Última Vez",
@@ -2902,65 +2853,15 @@ const media = [
     category: "Reggaeton",
     duration: "5:00"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "LOCO",
     artist:   "Lossa, GIMS",
     cover:    "https://tse2.mm.bing.net/th/id/OIP.OdOswB7hBDsEfd5BThfK7AAAAA?rs=1&pid=ImgDetMain&o=7&rm=3",
     file:     "./Music/loco.mp3",
-    category: "Reggaeton",
+    category: "Rap",
     duration: "2:41"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "SI ESTÁS CON ALGUIEN",
@@ -2970,28 +2871,6 @@ const media = [
     category: "Reggaeton",
     duration: "4:11"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                {
     type:     "music",
     title:    "$UELTA GATITA $UELTA",
@@ -3001,83 +2880,78 @@ const media = [
     category: "Reggaeton",
     duration: "3:51"
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+               {
+    type:     "music",
+    title:    "DROGA",
+    artist:   "Mora, C. Tangana",
+    cover:    "https://images.genius.com/9b4acd648c12aa172b1b4ec9f8eaf4da.1000x1000x1.png",
+    file:     "./Music/droga.mp3",
+    category: "Reggaeton",
+    duration: "3:42"
+  },
+               {
+    type:     "music",
+    title:    "LA 13 14",
+    artist:   "JC REYES",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/59c0a2b8506fe82d4ce5fa6fb86c8842/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/la1314.mp3",
+    category: "Reggaeton",
+    duration: "2:38"
+  },
+               {
+    type:     "music",
+    title:    "Duro Ma",
+    artist:   "Bryant Myers, Dei V, SAIKO",
+    cover:    "https://i1.sndcdn.com/artworks-4kPDYeBjuoIo-0-t500x500.jpg",
+    file:     "./Music/duroma.mp3",
+    category: "Reggaeton",
+    duration: "4:14"
+  },
+               {
+    type:     "music",
+    title:    "Charger",
+    artist:   "Triangle des bermudes",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2734e510d64719fa273c037b678",
+    file:     "./Music/charger.mp3",
+    category: "Rap",
+    duration: "2:37"
+  },
+               {
+    type:     "music",
+    title:    "Maladie",
+    artist:   "Mauvais Djo",
+    cover:    "https://i.scdn.co/image/ab67616d00001e02196de2f4961a29abb049f2ff",
+    file:     "./Music/maladie.mp3",
+    category: "Rap",
+    duration: "3:12"
+  },
+               {
+    type:     "music",
+    title:    "Pilé",
+    artist:   "Mauvais Djo",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2733100e1ee90b3190b95a08047",
+    file:     "./Music/pile.mp3",
+    category: "Rap",
+    duration: "2:35"
+  },
+               {
+    type:     "music",
+    title:    "Tout Donner",
+    artist:   "Naza, SDM, Ingénieurfull",
+    cover:    "https://m.media-amazon.com/images/I/51FB5IEo50L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/toutdonner.mp3",
+    category: "Rap",
+    duration: "2:23"
+  },
+               {
+    type:     "music",
+    title:    "Ramenez la coupe à la maison",
+    artist:   "Vegedream",
+    cover:    "https://i.scdn.co/image/ab67616d0000b2731172e6fea73f73597a3e7fa6",
+    file:     "./Music/ramenezlacoupeàlamaison.mp3",
+    category: "Rap",
+    duration: "3:55"
+  },
 
 
 
@@ -8186,7 +8060,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/quiene.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "3:41"
   },
               {
@@ -8195,7 +8069,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/payas.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "4:35"
   },
               {
@@ -8204,7 +8078,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/mardosa.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:09"
   },
               {
@@ -8213,7 +8087,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/kikeywanillo.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:25"
   },
               {
@@ -8222,7 +8096,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/fela.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:18"
   },
               {
@@ -8231,7 +8105,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/poralgosera.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:39"
   },
               {
@@ -8240,7 +8114,7 @@ const MIXES = [
     artist:   "LOS DIOZES",
     cover:    "https://i.scdn.co/image/ab67616d00001e029583673af04af6d27def8a9c",
     file:     "./Music/malafarlopa.mp3",
-    category: "No se",
+    category: "Trap",
     duration: "2:58"
   },
     ]
