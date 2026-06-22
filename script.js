@@ -3192,7 +3192,7 @@ function updatePlayIcons(playing) {
 function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
 
 function downloadedEmojiHtml(isDownloaded) {
-  return isDownloaded ? '<span class="track-dl-emoji" title="Descargada">📥</span>' : '';
+  return isDownloaded ? '<span class="track-dl-emoji" title="Descargada"><svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg></span>' : '';
 }
 
 function syncDownloadedEmoji(file, isDownloaded) {
@@ -3206,7 +3206,7 @@ function syncDownloadedEmoji(file, isDownloaded) {
         emoji = document.createElement('span');
         emoji.className = 'track-dl-emoji';
         emoji.title = 'Descargada';
-        emoji.textContent = '📥';
+        emoji.innerHTML = '<svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg>';
         titleEl.appendChild(emoji);
       }
     } else if (emoji) {
@@ -3222,31 +3222,25 @@ const TOAST_DURATION = 2800;
 function showToast(msg, type = "default") {
   const el = document.createElement("div");
   el.className = `toast toast-${type}`;
-  el.style.setProperty('--toast-duration', `${TOAST_DURATION}ms`);
 
-  // Icon based on type
+  // Icono dentro de círculo de color
   const iconMap = {
-    success: `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:var(--green);stroke-width:2.5;fill:none;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>`,
-    error:   `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:#ef4444;stroke-width:2.5;fill:none;flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-    warn:    `<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:#fabd00;stroke-width:2.5;fill:none;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    success: `<div class="toast-icon-wrap"><svg viewBox="0 0 24 24" width="12" height="12" style="stroke:#22c55e;stroke-width:2.8;fill:none;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg></div>`,
+    error:   `<div class="toast-icon-wrap"><svg viewBox="0 0 24 24" width="12" height="12" style="stroke:#ef4444;stroke-width:2.8;fill:none;flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>`,
+    warn:    `<div class="toast-icon-wrap"><svg viewBox="0 0 24 24" width="12" height="12" style="stroke:#fabd00;stroke-width:2.8;fill:none;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`,
     default: `<span class="toast-dot"></span>`
   };
   const icon = iconMap[type] || iconMap.default;
 
-  el.innerHTML = `
-    <div class="toast-content">${icon}<span>${msg}</span></div>
-    <div class="toast-bar-wrap"><div class="toast-bar"></div></div>
-  `;
+  el.innerHTML = `<div class="toast-content">${icon}<span>${msg}</span></div>`;
 
   toastContainer.appendChild(el);
 
-  // Auto-remove when bar finishes
   const timer = setTimeout(() => {
     el.classList.add("toast-out");
     el.addEventListener("animationend", () => el.remove(), { once: true });
   }, TOAST_DURATION);
 
-  // Tap to dismiss
   el.addEventListener("click", () => {
     clearTimeout(timer);
     el.classList.add("toast-out");
@@ -4521,7 +4515,7 @@ function renderPlaylists() {
     card.innerHTML = `
       ${coverHTML}
       <div class="playlist-card-body">
-        <div class="playlist-card-name">${pl.name}${allDownloaded ? ' <span class="track-dl-emoji" title="Playlist descargada">📥</span>' : ''}</div>
+        <div class="playlist-card-name">${pl.name}${allDownloaded ? ' <span class="track-dl-emoji" title="Playlist descargada"><svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg></span>' : ''}</div>
         <div class="playlist-card-count">${pl.tracks.length} cancion${pl.tracks.length !== 1 ? "es" : ""}</div>
       </div>`;
     card.addEventListener("click", () => openPlaylistDetail(pl.id));
@@ -4602,7 +4596,7 @@ function openPlaylistDetail(id) {
       div.innerHTML = `
         <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'">
         <div class="playlist-detail-info">
-          <div class="playlist-detail-track">${item.title}${isDownloaded ? ' <span class="track-dl-emoji" title="Descargada">📥</span>' : ''}</div>
+          <div class="playlist-detail-track">${item.title}${isDownloaded ? ' <span class="track-dl-emoji" title="Descargada"><svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg></span>' : ''}</div>
           <div class="playlist-detail-artist">${item.artist} · <span style="color:var(--accent);font-size:.68rem">${item.category}</span></div>
         </div>
         <span style="font-size:.72rem;color:var(--text-soft);flex-shrink:0;font-variant-numeric:tabular-nums">${item.duration || ""}</span>
@@ -4934,18 +4928,37 @@ function buildGenreGrid() {
       if (items.length === 0) {
         listEl.innerHTML = `<p style="color:var(--text-soft);text-align:center;padding:2.5rem 1rem">Sin canciones en esta categoría.</p>`;
       } else {
+        const SWIPE_THRESHOLD = 72;
         items.forEach(item => {
           const cover = item.cover || getPlaceholderCover(item.category);
           const isPlaying = item.file === currentFile;
+          const isDl = (typeof OfflineManager !== 'undefined') && OfflineManager.isDownloaded(item.file);
+
+          // Wrapper swipe
+          const wrap = document.createElement("div");
+          wrap.className = "search-result-row-wrap";
+
+          // Fondo verde izquierda -> playlist
+          const addBg = document.createElement("div");
+          addBg.className = "search-result-add-bg";
+          addBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>PLAYLIST</span>`;
+          wrap.appendChild(addBg);
+
+          // Fondo morado derecha -> cola
+          const queueBg = document.createElement("div");
+          queueBg.className = "search-result-queue-bg";
+          queueBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><path d="M3 16l3 3 3-3"/></svg><span>EN COLA</span>`;
+          wrap.appendChild(queueBg);
+
           const div = document.createElement("div");
           div.className = "playlist-detail-item" + (isPlaying ? " playing" : "");
           div.innerHTML = `
             <img src="${cover}" alt="${item.title}" onerror="this.src='${getPlaceholderCover(item.category)}'">
             <div class="playlist-detail-info">
-              <div class="playlist-detail-track">${item.title}</div>
+              <div class="playlist-detail-track">${item.title}${downloadedEmojiHtml(isDl)}</div>
               <div class="playlist-detail-artist">${item.artist}${item.duration ? ` · <span style="color:var(--text-soft);font-size:.68rem">${item.duration}</span>` : ""}</div>
             </div>
-            <button class="library-action-more" aria-label="Más opciones" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:transparent;border:none;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:1">
+            <button class="library-action-more" aria-label="Mas opciones" style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:transparent;border:none;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:1">
               <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
             </button>`;
           div.addEventListener("click", e => {
@@ -4958,7 +4971,61 @@ function buildGenreGrid() {
             e.stopPropagation();
             openContextMenu(item);
           });
-          listEl.appendChild(div);
+
+          // Swipe gestures
+          let _swipeStartX = 0, _swipeStartY = 0, _swipeDx = 0, _swiping = false, _swipeLocked = false;
+          div.addEventListener("touchstart", e => {
+            _swipeStartX = e.touches[0].clientX;
+            _swipeStartY = e.touches[0].clientY;
+            _swipeDx = 0; _swiping = false; _swipeLocked = false;
+            div.classList.remove("snap-back");
+          }, { passive: true });
+          div.addEventListener("touchmove", e => {
+            const dx = e.touches[0].clientX - _swipeStartX;
+            const dy = e.touches[0].clientY - _swipeStartY;
+            if (!_swipeLocked) {
+              if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                _swipeLocked = true;
+                if (Math.abs(dy) > Math.abs(dx)) return;
+                _swiping = true;
+              } else return;
+            }
+            if (!_swiping) return;
+            _swipeDx = dx;
+            div.style.transform = `translateX(${_swipeDx}px)`;
+            div.classList.add("swiping");
+            wrap.classList.add("swiping");
+            const ratio = Math.min(1, Math.abs(_swipeDx) / SWIPE_THRESHOLD);
+            if (_swipeDx < 0) {
+              addBg.style.opacity = ratio;
+              addBg.style.background = ratio >= 1 ? "#16a34a" : "#22c55e";
+              queueBg.style.opacity = 0;
+            } else {
+              queueBg.style.opacity = ratio;
+              queueBg.style.background = ratio >= 1 ? "#7c3aed" : "#8b5cf6";
+              addBg.style.opacity = 0;
+            }
+          }, { passive: true });
+          div.addEventListener("touchend", () => {
+            div.classList.remove("swiping");
+            wrap.classList.remove("swiping");
+            addBg.style.opacity = ""; addBg.style.background = "";
+            queueBg.style.opacity = ""; queueBg.style.background = "";
+            if (!_swiping) return;
+            _swiping = false;
+            div.classList.add("snap-back");
+            div.style.transform = "";
+            setTimeout(() => div.classList.remove("snap-back"), 350);
+            if (Math.abs(_swipeDx) >= SWIPE_THRESHOLD) {
+              hapticFeedback("medium");
+              if (_swipeDx < 0) openAddToPlaylist(item);
+              else addToQueue(item);
+            }
+            _swipeDx = 0;
+          }, { passive: true });
+
+          wrap.appendChild(div);
+          listEl.appendChild(wrap);
         });
       }
     }
@@ -5392,7 +5459,7 @@ function renderHomeScreen() {
       card.className = "home-pl-card";
       const allDownloaded = pl.tracks.length > 0 && typeof OfflineManager !== 'undefined' &&
         pl.tracks.every(f => OfflineManager.isDownloaded(f));
-      const dlBadge = allDownloaded ? `<span class="track-dl-emoji" title="Playlist descargada">📥</span>` : '';
+      const dlBadge = allDownloaded ? `<span class="track-dl-emoji" title="Playlist descargada"><svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg></span>` : '';
       const coverHTML = trackImgs.length === 0
         ? `<div class="home-pl-cover home-pl-cover--empty"><svg viewBox="0 0 24 24" width="24" height="24" style="opacity:.25"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>`
         : trackImgs.length === 1

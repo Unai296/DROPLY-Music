@@ -94,75 +94,64 @@ input { font-family: inherit; }
 ══════════════════════════════════════════════════════ */
 .toast-container {
   position: fixed;
-  top: calc(var(--topbar-total) + 8px);
+  top: calc(var(--topbar-total) + 10px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: .5rem;
   align-items: center;
   pointer-events: none;
   width: max-content;
-  max-width: calc(100vw - 2rem);
+  max-width: calc(100vw - 2.5rem);
 }
 .toast {
-  background: rgba(22,22,30,.97);
-  color: var(--text);
-  padding: .65rem 1.1rem .45rem 1.1rem;
-  border-radius: 14px;
+  background: rgba(30,30,35,.82);
+  color: #f5f5f7;
+  padding: .55rem .9rem .55rem .6rem;
+  border-radius: 99px;
   font-size: .82rem;
   font-weight: 500;
-  border: 1px solid rgba(255,255,255,.1);
-  box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4);
+  letter-spacing: -.01em;
+  border: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,.38), 0 1px 4px rgba(0,0,0,.22), inset 0 0 0 .5px rgba(255,255,255,.1);
   white-space: nowrap;
   pointer-events: all;
-  animation: toastIn .3s var(--ease-spring) both;
+  animation: toastIn .38s var(--ease-spring) both;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: .4rem;
-  overflow: hidden;
-  min-width: 160px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  align-items: center;
+  gap: .55rem;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 .toast-content {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .55rem;
 }
-.toast.toast-success { border-color: rgba(34,197,94,.22); }
-.toast.toast-error   { border-color: rgba(239,68,68,.22); }
-.toast.toast-warn    { border-color: rgba(250,189,0,.22); }
-.toast.toast-out     { animation: toastOut .3s var(--ease) both; }
-.toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-soft); flex-shrink: 0; }
-.toast.toast-success .toast-dot { background: var(--green); }
-.toast.toast-error   .toast-dot { background: #ef4444; }
-.toast.toast-warn    .toast-dot { background: #fabd00; }
-/* Progress bar */
-.toast-bar-wrap {
-  height: 2px;
-  background: rgba(255,255,255,.08);
-  border-radius: 99px;
-  overflow: hidden;
-  margin: 0 -.1rem;
+/* Círculo de icono */
+.toast-icon-wrap {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255,255,255,.12);
 }
-.toast-bar {
-  height: 100%;
-  border-radius: 99px;
-  background: rgba(255,255,255,.35);
-  width: 100%;
-  transform-origin: left;
-  animation: toastBarDrain var(--toast-duration, 2.8s) linear both;
-}
-.toast.toast-success .toast-bar { background: var(--green); }
-.toast.toast-error   .toast-bar { background: #ef4444; }
-.toast.toast-warn    .toast-bar { background: #fabd00; }
+.toast.toast-success .toast-icon-wrap { background: rgba(34,197,94,.25); }
+.toast.toast-error   .toast-icon-wrap { background: rgba(239,68,68,.25); }
+.toast.toast-warn    .toast-icon-wrap { background: rgba(250,189,0,.22); }
 
-@keyframes toastIn      { from { opacity:0; transform:translateY(-14px) scale(.93); } to { opacity:1; transform:none; } }
-@keyframes toastOut     { to   { opacity:0; transform:translateY(-10px) scale(.93); } }
-@keyframes toastBarDrain{ from { transform:scaleX(1); } to { transform:scaleX(0); } }
+.toast.toast-out { animation: toastOut .25s var(--ease) both; }
+
+/* Dot para default (sin icono svg) */
+.toast-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.35); flex-shrink: 0;
+}
+
+@keyframes toastIn  { from { opacity:0; transform:translateY(-12px) scale(.86); } to { opacity:1; transform:none; } }
+@keyframes toastOut { to   { opacity:0; transform:translateY(-8px) scale(.9); } }
 
 /* ══════════════════════════════════════════════════════
    TOP BAR — with safe-area support
@@ -397,12 +386,16 @@ input { font-family: inherit; }
 .card-liked-dot svg { width: 10px; height: 10px; fill: #fff; stroke: none; }
 
 .track-dl-emoji {
-  display: inline-block;
-  margin-left: .25rem;
-  font-size: .72rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  margin-left: .3rem;
   vertical-align: middle;
-  opacity: .9;
+  flex-shrink: 0;
+  opacity: .95;
+}
+.track-dl-emoji svg {
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(34,197,94,.5));
 }
 
 /* Inline green circle badge for downloaded tracks/playlists (legacy) */
@@ -1415,32 +1408,49 @@ input { font-family: inherit; }
   pointer-events: none;
 }
 
-/* Bottom icon row: Shuffle / Queue / Repeat */
+/* Bottom icon row: Lyrics / Shuffle / Queue / Repeat */
 .sheet-bottom-icons {
   display: flex; align-items: center; justify-content: space-around;
-  padding: .35rem 2rem .5rem;
+  padding: .35rem 1.4rem .5rem;
 }
 .sheet-icon-btn {
-  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,.45); border-radius: 50%;
-  transition: color var(--t), transform .15s;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px; height: 36px;
+  padding: 0 10px;
+  border-radius: 99px;
+  color: rgba(255,255,255,.4);
+  background: transparent;
+  transition: color .18s, background .18s, transform .15s;
+  position: relative; flex-shrink: 0;
 }
-.sheet-icon-btn svg { width: 20px; height: 20px; }
+.sheet-icon-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
 .sheet-icon-btn:active { transform: scale(.88); }
-.sheet-icon-btn.active { color: rgba(255,255,255,.9); }
-.sheet-icon-btn.repeat-one { color: var(--accent); }
+
+/* Estado activo: pill relleno blanco semitransparente */
+.sheet-icon-btn.active {
+  color: #1a1a1a;
+  background: rgba(255,255,255,.88);
+}
+.sheet-icon-btn.active svg { stroke: #1a1a1a; }
+
+/* Repeat: accent cuando está on */
+.sheet-icon-btn.repeat-one,
+.sheet-icon-btn.repeat-all {
+  color: var(--accent);
+  background: rgba(139,92,246,.18);
+}
+.sheet-icon-btn.repeat-one svg,
+.sheet-icon-btn.repeat-all svg { stroke: var(--accent); }
 .sheet-icon-btn.repeat-one::after {
   content: '1';
   position: absolute;
   bottom: 3px;
-  right: 5px;
-  font-size: .52rem;
+  right: 7px;
+  font-size: .5rem;
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
 }
-.sheet-icon-btn.repeat-all { color: var(--accent); }
-.sheet-icon-btn { position: relative; flex-shrink: 0; }
 
 /* Hidden compat elements */
 .sheet-heart { display: none !important; }
