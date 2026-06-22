@@ -8896,30 +8896,61 @@ const MixesManager = (function() {
     if (newLine === activeLine && !force) return;
     activeLine = newLine;
 
-    lineEls.forEach((el, i) => {
-      el.classList.remove('active','prev-1','prev-2','next-1','next-2');
-      el.style.removeProperty('--lyric-fill');   // reset fill al cambiar de línea
-      const d = i - newLine;
-      if      (d ===  0) el.classList.add('active');
-      else if (d === -1) el.classList.add('prev-1');
-      else if (d === -2) el.classList.add('prev-2');
-      else if (d ===  1) el.classList.add('next-1');
-      else if (d ===  2) el.classList.add('next-2');
+    // Defer class application one frame so CSS transitions fire properly
+    requestAnimationFrame(() => {
+      lineEls.forEach((el, i) => {
+        el.classList.remove('active','prev-1','prev-2','next-1','next-2');
+        el.style.setProperty('--lyric-fill', '0%');
+        const d = i - newLine;
+        if      (d ===  0) el.classList.add('active');
+        else if (d === -1) el.classList.add('prev-1');
+        else if (d === -2) el.classList.add('prev-2');
+        else if (d ===  1) el.classList.add('next-1');
+        else if (d ===  2) el.classList.add('next-2');
+      });
     });
 
     scrollToActive(newLine, force);
   }
 
-  /* ── Smooth scroll ────────────────────────────────────────── */
+  /* ── Smooth scroll — custom eased animation ─────────────────── */
+  let _scrollAnim = null;
   function scrollToActive(idx, instant) {
     if (!lyricsScroll || !lineEls[idx]) return;
     const containerH   = lyricsScroll.clientHeight;
-    const targetScroll = lineEls[idx].offsetTop - containerH * 0.32 + lineEls[idx].offsetHeight / 2;
+    const targetScroll = Math.max(0, lineEls[idx].offsetTop - containerH * 0.32 + lineEls[idx].offsetHeight / 2);
+
     if (instant) {
-      lyricsScroll.scrollTop = Math.max(0, targetScroll);
-    } else {
-      lyricsScroll.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      if (_scrollAnim) { cancelAnimationFrame(_scrollAnim); _scrollAnim = null; }
+      lyricsScroll.scrollTop = targetScroll;
+      return;
     }
+
+    // Cancel any running animation
+    if (_scrollAnim) { cancelAnimationFrame(_scrollAnim); _scrollAnim = null; }
+
+    const startTop  = lyricsScroll.scrollTop;
+    const dist      = targetScroll - startTop;
+    if (Math.abs(dist) < 2) return;
+
+    const duration  = 520; // ms
+    const startTime = performance.now();
+
+    function easeInOutQuart(t) {
+      return t < .5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2, 4)/2;
+    }
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      lyricsScroll.scrollTop = startTop + dist * easeInOutQuart(progress);
+      if (progress < 1) {
+        _scrollAnim = requestAnimationFrame(step);
+      } else {
+        _scrollAnim = null;
+      }
+    }
+    _scrollAnim = requestAnimationFrame(step);
   }
 
   /* ── rAF ticker ───────────────────────────────────────────── */
@@ -8946,9 +8977,15 @@ const MixesManager = (function() {
   function showState(state) {
     if (!lyricsInner) return;
     lineEls = []; lyricsReady = false;
+    if (state === 'loading') {
+      lyricsInner.innerHTML = `
+        <div class="lyrics-loading-dots">
+          <span></span><span></span><span></span>
+        </div>`;
+      return;
+    }
     const msgs = {
       'idle':      ['Reproduce una canción', 'para ver la letra aquí'],
-      'loading':   ['Buscando letra…', ''],
       'not-found': ['Sin letra disponible', 'para esta canción'],
     };
     const [line1, line2] = msgs[state] || msgs['idle'];
