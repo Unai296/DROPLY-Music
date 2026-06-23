@@ -1,4 +1,3 @@
-
 /* ══════════════════════════════════════════════════════
    SUPABASE CLOUD — Auth & Sync Module
 ══════════════════════════════════════════════════════ */
@@ -19,12 +18,36 @@ const SupabaseCloud = (() => {
     }
 
     try {
-      supabase = sdk.createClient(SUPABASE_URL, SUPABASE_KEY);
-      checkUser();
-      
+      supabase = sdk.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+          persistSession: true,
+          storageKey: 'droply-auth',
+          storage: window.localStorage,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+
+      // Procesar sesión desde URL hash tras redirect OAuth (PWA vuelve como web tab)
+      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            user = session.user;
+            if (typeof window.updateSupabaseUI === 'function') {
+              window.updateSupabaseUI(user);
+            }
+            // Limpiar hash/params de la URL sin recargar
+            history.replaceState(null, '', window.location.pathname);
+          }
+        });
+      } else {
+        checkUser();
+      }
+
       // Escuchar cambios de estado
       supabase.auth.onAuthStateChange((event, session) => {
         user = session?.user || null;
+        console.info('[SUPABASE] Auth event:', event, user?.email);
         if (typeof window.updateSupabaseUI === 'function') {
           window.updateSupabaseUI(user);
         }
@@ -44,10 +67,16 @@ const SupabaseCloud = (() => {
 
   async function loginWithGoogle() {
     if (!supabase) return;
+    // Usar origin + pathname para que el redirect vuelva a la raíz exacta
+    // Esto es clave en PWA: el browser tab que abre Google debe volver a la misma URL
+    const redirectTo = window.location.origin + '/';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo,
+        queryParams: {
+          prompt: 'select_account'
+        }
       }
     });
     if (error) showToast("Error al conectar con Google", "error");
