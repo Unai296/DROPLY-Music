@@ -38,8 +38,8 @@
 
   --topbar-h:     56px;
   --topbar-total: calc(var(--topbar-h) + var(--safe-top));
-  --bottomnav-h:  60px;
-  --miniplayer-h: 68px;
+  --bottomnav-h:  50px;
+  --miniplayer-h: 58px;
 
   --r:    16px;
   --r-sm: 10px;
@@ -1898,12 +1898,12 @@ input { font-family: inherit; }
 ══════════════════════════════════════════════════════ */
 .mini-player {
   position: fixed;
-  left: .6rem; right: .6rem;
-  bottom: calc(var(--bottomnav-h) + var(--safe-bottom) + .55rem);
+  left: .55rem; right: .55rem;
+  bottom: calc(var(--bottomnav-h) + var(--safe-bottom) + .35rem);
   height: var(--miniplayer-h);
   /* iOS 18 liquid glass — same recipe as bottom nav */
   background: rgba(255,255,255,0.10);
-  border-radius: 22px;
+  border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.26);
   backdrop-filter: blur(80px) saturate(3) brightness(1.22) contrast(0.9);
   -webkit-backdrop-filter: blur(80px) saturate(3) brightness(1.22) contrast(0.9);
@@ -1911,8 +1911,8 @@ input { font-family: inherit; }
     0 1.5px 0 rgba(255,255,255,0.42) inset,
     0 -1px 0 rgba(255,255,255,0.06) inset,
     1px 0 0 rgba(255,255,255,0.08) inset,
-    0 12px 40px rgba(0,0,0,0.30),
-    0 2px 8px rgba(0,0,0,0.18),
+    0 8px 28px rgba(0,0,0,0.28),
+    0 2px 6px rgba(0,0,0,0.16),
     0 0 0 0.5px rgba(255,255,255,0.10);
   display: none; align-items: center;
   z-index: 850;
@@ -2011,7 +2011,7 @@ input { font-family: inherit; }
   min-width: 0; height: 100%; position: relative; z-index: 1;
 }
 .mini-cover {
-  width: 38px; height: 38px; border-radius: 8px;
+  width: 34px; height: 34px; border-radius: 7px;
   overflow: hidden; flex-shrink: 0; background: var(--bg2);
   box-shadow: 0 2px 8px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.07) inset;
   transition: transform .22s var(--ease-spring);
@@ -2020,14 +2020,14 @@ input { font-family: inherit; }
 .mini-cover img { width: 100%; height: 100%; object-fit: cover; }
 .mini-info { flex: 1; min-width: 0; }
 .mini-title {
-  display: block; font-size: .8rem; font-weight: 600;
+  display: block; font-size: .76rem; font-weight: 600;
   color: var(--text); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; letter-spacing: -.01em;
 }
 .mini-artist {
-  display: block; font-size: .66rem; color: rgba(255,255,255,.50);
+  display: block; font-size: .62rem; color: rgba(255,255,255,.50);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-top: .04rem;
+  margin-top: .02rem;
 }
 
 /* ── Controls ── */
@@ -2056,8 +2056,8 @@ input { font-family: inherit; }
   left: 0; right: 0;
   transform: none;
   width: 100%;
-  bottom: calc(var(--safe-bottom) + .6rem);
-  height: 58px;
+  bottom: calc(var(--safe-bottom) + .5rem);
+  height: 50px;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -2109,8 +2109,8 @@ input { font-family: inherit; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 58px;
-  height: 58px;
+  width: 50px;
+  height: 50px;
   border-radius: 999px;
   color: rgba(255,255,255,.95);
   order: 0;
@@ -2169,7 +2169,7 @@ input { font-family: inherit; }
   display: flex !important;
   align-items: center;
   flex-shrink: 0;
-  height: 58px;
+  height: 50px;
   padding: 0 .55rem 0 .3rem;
   order: 2;
   border-radius: 0 999px 999px 0;
@@ -2194,8 +2194,8 @@ input { font-family: inherit; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 58px;
-  height: 58px;
+  width: 50px;
+  height: 50px;
   border-radius: 999px;
   color: rgba(255,255,255,.95);
   order: 3;
@@ -2252,16 +2252,19 @@ input { font-family: inherit; }
 
 .bottom-nav {
   position: fixed;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100vw - 2rem), 768px);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: none;
+  width: 100%;
   height: calc(var(--bottomnav-h) + var(--safe-bottom));
-  padding: 0 1rem calc(var(--safe-bottom));
+  padding: 0 .5rem calc(var(--safe-bottom));
+  border-radius: 0;
   /* Liquid glass base */
   background: rgba(255, 255, 255, 0.07);
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(40px) saturate(1.8) brightness(1.08);
   -webkit-backdrop-filter: blur(40px) saturate(1.8) brightness(1.08);
   box-shadow:
@@ -2279,7 +2282,7 @@ input { font-family: inherit; }
 }
 /* Nav oculto al hacer scroll hacia abajo */
 .bottom-nav.nav-hidden {
-  transform: translateX(-50%) translateY(calc(100% + 1.5rem));
+  transform: translateY(calc(100% + 1.5rem));
   opacity: 0;
   pointer-events: none;
 }
@@ -2318,17 +2321,17 @@ input { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .14rem;
-  padding: .48rem .08rem .48rem;
+  gap: .1rem;
+  padding: .3rem .08rem .2rem;
   color: rgba(255,255,255,.82);
   transition: color var(--t), transform .2s var(--ease-spring);
   position: relative;
-  border-radius: 18px;
+  border-radius: 14px;
   z-index: 2;
 }
 .bnav-btn:hover { color: #fff; }
-.bnav-btn svg { width: 22px; height: 22px; transition: stroke-width var(--t), color var(--t); }
-.bnav-btn span:not(.nav-badge) { font-size: .58rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
+.bnav-btn svg { width: 20px; height: 20px; transition: stroke-width var(--t), color var(--t); }
+.bnav-btn span:not(.nav-badge) { font-size: .55rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
 .bnav-btn.active {
   color: #fff;
 }
@@ -2676,7 +2679,7 @@ input { font-family: inherit; }
     padding-top: 0;
   }
   .now-playing-sheet.open { transform: translateX(-50%) translateY(0) !important; }
-  .bottom-nav { max-width: 768px; left: 50%; transform: translateX(-50%); }
+  .bottom-nav { max-width: 768px; left: 50%; right: auto; transform: translateX(-50%); border-radius: 999px 999px 0 0; }
   .bottom-nav.nav-hidden { transform: translateX(-50%) translateY(calc(100% + 1.5rem)); }
   .queue-panel { max-width: 480px; left: 50%; transform: translateX(-50%) translateY(100%); border-radius: 20px 20px 0 0; }
   .queue-panel.open { transform: translateX(-50%) translateY(0); }
