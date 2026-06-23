@@ -38,7 +38,7 @@
 
   --topbar-h:     56px;
   --topbar-total: calc(var(--topbar-h) + var(--safe-top));
-  --bottomnav-h:  50px;
+  --bottomnav-h:  62px;
   --miniplayer-h: 58px;
 
   --r:    16px;
@@ -2263,10 +2263,10 @@ input { font-family: inherit; }
   right: auto;
   transform: translateX(-50%);
   width: auto;
-  min-width: 320px;
-  max-width: calc(100vw - 2.5rem);
+  min-width: 340px;
+  max-width: calc(100vw - 2rem);
   height: var(--bottomnav-h);
-  padding: 0 1.2rem;
+  padding: 0 1.5rem;
   border-radius: 999px;
   /* Liquid glass base */
   background: rgba(22, 22, 30, 0.85);
@@ -2339,8 +2339,8 @@ input { font-family: inherit; }
   z-index: 2;
 }
 .bnav-btn:hover { color: #fff; }
-.bnav-btn svg { width: 20px; height: 20px; transition: stroke-width var(--t), color var(--t); }
-.bnav-btn span:not(.nav-badge) { font-size: .55rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
+.bnav-btn svg { width: 22px; height: 22px; transition: stroke-width var(--t), color var(--t); }
+.bnav-btn span:not(.nav-badge) { font-size: .62rem; font-weight: 600; letter-spacing: .02em; transition: color var(--t); }
 .bnav-btn.active {
   color: #fff;
 }
