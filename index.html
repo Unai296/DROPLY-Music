@@ -597,6 +597,11 @@
 
   <!-- ══ MINI PLAYER ══ -->
   <div class="mini-player" id="miniPlayer" role="region" aria-label="Reproductor">
+    <!-- Home button — only visible in collapsed mode -->
+    <button class="mini-home-btn" id="miniHomeBtn" aria-label="Inicio">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <!-- Track info — tap to open now playing -->
     <div class="mini-player-inner" id="miniPlayerExpand">
       <div class="mini-cover">
         <img id="miniCover" src="" alt="" />
@@ -609,6 +614,7 @@
         <div class="mini-progress-fill" id="miniProgressFill"></div>
       </div>
     </div>
+    <!-- Controls -->
     <div class="mini-controls">
       <button class="mini-ctrl" id="miniPlay" aria-label="Play/Pause">
         <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
@@ -618,6 +624,10 @@
         <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,20 15,12 5,4"/><rect x="16" y="4" width="3" height="16"/></svg>
       </button>
     </div>
+    <!-- Search button — only visible in collapsed mode -->
+    <button class="mini-search-btn" id="miniSearchBtn" aria-label="Buscar">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+    </button>
   </div>
 
   <!-- ══ BOTTOM NAV ══ -->
@@ -641,10 +651,7 @@
     </button>
   </nav>
 
-  <!-- Ghost lupa: aparece al lado del mini player cuando el nav se esconde -->
-  <button class="search-ghost" id="searchGhost" aria-label="Buscar" tabindex="-1">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-  </button>
+
 
 
   <!-- ══ CHANGELOG MODAL ══ -->

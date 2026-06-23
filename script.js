@@ -5398,93 +5398,80 @@ window.addEventListener("scroll", () => {
   document.getElementById("topbar").classList.toggle("scrolled", window.scrollY > 20);
 }, { passive: true });
 
-/* ── Scroll-hide bottom nav (Apple Music style) ── */
+/* ── Scroll-hide bottom nav — collapsed pill (Apple Music style) ── */
 (function() {
-  const nav       = document.getElementById("bottomNav");
-  const mini      = document.getElementById("miniPlayer");
-  const ghost     = document.getElementById("searchGhost");
+  const nav        = document.getElementById("bottomNav");
+  const mini       = document.getElementById("miniPlayer");
+  const homeBtn    = document.getElementById("miniHomeBtn");
+  const searchBtn  = document.getElementById("miniSearchBtn");
   if (!nav) return;
 
-  let lastY       = window.scrollY;
-  let hideTimer   = null;
-  let isHidden    = false;
+  let lastY      = window.scrollY;
+  let hideTimer  = null;
+  let isHidden   = false;
 
-  function showGhost() {
-    if (!ghost || !mini) return;
-    ghost.classList.add("visible", "nav-at-bottom");
-    // mini baja + cede espacio a la derecha
-    mini.classList.add("ghost-companion", "nav-hidden");
-  }
-
-  function hideGhost() {
-    if (!ghost) return;
-    ghost.classList.remove("visible", "nav-at-bottom");
-    // quitar ghost-companion pero conservar nav-hidden si el nav sigue oculto
-    if (mini) {
-      mini.classList.remove("ghost-companion");
-      if (!isHidden) mini.classList.remove("nav-hidden");
-    }
-  }
+  /* Expose for external callers */
+  window._droplyShowNav = showNav;
+  window._droplyHideNav = hideNav;
 
   function showNav() {
     if (!isHidden) return;
     isHidden = false;
     nav.classList.remove("nav-hidden");
-    if (mini) mini.classList.remove("nav-hidden", "ghost-companion");
-    if (ghost) ghost.classList.remove("visible", "nav-at-bottom");
+    if (mini) mini.classList.remove("nav-hidden");
   }
 
   function hideNav() {
     if (isHidden) return;
     isHidden = true;
     nav.classList.add("nav-hidden");
-    if (mini && mini.classList.contains("visible")) {
-      showGhost(); // mini player activo → lupa al lado
-    } else {
-      if (mini) mini.classList.add("nav-hidden"); // sin canción → solo bajar
-    }
+    if (mini) mini.classList.add("nav-hidden");
   }
 
-  /* Cuando el mini player aparece mientras el nav ya está oculto */
-  let miniWasVisible = mini ? mini.classList.contains("visible") : false;
-  const miniObserver = new MutationObserver(() => {
-    const nowVisible = mini && mini.classList.contains("visible");
-    if (nowVisible === miniWasVisible) return; // sin cambio real
-    miniWasVisible = nowVisible;
-    if (isHidden && nowVisible) showGhost();
-    else if (!nowVisible) hideGhost();
-  });
-  if (mini) miniObserver.observe(mini, { attributes: true, attributeFilter: ["class"] });
-
-  /* Clic en ghost → ir a búsqueda */
-  if (ghost) {
-    ghost.addEventListener("click", () => {
-      if (typeof showPage === "function") showPage("pageSearch");
-      ghost.classList.add("active");
-      setTimeout(() => ghost.classList.remove("active"), 400);
+  /* Home button → spring nav back */
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      showNav();
+      /* also navigate home */
+      if (typeof showPage === "function") showPage("pageHome");
     });
-    ghost.tabIndex = 0;
+  }
+
+  /* Search button → go to search */
+  if (searchBtn) {
+    searchBtn.addEventListener("click", () => {
+      if (typeof showPage === "function") showPage("pageSearch");
+    });
+  }
+
+  /* When mini player becomes visible while nav is already hidden → enter collapsed */
+  if (mini) {
+    let miniWasVisible = mini.classList.contains("visible");
+    new MutationObserver(() => {
+      const nowVisible = mini.classList.contains("visible");
+      if (nowVisible === miniWasVisible) return;
+      miniWasVisible = nowVisible;
+      if (isHidden && nowVisible) mini.classList.add("nav-hidden");
+      if (!nowVisible && isHidden) mini.classList.remove("nav-hidden");
+    }).observe(mini, { attributes: true, attributeFilter: ["class"] });
   }
 
   window.addEventListener("scroll", () => {
-    const y   = window.scrollY;
-    const dy  = y - lastY;
-    lastY     = y;
-
-    // En el top → siempre visible
-    if (y < 60) { showNav(); return; }
+    const y  = window.scrollY;
+    const dy = y - lastY;
+    lastY    = y;
 
     clearTimeout(hideTimer);
 
     if (dy > 4) {
-      // Scrolleando hacia abajo → mostrar nav
+      /* Scrolling down → show nav */
       showNav();
     } else if (dy < -4) {
-      // Scrolleando hacia arriba → esconder nav
+      /* Scrolling up → collapse to pill */
       hideNav();
     }
 
-    // Al parar 5s sin scroll → mostrar nav
+    /* After 5s idle → restore nav */
     hideTimer = setTimeout(showNav, 5000);
   }, { passive: true });
 })();
