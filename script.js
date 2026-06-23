@@ -9860,9 +9860,12 @@ function initAuthMosaic() {
   const col3 = document.getElementById("mosaicCol3");
   if (!col1 || !col2 || !col3) return;
 
-  const allCovers = media.map(m => m.cover).filter(Boolean);
+  // Usar imágenes de ARTIST_PHOTOS que sabemos que funcionan
+  const allCovers = Object.values(ARTIST_PHOTOS).filter(Boolean);
   const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
-  const picked = shuffle(allCovers).slice(0, 9);
+  // Si no hay suficientes fotos de artistas, usar portadas de canciones
+  const source = allCovers.length >= 9 ? allCovers : media.map(m => m.cover).filter(Boolean);
+  const picked = shuffle([...new Set(source)]).slice(0, 9);
 
   [col1, col2, col3].forEach((col, i) => {
     col.innerHTML = picked.slice(i * 3, (i + 1) * 3).map(src => `<img src="${src}" alt="">`).join("");
