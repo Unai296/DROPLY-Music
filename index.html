@@ -27,6 +27,12 @@
 </head>
 <body>
 
+  <!-- ══ LIQUID GLASS BG ══ -->
+  <div class="liquid-bg" id="liquidBg">
+    <div class="liquid-blob"></div>
+    <div class="liquid-blob"></div>
+  </div>
+
   <!-- ══ TOP BAR ══ -->
   <header class="topbar" id="topbar">
     <div class="topbar-inner">
@@ -35,12 +41,54 @@
         <button class="topbar-icon-btn" id="topbarSearchBtn" aria-label="Buscar">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
         </button>
+        <button class="topbar-profile-mini" id="topbarProfileBtn" aria-label="Perfil">
+          <img src="https://i.pravatar.cc/100?img=12" alt="Perfil" />
+        </button>
       </div>
     </div>
   </header>
 
   <!-- ══ TOAST CONTAINER ══ -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ══ AUTH WALL (Diseño Spotify Mosaic) ══ -->
+  <div class="auth-wall" id="authWall">
+    <div class="auth-mosaic">
+      <div class="auth-mosaic-column">
+        <img src="https://i.scdn.co/image/ab67616d0000b2734170aac3f62129c9c7b1391d" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b2737070ef2daebed755fa876200" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b273760980209420067a9980e557" alt="">
+      </div>
+      <div class="auth-mosaic-column">
+        <img src="https://i.scdn.co/image/ab67616d0000b273bd659972378906013661138a" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b273767f33e085601201a07090f4" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b2733979339316e68078693a741f" alt="">
+      </div>
+      <div class="auth-mosaic-column">
+        <img src="https://i.scdn.co/image/ab67616d0000b27389408698a033334e96f30687" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b2737f7194f4f34685037e96a40c" alt="">
+        <img src="https://i.scdn.co/image/ab67616d0000b27303f269418a00282165972583" alt="">
+      </div>
+      <div class="auth-mosaic-overlay"></div>
+    </div>
+
+    <div class="auth-content-spotify">
+      <div class="auth-logo-spotify">
+        <div class="auth-logo-icon">
+          <svg viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#8b5cf6"/><circle cx="12" cy="12" r="5" fill="white" opacity=".3"/><circle cx="10" cy="12" r="4" fill="white"/></svg>
+        </div>
+        <span class="auth-logo-text">DROPLY Music</span>
+      </div>
+      
+      <h1 class="auth-title-spotify">Millones de canciones, solo para ti</h1>
+      <p class="auth-sub-spotify">Crea una cuenta gratuita para guardar tus playlists, likes e historial en todos tus dispositivos.</p>
+      
+      <div class="auth-actions-spotify">
+        <button class="btn-spotify-purple" id="btnGoogleAuthWall">Crear cuenta gratis</button>
+        <button class="btn-spotify-outline" id="btnGoogleLoginWall">Iniciar sesión</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══ PAGES ══ -->
   <div class="pages-container" id="pagesContainer">
@@ -215,6 +263,126 @@
     </div>
 
     <!-- PAGE: FEED -->
+    <!-- PAGE: PROFILE -->
+    <div class="page" id="pageProfile">
+      <div class="profile-scroll">
+        
+        <!-- Header de Usuario -->
+        <header class="profile-header">
+          <div class="profile-avatar-wrap">
+            <img src="https://i.pravatar.cc/300?img=12" alt="Foto de perfil" class="profile-avatar" id="profileAvatar" />
+            <div class="profile-avatar-glow"></div>
+          </div>
+          <div class="profile-info">
+            <h1 class="profile-name" id="profileName">Alex Droply</h1>
+            <p class="profile-username" id="profileUsername">@alex_music_fan</p>
+          </div>
+        </header>
+
+        <!-- Sistema de Rachas -->
+        <section class="profile-section">
+          <div class="streak-card">
+            <div class="streak-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.66 11.5c-.21-.07-.41-.14-.61-.21C15.47 10.73 14.5 9 14.5 7.41c0-1.68.63-3.12 1.58-4.16a.5.5 0 0 0-.75-.64C11.87 5.41 8 8.93 8 13.5c0 2.2 1.78 4 4 4 2.2 0 4-1.78 4-4 0-.69-.18-1.34-.49-1.9-.03-.06-.05-.12-.08-.18a.5.5 0 0 0-.77-.42z"/><path d="M10.51 16.08C9.01 14.71 8 12.72 8 10.5c0-1.28.37-2.48 1-3.5a.5.5 0 0 0-.85-.54C6.11 8.94 5 11.09 5 13.5c0 3.87 3.13 7 7 7 3.87 0 7-3.13 7-7 0-1.23-.32-2.38-.88-3.39a.5.5 0 0 0-.85.52c.46.75.73 1.62.73 2.55 0 1.93-1.11 3.59-2.74 4.41a.5.5 0 0 0-.25.43c0 .28-.22.5-.5.5s-.5-.22-.5-.5a.5.5 0 0 0-.25-.43c-1.15-.69-2-1.92-2-3.33 0-.52.1-1.01.29-1.46a.5.5 0 0 0-.9-.44c-.4.86-.64 1.82-.64 2.83 0 1.54.55 2.95 1.47 4.03a.5.5 0 0 1-.77.64z"/></svg>
+            </div>
+            <div class="streak-info">
+              <span class="streak-count" id="streakCount">12</span>
+              <span class="streak-label">Días seguidos escuchando</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Estadísticas Musicales -->
+        <section class="profile-section">
+          <h2 class="profile-section-title">Tus Estadísticas</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-value" id="statMinutes">1,240</span>
+              <span class="stat-label">Minutos este mes</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="statGenre">Indie Rock</span>
+              <span class="stat-label">Género favorito</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Artistas Top -->
+        <section class="profile-section">
+          <div class="home-section-header">
+            <h2 class="profile-section-title">Artistas Top</h2>
+          </div>
+          <div class="home-hscroll-wrap">
+            <div class="home-hscroll" id="profileArtistsGrid">
+              <!-- Inyectado por JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Ajustes: Personalización (REALES) -->
+        <section class="profile-section">
+          <h2 class="profile-section-title">Personalización</h2>
+          <div class="settings-list">
+            <button class="setting-item" id="btnToggleLiquid">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+              <span class="setting-label">Efecto Liquid Glass</span>
+              <div class="setting-toggle active" id="liquidToggle"></div>
+            </button>
+            <div class="setting-item-complex">
+              <div class="setting-header">
+                <div class="setting-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg></div>
+                <span class="setting-label">Color de Acento</span>
+              </div>
+              <div class="accent-picker">
+                <button class="accent-dot active" data-color="#8b5cf6" style="background: #8b5cf6;"></button>
+                <button class="accent-dot" data-color="#10b981" style="background: #10b981;"></button>
+                <button class="accent-dot" data-color="#3b82f6" style="background: #3b82f6;"></button>
+                <button class="accent-dot" data-color="#f59e0b" style="background: #f59e0b;"></button>
+                <button class="accent-dot" data-color="#ef4444" style="background: #ef4444;"></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Ajustes: Social y Privacidad -->
+        <section class="profile-section">
+          <h2 class="profile-section-title">Social y Privacidad</h2>
+          <div class="settings-list">
+            <button class="setting-item">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <span class="setting-label">Actividad de escucha</span>
+              <div class="setting-toggle active" data-setting="social-activity"></div>
+            </button>
+            <button class="setting-item">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <span class="setting-label">Sesión privada</span>
+              <div class="setting-toggle" data-setting="private-session"></div>
+            </button>
+          </div>
+        </section>
+
+        <!-- Ajustes: Cuenta -->
+        <section class="profile-section">
+          <h2 class="profile-section-title">Cuenta</h2>
+          <div class="settings-list">
+            <button class="setting-item" id="btnManageAccount">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <span class="setting-label">Gestionar cuenta</span>
+              <svg class="setting-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="setting-item" id="btnLogout" style="color: #ef4444;">
+              <div class="setting-icon" style="color: #ef4444;"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+              <span class="setting-label">Cerrar sesión</span>
+            </button>
+          </div>
+        </section>
+
+
+
+        <div style="height: 2rem;"></div>
+      </div>
+    </div>
+
     <div class="page" id="pageFeed">
       <div class="feed-scroll" id="feedScroll">
 
@@ -650,24 +818,64 @@
 
 
 
-  <!-- ══ CHANGELOG MODAL ══ -->
-  <div class="changelog-modal" id="changelogModal" role="dialog" aria-modal="true" aria-label="Novedades">
-    <div class="changelog-card">
-      <div class="changelog-header">
-        <span class="cl-emoji" id="clEmoji">✨</span>
-        <div class="changelog-header-text">
-          <h2 class="cl-title" id="clTitle">Novedades</h2>
-          <div class="cl-meta">
-            <span class="cl-version" id="clVersion"></span>
-            <span class="cl-dot">·</span>
-            <span class="cl-date" id="clDate"></span>
+  <!-- ══ ACCOUNT MANAGEMENT MODAL ══ -->
+  <div class="account-modal" id="accountModal" role="dialog" aria-modal="true" aria-label="Gestionar cuenta">
+    <div class="account-card">
+      <div class="account-header">
+        <h2 class="account-title">Gestionar cuenta</h2>
+        <button class="account-close-btn" id="accountClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="account-body">
+        <!-- Supabase Auth Section -->
+        <div class="account-auth-section" id="accountAuthSection">
+          <div class="auth-status-card" id="authStatusCard">
+            <div class="auth-info">
+              <p class="auth-label">Sincronización en la nube</p>
+              <p class="auth-status" id="authStatusText">No conectado</p>
+            </div>
+            <button class="btn-auth-google" id="btnGoogleLogin">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/></svg>
+              Conectar con Google
+            </button>
+            <div class="auth-user-info" id="authUserDetail" style="display:none">
+              <span class="auth-email" id="authUserEmail">usuario@gmail.com</span>
+              <button class="btn-auth-logout" id="btnAuthLogout">Desconectar</button>
+            </div>
+          </div>
+          <div class="auth-divider"><span>o usa tu perfil local</span></div>
+        </div>
+
+        <div class="account-avatar-edit">
+          <div class="avatar-preview-wrap">
+            <img src="https://i.pravatar.cc/300?img=12" alt="Previsualización" id="avatarPreview" />
+            <label for="avatarInput" class="avatar-edit-badge">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </label>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none" />
+          <p class="avatar-hint">Pulsa para cambiar la foto</p>
+        </div>
+        <div class="account-form">
+          <div class="input-group">
+            <label for="inputName">Nombre</label>
+            <input type="text" id="inputName" placeholder="Tu nombre" maxlength="25" />
+          </div>
+          <div class="input-group">
+            <label for="inputUsername">Nombre de usuario</label>
+            <div class="username-input-wrap">
+              <span class="username-prefix">@</span>
+              <input type="text" id="inputUsername" placeholder="usuario" maxlength="20" />
+            </div>
           </div>
         </div>
       </div>
-      <ul class="cl-list" id="clList"></ul>
-      <button class="cl-close-btn" id="clClose">¡Entendido!</button>
+      <div class="account-footer">
+        <button class="btn-account-save" id="btnAccountSave">Guardar cambios</button>
+      </div>
     </div>
   </div>
+
+
 
 
   <!-- ══ PWA INSTALL PROMPT ══ -->

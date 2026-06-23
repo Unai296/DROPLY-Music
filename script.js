@@ -318,44 +318,27 @@ function markVersionSeen(v){ localStorage.setItem(CHANGELOG_SEEN_KEY, v); }
 function initChangelog() {
   if (!CHANGELOG || CHANGELOG.length === 0) return;
   const latest = CHANGELOG[0];
-  if (getSeenVersion() === latest.version) return; // ya visto
 
-  const modal = document.getElementById("changelogModal");
-  if (!modal) return;
+  // Renderizar en el perfil (siempre visible)
+  const profileVersion = document.getElementById("profileClVersion");
+  const profileList = document.getElementById("profileClList");
 
-  // Rellenar contenido
-  const elEmoji   = document.getElementById("clEmoji");
-  const elTitle   = document.getElementById("clTitle");
-  const elDate    = document.getElementById("clDate");
-  const elVersion = document.getElementById("clVersion");
-  const elList    = document.getElementById("clList");
-  const elClose   = document.getElementById("clClose");
-
-  if (elEmoji)   elEmoji.textContent   = latest.emoji || "✨";
-  if (elTitle)   elTitle.textContent   = latest.title || "Novedades";
-  if (elDate)    elDate.textContent    = latest.date  || "";
-  if (elVersion) elVersion.textContent = latest.version || "";
-  if (elList) {
-    elList.innerHTML = (latest.changes || []).map(c =>
+  if (profileVersion) profileVersion.textContent = latest.version;
+  if (profileList) {
+    profileList.innerHTML = (latest.changes || []).map(c =>
       `<li class="cl-item"><span class="cl-icon">${c.icon || "•"}</span><span class="cl-text">${c.text}</span></li>`
     ).join("");
   }
 
-  // Mostrar con pequeño delay para que la app cargue primero
-  setTimeout(() => { modal.classList.add("open"); }, 600);
-
-  if (elClose) {
-    elClose.addEventListener("click", () => {
-      modal.classList.remove("open");
-      markVersionSeen(latest.version);
-    });
+  // Si no se ha visto la versión, podemos destacar la sección o mostrar un aviso
+  if (getSeenVersion() !== latest.version) {
+    // Podríamos añadir una clase 'new' para resaltar
+    const section = document.getElementById("profileChangelogSection");
+    if (section) section.classList.add("has-update");
+    
+    // Al entrar a la página de perfil, marcar como visto
+    // Esto se manejará en showPage('pageProfile')
   }
-  modal.addEventListener("click", e => {
-    if (e.target === modal) {
-      modal.classList.remove("open");
-      markVersionSeen(latest.version);
-    }
-  });
 }
 
 
@@ -3261,12 +3244,15 @@ function showPage(pageId) {
   });
   if (pageId === "pagePlaylists") renderPlaylists();
   if (pageId === "pageFeed") { if (typeof Feed !== "undefined") Feed.init(); }
+  if (pageId === "pageProfile") {
+    renderProfile();
+  }
   if (pageId === "pageEventos" && typeof EventosManager !== "undefined") EventosManager.render();
   if (pageId === "pageMixes") { /* Mixes removed */ }
   closeContextMenu();
   updateBottomNavSlider();
   try {
-    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists", pageFeed: "feed" };
+    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists", pageFeed: "feed", pageProfile: "profile" };
     const hash = hashMap[pageId];
     if (hash !== undefined && location.hash !== "#" + hash) {
       history.replaceState(null, "", hash ? "#" + hash : location.pathname + location.search);
@@ -3276,7 +3262,7 @@ function showPage(pageId) {
 
 function handleHashRoute() {
   const route = (location.hash || "").slice(1).toLowerCase();
-  const map = { search: "pageSearch", playlists: "pagePlaylists", feed: "pageFeed", home: "pageHome", "": "pageHome" };
+  const map = { search: "pageSearch", playlists: "pagePlaylists", feed: "pageFeed", profile: "pageProfile", home: "pageHome", "": "pageHome" };
   const pageId = map[route];
   if (pageId) showPage(pageId);
 }
@@ -3295,6 +3281,10 @@ bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
   btn.addEventListener("click", () => showPage(btn.dataset.page));
 });
 topbarSearchBtn.addEventListener("click", () => showPage("pageSearch"));
+const topbarProfileBtn = document.getElementById("topbarProfileBtn");
+if (topbarProfileBtn) {
+  topbarProfileBtn.addEventListener("click", () => showPage("pageProfile"));
+}
 window.addEventListener("resize", updateBottomNavSlider);
 window.addEventListener("hashchange", handleHashRoute);
 
@@ -5728,6 +5718,154 @@ function updateHomeContinueProgress() {
   });
 }
 
+/* ── PROFILE RENDER ── */
+function renderProfile() {
+  const grid = document.getElementById("profileArtistsGrid");
+  if (!grid) return;
+  
+  // Usamos los mismos artistas que en la home para coherencia
+  const artistMap = new Map();
+  
+  media.filter(m => m.type === "music").forEach(m => {
+    if (!m.artist) return;
+    const primary = m.artist.split(",")[0].trim();
+    if (!artistMap.has(primary)) {
+      artistMap.set(primary, m);
+    }
+  });
+  
+  const sortedArtists = Array.from(artistMap.values()).slice(0, 8);
+  
+  grid.innerHTML = "";
+  sortedArtists.forEach(m => {
+    const primary = m.artist.split(",")[0].trim();
+    const photo = ARTIST_PHOTOS[primary] || m.cover;
+    
+    const el = document.createElement("div");
+    el.className = "home-artist-card";
+    el.innerHTML = `
+      <div class="home-artist-photo">
+        <img src="${photo}" alt="${primary}" loading="lazy" />
+      </div>
+      <p class="home-artist-name">${primary}</p>
+    `;
+    el.onclick = () => {
+      const artistTracks = media.filter(s => s.artist && s.artist.includes(primary));
+      if (artistTracks.length > 0) {
+        playlist = artistTracks;
+        currentTrackIdx = 0;
+        loadTrack(playlist[0]);
+      }
+    };
+    grid.appendChild(el);
+  });
+}
+
+// ── Lógica Real de Ajustes y Personalización ──
+
+// Cargar ajustes guardados
+function loadSavedSettings() {
+  const theme = localStorage.getItem('droply_theme') || 'dark';
+  const accent = localStorage.getItem('droply_accent') || '#8b5cf6';
+  const liquid = localStorage.getItem('droply_liquid') !== 'false';
+  const totalMinutes = parseInt(localStorage.getItem('droply_minutes') || '1240');
+
+  // Aplicar Tema
+  if (theme === 'light') {
+    document.body.classList.add('light-mode');
+    document.getElementById('themeToggle')?.classList.remove('active');
+  }
+
+  // Aplicar Acento
+  document.documentElement.style.setProperty('--accent', accent);
+  document.querySelectorAll('.accent-dot').forEach(dot => {
+    dot.classList.toggle('active', dot.dataset.color === accent);
+  });
+
+  // Aplicar Liquid Glass
+  document.body.classList.toggle('liquid-enabled', liquid);
+  document.getElementById('liquidToggle')?.classList.toggle('active', liquid);
+
+  // Aplicar Estadísticas
+  const statMinutes = document.getElementById('statMinutes');
+  if (statMinutes) statMinutes.textContent = totalMinutes.toLocaleString();
+}
+
+// Escuchar cambios en los ajustes
+document.addEventListener("click", e => {
+  // Toggle Tema
+  const themeBtn = e.target.closest("#btnToggleTheme");
+  if (themeBtn) {
+    const isDark = document.body.classList.toggle('light-mode');
+    const newTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+    localStorage.setItem('droply_theme', newTheme);
+    document.getElementById('themeToggle')?.classList.toggle('active', newTheme === 'dark');
+    showToast(`Modo ${newTheme === 'dark' ? 'Oscuro' : 'Claro'} activado`, "info");
+    return;
+  }
+
+  // Toggle Liquid Glass
+  const liquidBtn = e.target.closest("#btnToggleLiquid");
+  if (liquidBtn) {
+    const isEnabled = document.body.classList.toggle('liquid-enabled');
+    localStorage.setItem('droply_liquid', isEnabled);
+    document.getElementById('liquidToggle')?.classList.toggle('active', isEnabled);
+    showToast(`Liquid Glass ${isEnabled ? 'Activado' : 'Desactivado'}`, "info");
+    return;
+  }
+
+  // Picker de Acento
+  const accentDot = e.target.closest(".accent-dot");
+  if (accentDot) {
+    const color = accentDot.dataset.color;
+    document.documentElement.style.setProperty('--accent', color);
+    localStorage.setItem('droply_accent', color);
+    document.querySelectorAll('.accent-dot').forEach(d => d.classList.remove('active'));
+    accentDot.classList.add('active');
+    showToast(`Color de acento actualizado`, "info");
+    return;
+  }
+
+  // Otros Toggles (Genéricos)
+  const toggle = e.target.closest(".setting-toggle");
+  if (toggle && !toggle.id) {
+    toggle.classList.toggle("active");
+    const isActive = toggle.classList.contains("active");
+    const label = toggle.closest(".setting-item").querySelector(".setting-label").textContent;
+    showToast(`${label}: ${isActive ? 'Activado' : 'Desactivado'}`, "info");
+    return;
+  }
+});
+
+// Lógica de Estadísticas Reales (Minutos escuchados)
+let lastMinuteUpdate = Date.now();
+setInterval(() => {
+  if (isPlaying && !document.hidden) {
+    const now = Date.now();
+    if (now - lastMinuteUpdate >= 60000) { // Cada minuto real
+      let total = parseInt(localStorage.getItem('droply_minutes') || '1240');
+      total += 1;
+      localStorage.setItem('droply_minutes', total);
+      const statMinutes = document.getElementById('statMinutes');
+      if (statMinutes) statMinutes.textContent = total.toLocaleString();
+      lastMinuteUpdate = now;
+    }
+  } else {
+    lastMinuteUpdate = Date.now();
+  }
+}, 10000); // Chequear cada 10 segundos
+
+// Inicializar ajustes al cargar
+document.addEventListener('DOMContentLoaded', loadSavedSettings);
+// Forzar carga inmediata por si el evento ya pasó
+loadSavedSettings();
+// También llamar después de renderizar el perfil por si acaso
+const originalRenderProfile = renderProfile;
+renderProfile = function() {
+  originalRenderProfile();
+  loadSavedSettings();
+};
+
 /* ══════════════════════════════════════════════════════
    20b. MISSING CORE FUNCTIONS
    togglePlay · playNext · playPrev · queue · haptic
@@ -7446,15 +7584,7 @@ function injectPremiumDOM() {
 
   /* ── Transfer panel (removed) ─────────────────── */
 
-  /* ── Cloud sync indicator ─────────────────────── */
-  const topbarActions = document.querySelector('.topbar-actions');
-  if (topbarActions) {
-    topbarActions.insertAdjacentHTML('afterbegin', `
-      <div class="cloud-sync-indicator" id="cloudSyncIndicator" title="Estado de sincronización">
-        <svg class="sync-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
-        <span class="sync-text"></span>
-      </div>`);
-  }
+  /* ── Cloud sync indicator (Removed from topbar) ── */
 
   /* ── Transfer button in now-playing sheet ─────── */
   const sheetVolumeWrap = document.querySelector('.sheet-volume-wrap');
@@ -9507,3 +9637,253 @@ const Feed = (() => {
 
   return { init: init, refresh: refresh };
 })();
+
+/* ══════════════════════════════════════════════════════
+   ACCOUNT MANAGEMENT & PERSISTENCE
+══════════════════════════════════════════════════════ */
+const USER_DATA_KEY = "droply_user_data_v1";
+
+const defaultUserData = {
+  name: "Invitado",
+  username: "guest",
+  avatar: "https://i.pravatar.cc/300?img=12"
+};
+
+let currentUser = loadUserData();
+
+function loadUserData() {
+  try {
+    const saved = localStorage.getItem(USER_DATA_KEY);
+    return saved ? JSON.parse(saved) : defaultUserData;
+  } catch (e) {
+    return defaultUserData;
+  }
+}
+
+function saveUserData(data) {
+  try {
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(data));
+    currentUser = data;
+    updateUserUI();
+  } catch (e) {
+    showToast("Error al guardar los datos", "error");
+  }
+}
+
+function updateUserUI() {
+  // Topbar
+  const topbarImg = document.querySelector("#topbarProfileBtn img");
+  if (topbarImg) topbarImg.src = currentUser.avatar;
+
+  // Profile Page
+  const profileName = document.getElementById("profileName");
+  const profileUser = document.getElementById("profileUsername");
+  const profileAvatar = document.getElementById("profileAvatar");
+
+  if (profileName) profileName.textContent = currentUser.name;
+  if (profileUser) profileUser.textContent = `@${currentUser.username}`;
+  if (profileAvatar) profileAvatar.src = currentUser.avatar;
+
+  // Modal pre-fill
+  const inputName = document.getElementById("inputName");
+  const inputUser = document.getElementById("inputUsername");
+  const avatarPrev = document.getElementById("avatarPreview");
+
+  if (inputName) inputName.value = currentUser.name;
+  if (inputUser) inputUser.value = currentUser.username;
+  if (avatarPrev) avatarPrev.src = currentUser.avatar;
+}
+
+// Inicializar gestión de cuenta
+function initAccountManagement() {
+  const modal = document.getElementById("accountModal");
+  const btnOpen = document.getElementById("btnManageAccount");
+  const btnClose = document.getElementById("accountClose");
+  const btnSave = document.getElementById("btnAccountSave");
+  const btnLogout = document.getElementById("btnLogout");
+  const avatarInput = document.getElementById("avatarInput");
+  const avatarPreview = document.getElementById("avatarPreview");
+
+  if (btnOpen) {
+    btnOpen.addEventListener("click", () => {
+      updateUserUI(); // Asegurar que el modal tiene los datos frescos
+      modal.classList.add("open");
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener("click", () => modal.classList.remove("open"));
+  }
+
+  // Cerrar al hacer click fuera
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("open");
+  });
+
+  // Manejo de avatar (Base64 para persistencia local simple)
+  if (avatarInput) {
+    avatarInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 1024 * 1024) { // Limite 1MB para localStorage
+          showToast("La imagen es demasiado grande (máx 1MB)", "warn");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          avatarPreview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (btnSave) {
+    btnSave.addEventListener("click", () => {
+      const newName = document.getElementById("inputName").value.trim();
+      const newUser = document.getElementById("inputUsername").value.trim();
+      const newAvatar = avatarPreview.src;
+
+      if (!newName || !newUser) {
+        showToast("Nombre y usuario son obligatorios", "warn");
+        return;
+      }
+
+      saveUserData({
+        name: newName,
+        username: newUser.replace("@", ""),
+        avatar: newAvatar
+      });
+
+      modal.classList.remove("open");
+      showToast("Perfil actualizado con éxito", "success");
+    });
+  }
+
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      if (confirm("¿Estás seguro de que quieres cerrar sesión? Se borrarán tus datos locales.")) {
+        localStorage.removeItem(USER_DATA_KEY);
+        localStorage.removeItem(PL_KEY);
+        localStorage.removeItem(HIST_KEY);
+        localStorage.removeItem(LIKED_KEY);
+        
+        // También cerrar sesión en Supabase si existe
+        if (typeof SupabaseCloud !== "undefined" && SupabaseCloud.logout) {
+          SupabaseCloud.logout();
+        }
+        
+        showToast("Sesión cerrada. Reiniciando...", "default");
+        setTimeout(() => location.reload(), 1500);
+      }
+    });
+  }
+
+  // Lógica de Supabase Auth
+  const btnGoogle = document.getElementById("btnGoogleLogin");
+  const btnAuthLogout = document.getElementById("btnAuthLogout");
+
+  if (btnGoogle) {
+    btnGoogle.addEventListener("click", () => {
+      if (typeof SupabaseCloud !== "undefined" && SupabaseCloud.loginWithGoogle) {
+        SupabaseCloud.loginWithGoogle();
+      } else {
+        showToast("Supabase no está configurado", "error");
+      }
+    });
+  }
+
+  if (btnAuthLogout) {
+    btnAuthLogout.addEventListener("click", () => {
+      if (typeof SupabaseCloud !== "undefined" && SupabaseCloud.logout) {
+        SupabaseCloud.logout();
+      }
+    });
+  }
+}
+
+// Función para actualizar el estado visual de Supabase (llamada desde supabase-cloud.js)
+window.updateSupabaseUI = function(user) {
+  const statusText = document.getElementById("authStatusText");
+  const btnGoogle = document.getElementById("btnGoogleLogin");
+  const authDetail = document.getElementById("authUserDetail");
+  const authEmail = document.getElementById("authUserEmail");
+
+  if (user) {
+    if (statusText) statusText.textContent = "Conectado a la nube";
+    if (btnGoogle) btnGoogle.style.display = "none";
+    if (authDetail) authDetail.style.display = "flex";
+    if (authEmail) authEmail.textContent = user.email;
+    
+    // Si el usuario de Supabase tiene metadatos, actualizar perfil local y ocultar muro
+    const meta = user.user_metadata || {};
+    saveUserData({
+      name: meta.full_name || user.email.split('@')[0],
+      username: user.email.split('@')[0],
+      avatar: meta.avatar_url || currentUser.avatar
+    });
+    
+    // Ocultar muro de autenticación
+    const authWall = document.getElementById("authWall");
+    if (authWall) {
+      authWall.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+  } else {
+    if (statusText) statusText.textContent = "No conectado";
+    if (btnGoogle) btnGoogle.style.display = "flex";
+    if (authDetail) authDetail.style.display = "none";
+    
+    // Si no hay usuario de Supabase y tampoco local, mostrar muro
+    if (currentUser.username === "guest") {
+      const authWall = document.getElementById("authWall");
+      if (authWall) {
+        authWall.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+    }
+  }
+}
+
+// Inyectar en el flujo de inicio
+document.addEventListener("DOMContentLoaded", () => {
+  updateUserUI();
+  initAccountManagement();
+  checkAuthWall();
+});
+
+function checkAuthWall() {
+  const authWall = document.getElementById("authWall");
+  const btnCreate = document.getElementById("btnGoogleAuthWall");
+  const btnLogin = document.getElementById("btnGoogleLoginWall");
+
+  // Si el usuario es invitado (no registrado), mostrar muro
+  if (currentUser.username === "guest") {
+    authWall.classList.remove("hidden");
+    // Bloquear scroll
+    document.body.style.overflow = "hidden";
+  } else {
+    authWall.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  const handleAuth = () => {
+    if (typeof SupabaseCloud !== "undefined" && SupabaseCloud.loginWithGoogle) {
+      SupabaseCloud.loginWithGoogle();
+    } else {
+      // Fallback para desarrollo si no hay Supabase: simular registro
+      showToast("Conectando con Google...", "success");
+      setTimeout(() => {
+        saveUserData({
+          name: "Nuevo Usuario",
+          username: "user_" + Math.floor(Math.random() * 1000),
+          avatar: "https://i.pravatar.cc/300?img=12"
+        });
+        location.reload();
+      }, 1500);
+    }
+  };
+
+  if (btnCreate) btnCreate.addEventListener("click", handleAuth);
+  if (btnLogin) btnLogin.addEventListener("click", handleAuth);
+}
