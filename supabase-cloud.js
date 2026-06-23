@@ -11,14 +11,15 @@ const SupabaseCloud = (() => {
   const SUPABASE_KEY = 'your-anon-key';
 
   function init() {
-    // El SDK de Supabase se carga como 'supabase' no 'supabasejs' en la v2
-    if (typeof supabase === 'undefined' && typeof window.supabase === 'undefined') {
-      console.warn('[SUPABASE] SDK no encontrado');
+    // En la v2 de supabase-js cargada vía CDN, el objeto global suele ser 'supabase'
+    const sdk = window.supabase;
+    if (!sdk) {
+      console.warn('[SUPABASE] SDK no encontrado en window.supabase');
       return;
     }
 
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      supabase = sdk.createClient(SUPABASE_URL, SUPABASE_KEY);
       checkUser();
       
       // Escuchar cambios de estado

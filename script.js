@@ -8273,7 +8273,9 @@ function bootPremium() {
   OfflineManager.init();
   OfflineManager.setupOfflineDetection();
   CloudSync.init();
-  if (typeof SupabaseCloud !== "undefined") SupabaseCloud.init();
+  if (typeof SupabaseCloud !== "undefined" && typeof SupabaseCloud.init === "function") {
+    SupabaseCloud.init();
+  }
 
   // Render offline playlist (after IDB is ready, slight delay)
   setTimeout(() => { updateOfflineStatusBanner(); }, 400);
@@ -9852,35 +9854,57 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthWall();
 });
 
+function initAuthMosaic() {
+  const col1 = document.getElementById("mosaicCol1");
+  const col2 = document.getElementById("mosaicCol2");
+  const col3 = document.getElementById("mosaicCol3");
+  if (!col1 || !col2 || !col3) return;
+
+  const allCovers = media.map(m => m.cover).filter(Boolean);
+  const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+  const picked = shuffle(allCovers).slice(0, 9);
+
+  [col1, col2, col3].forEach((col, i) => {
+    col.innerHTML = picked.slice(i * 3, (i + 1) * 3).map(src => `<img src="${src}" alt="">`).join("");
+  });
+}
+
 function checkAuthWall() {
   const authWall = document.getElementById("authWall");
   const btnCreate = document.getElementById("btnGoogleAuthWall");
   const btnLogin = document.getElementById("btnGoogleLoginWall");
 
+  if (!authWall) return;
+
+  // Generar mosaico dinámico con imágenes que sí cargan
+  initAuthMosaic();
+
   // Si el usuario es invitado (no registrado), mostrar muro
   if (currentUser.username === "guest") {
     authWall.classList.remove("hidden");
-    // Bloquear scroll
     document.body.style.overflow = "hidden";
   } else {
     authWall.classList.add("hidden");
     document.body.style.overflow = "";
   }
 
-  const handleAuth = () => {
-    if (typeof SupabaseCloud !== "undefined" && SupabaseCloud.loginWithGoogle) {
+  const handleAuth = (e) => {
+    if (e) e.preventDefault();
+    // Prioridad: Usar la lógica de Supabase original si está disponible
+    if (typeof SupabaseCloud !== "undefined" && typeof SupabaseCloud.loginWithGoogle === "function") {
       SupabaseCloud.loginWithGoogle();
     } else {
-      // Fallback para desarrollo si no hay Supabase: simular registro
-      showToast("Conectando con Google...", "success");
+      // Fallback: Si Supabase no está configurado, usar el simulador premium original
+      showToast("Conectando...", "success");
       setTimeout(() => {
-        saveUserData({
-          name: "Nuevo Usuario",
-          username: "user_" + Math.floor(Math.random() * 1000),
+        const fakeUser = {
+          name: "Usuario Premium",
+          username: "premium_user",
           avatar: "https://i.pravatar.cc/300?img=12"
-        });
+        };
+        saveUserData(fakeUser);
         location.reload();
-      }, 1500);
+      }, 1000);
     }
   };
 

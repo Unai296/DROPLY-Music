@@ -54,20 +54,14 @@
   <!-- ══ AUTH WALL (Diseño Spotify Mosaic) ══ -->
   <div class="auth-wall" id="authWall">
     <div class="auth-mosaic">
-      <div class="auth-mosaic-column">
-        <img src="https://i.scdn.co/image/ab67616d0000b2734170aac3f62129c9c7b1391d" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b2737070ef2daebed755fa876200" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b273760980209420067a9980e557" alt="">
+      <div class="auth-mosaic-column" id="mosaicCol1">
+        <!-- Generado por JS -->
       </div>
-      <div class="auth-mosaic-column">
-        <img src="https://i.scdn.co/image/ab67616d0000b273bd659972378906013661138a" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b273767f33e085601201a07090f4" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b2733979339316e68078693a741f" alt="">
+      <div class="auth-mosaic-column" id="mosaicCol2">
+        <!-- Generado por JS -->
       </div>
-      <div class="auth-mosaic-column">
-        <img src="https://i.scdn.co/image/ab67616d0000b27389408698a033334e96f30687" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b2737f7194f4f34685037e96a40c" alt="">
-        <img src="https://i.scdn.co/image/ab67616d0000b27303f269418a00282165972583" alt="">
+      <div class="auth-mosaic-column" id="mosaicCol3">
+        <!-- Generado por JS -->
       </div>
       <div class="auth-mosaic-overlay"></div>
     </div>
@@ -1063,11 +1057,12 @@
   })();
   </script>
 
-  <script src="script.js"></script>
-
-  <!-- ══ SUPABASE CLOUD (auth + sync) — aditivo, con fallback total ══ -->
+  <!-- ══ SUPABASE CLOUD (Carga prioritaria para Auth Wall) ══ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-cloud.js"></script>
+  
+  <!-- ══ MAIN SCRIPT ══ -->
+  <script src="script.js"></script>
   
 </body>
 </html>
