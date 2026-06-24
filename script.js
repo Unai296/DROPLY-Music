@@ -4343,19 +4343,36 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
 /* ── Swipe-down-to-close: drag sheet with finger ─────── */
 (function sheetSwipeDismiss() {
   const sheet = nowPlayingSheet;
-  const THRESHOLD    = 120;
-  const VELOCITY_MIN = 0.5;
+  const THRESHOLD    = 130;
+  const VELOCITY_MIN = 0.45;
   let startY = 0, startX = 0, dy = 0, startTime = 0;
   let dragging = false, locked = false;
 
-  sheet.addEventListener('touchstart', e => {
+  function _isInsideScrollable(target) {
+    // Returns true if the touch started inside a scrollable inner area
+    // (queue list or lyrics scroll) that still has scroll room upward
+    const queueArea  = document.getElementById('sheetQueueArea');
+    const queueList  = document.getElementById('sheetQueueList');
     const lyricsScroll = document.getElementById('sheetLyricsScroll');
-    const atTop = !lyricsScroll || lyricsScroll.scrollTop < 4;
+    if (queueArea && queueArea.classList.contains('active')) {
+      // We're in queue view — only allow dismiss from the drag handle or header
+      const handle = document.getElementById('sheetDragHandle');
+      const topBar = sheet.querySelector('.sheet-top-bar');
+      if (handle && handle.contains(target)) return false;
+      if (topBar  && topBar.contains(target))  return false;
+      // Everything else inside queue view is scrollable territory
+      return true;
+    }
+    if (lyricsScroll && lyricsScroll.contains(target)) {
+      return lyricsScroll.scrollTop > 4;
+    }
+    return false;
+  }
+
+  sheet.addEventListener('touchstart', e => {
+    if (_isInsideScrollable(e.target)) { locked = true; dragging = false; return; }
     const touchY = e.touches[0].clientY;
     const touchX = e.touches[0].clientX;
-    const relY = touchY - sheet.getBoundingClientRect().top;
-    const inTopZone = relY < sheet.clientHeight * 0.25;
-    if (!inTopZone && !atTop) return;
     startY = touchY; startX = touchX;
     startTime = Date.now(); dy = 0;
     dragging = false; locked = false;
@@ -4370,18 +4387,20 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
     const ddy  = curY - startY;
     if (!dragging) {
       if (Math.abs(ddy) < 6 && ddx < 6) return;
-      if (ddx > Math.abs(ddy)) { locked = true; return; }
+      if (ddx > Math.abs(ddy) + 2) { locked = true; return; }
       if (ddy < 0) { locked = true; return; }
       dragging = true;
     }
     dy = Math.max(0, ddy);
-    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.25;
+    // Rubber-band effect — resistance increases past threshold
+    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.18;
     sheet.style.transform = `translateY(${t}px)`;
-    sheet.style.opacity   = String(1 - Math.min(1, dy / (THRESHOLD * 2)) * 0.28);
-    if (dy > 10) e.preventDefault();
+    sheet.style.opacity   = String(1 - Math.min(1, dy / (THRESHOLD * 2.2)) * 0.3);
+    e.preventDefault();
   }, { passive: false });
 
   sheet.addEventListener('touchend', () => {
+    if (locked) { locked = false; return; }
     if (!dragging) {
       sheet.style.transition = '';
       sheet.style.transform  = '';
@@ -4389,9 +4408,10 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
       return;
     }
     const velocity = dy / Math.max(1, Date.now() - startTime);
-    sheet.style.transition = 'transform .38s cubic-bezier(.32,0,.67,0), opacity .32s ease';
+    sheet.style.transition = 'transform .4s cubic-bezier(.32,0,.67,0), opacity .35s ease';
     if (dy > THRESHOLD || velocity > VELOCITY_MIN) {
-      sheet.style.transform = 'translateY(100%)';
+      if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+      sheet.style.transform = 'translateY(105%)';
       sheet.style.opacity   = '0';
       setTimeout(() => {
         sheet.classList.remove('open');
@@ -4399,11 +4419,90 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
         sheet.style.transform  = '';
         sheet.style.opacity    = '';
         if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
-      }, 380);
+      }, 400);
     } else {
+      // Spring back
+      sheet.style.transition = 'transform .5s cubic-bezier(.34,1.56,.64,1), opacity .3s ease';
       sheet.style.transform = '';
       sheet.style.opacity   = '';
-      setTimeout(() => { sheet.style.transition = ''; }, 380);
+      setTimeout(() => { sheet.style.transition = ''; }, 500);
+    }
+    dragging = false; locked = false; dy = 0;
+  }, { passive: true });
+})();
+
+/* ── Queue panel: native swipe-down-to-close ──────────── */
+(function queuePanelSwipeDismiss() {
+  const panel = document.getElementById('queuePanel');
+  if (!panel) return;
+  const THRESHOLD    = 110;
+  const VELOCITY_MIN = 0.4;
+  let startY = 0, dy = 0, startTime = 0;
+  let dragging = false, locked = false;
+
+  function _canDrag(target) {
+    const handle = document.getElementById('queueDragHandle');
+    const header = panel.querySelector('.queue-panel-header');
+    const nowCard = panel.querySelector('.queue-now-playing');
+    if (handle && handle.contains(target)) return true;
+    if (header && header.contains(target)) return true;
+    if (nowCard && nowCard.contains(target)) return true;
+    // Also allow drag from list wrap only when scrolled to top
+    const listWrap = panel.querySelector('.queue-list-wrap');
+    if (listWrap && listWrap.contains(target)) {
+      return listWrap.scrollTop < 6;
+    }
+    return false;
+  }
+
+  panel.addEventListener('touchstart', e => {
+    if (!_canDrag(e.target)) { locked = true; return; }
+    startY = e.touches[0].clientY;
+    startTime = Date.now(); dy = 0;
+    dragging = false; locked = false;
+    panel.style.transition = 'none';
+  }, { passive: true });
+
+  panel.addEventListener('touchmove', e => {
+    if (locked) return;
+    const ddy = e.touches[0].clientY - startY;
+    if (!dragging) {
+      if (Math.abs(ddy) < 6) return;
+      if (ddy < 0) { locked = true; return; }
+      dragging = true;
+    }
+    dy = Math.max(0, ddy);
+    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.2;
+    panel.style.transform = `translateY(${t}px)`;
+    panel.style.opacity   = String(Math.max(0.3, 1 - (dy / (THRESHOLD * 2.5))));
+    e.preventDefault();
+  }, { passive: false });
+
+  panel.addEventListener('touchend', () => {
+    if (locked) { locked = false; return; }
+    if (!dragging) {
+      panel.style.transition = '';
+      panel.style.transform  = '';
+      panel.style.opacity    = '';
+      return;
+    }
+    const velocity = dy / Math.max(1, Date.now() - startTime);
+    if (dy > THRESHOLD || velocity > VELOCITY_MIN) {
+      if (typeof hapticFeedback === 'function') hapticFeedback('medium');
+      panel.style.transition = 'transform .36s cubic-bezier(.32,0,.67,0), opacity .3s ease';
+      panel.style.transform  = 'translateY(100%)';
+      panel.style.opacity    = '0';
+      setTimeout(() => {
+        if (typeof closeQueuePanel === 'function') closeQueuePanel();
+        panel.style.transition = '';
+        panel.style.transform  = '';
+        panel.style.opacity    = '';
+      }, 360);
+    } else {
+      panel.style.transition = 'transform .48s cubic-bezier(.34,1.56,.64,1), opacity .28s ease';
+      panel.style.transform  = '';
+      panel.style.opacity    = '';
+      setTimeout(() => { panel.style.transition = ''; }, 480);
     }
     dragging = false; locked = false; dy = 0;
   }, { passive: true });
@@ -6453,6 +6552,8 @@ function renderSheetQueue() {
   if (countEl) countEl.textContent = queue.length ? `${queue.length} canciones` : '';
 
   listEl.innerHTML = '';
+  // Ensure the list can scroll without triggering sheet-dismiss
+  listEl.style.touchAction = 'pan-y';
 
   if (historyTracks.length > 1) {
     const histHeader = document.createElement('div');
@@ -6495,6 +6596,17 @@ function renderSheetQueue() {
       </div>`;
   }
 
+  // Scroll the list so "Reproduciendo ahora" is at the top on open
+  if (areaEl) {
+    requestAnimationFrame(() => {
+      const npHeader = Array.from(listEl.querySelectorAll('.sheet-queue-section-header'))
+        .find(el => el.textContent.includes('Reproduciendo'));
+      if (npHeader) {
+        listEl.scrollTop = Math.max(0, npHeader.offsetTop - 8);
+      }
+    });
+  }
+
   if (areaEl) {
     const updateSheetHint = () => {
       const hint = document.getElementById('sheetQueueScrollHint');
@@ -6532,7 +6644,10 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
       <div class="sq-item-title">${item.title}</div>
       <div class="sq-item-artist">${item.artist}</div>
     </div>
-    ${!isNowPlaying ? '<div class="sq-item-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>' : ''}
+    ${isNowPlaying
+      ? '<div class="sq-item-now-bars"><span></span><span></span><span></span></div>'
+      : '<div class="sq-item-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>'
+    }
   `;
 
   if (!isNowPlaying) {
@@ -6633,9 +6748,15 @@ function openQueuePanel() {
   if (typeof hapticFeedback === 'function') hapticFeedback('medium');
 }
 
-function closeQueuePanel() {
+function closeQueuePanel(skipAnimation) {
   if (!queuePanel) return;
-  queuePanel.classList.remove('open');
+  if (!skipAnimation) {
+    // Normal close — let CSS transition handle it
+    queuePanel.classList.remove('open');
+  } else {
+    // Called after a swipe-dismiss animation already played; just reset class
+    queuePanel.classList.remove('open');
+  }
   if (queueOverlay) queueOverlay.classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -6696,6 +6817,13 @@ function closeQueuePanel() {
   if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', () => {
     setSheetView(_sheetView === 'queue' ? 'cover' : 'queue');
   });
+  const sheetQueueBackBtn = document.getElementById('sheetQueueBackBtn');
+  if (sheetQueueBackBtn) {
+    sheetQueueBackBtn.addEventListener('click', () => {
+      setSheetView('cover');
+      if (typeof hapticFeedback === 'function') hapticFeedback('light');
+    });
+  }
   if (queueCloseBtn) queueCloseBtn.addEventListener('click', closeQueuePanel);
   if (queueOverlay)  queueOverlay.addEventListener('click', closeQueuePanel);
   const queueDragHandle = document.getElementById('queueDragHandle');
