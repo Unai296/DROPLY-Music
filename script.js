@@ -6068,33 +6068,51 @@ function addToQueue(item) {
 
 /* ── Render queue now playing ───────────────────────── */
 function renderQueueNowPlaying(item) {
-  if (!queueNowPlaying) return;
+  const el = document.getElementById('queueNowPlaying');
+  if (!el) return;
   const cover = item.cover || getPlaceholderCover(item.category);
-  queueNowPlaying.innerHTML = `
-    <p class="queue-now-label">Reproduciendo ahora</p>
-    <div class="queue-now-card">
-      <div class="queue-now-cover-wrap">
-        <img class="queue-now-img" src="${cover}" alt="${item.title}" />
-        <div class="queue-now-bars">
-          <div class="queue-now-bar"></div>
-          <div class="queue-now-bar"></div>
-          <div class="queue-now-bar"></div>
+  const isPlaying = !(document.getElementById('mainAudio')?.paused ?? true);
+
+  el.innerHTML = `
+    <p class="queue-np-label">Reproduciendo ahora</p>
+    <div class="queue-np-row">
+      <div class="queue-np-cover">
+        <img src="${cover}" alt="${item.title}" />
+        <div class="queue-np-bars" id="queueNpBars" style="${isPlaying ? '' : 'display:none'}">
+          <div class="queue-np-bar"></div>
+          <div class="queue-np-bar"></div>
+          <div class="queue-np-bar"></div>
         </div>
       </div>
-      <div class="queue-now-info">
-        <div class="queue-now-title">${item.title}</div>
-        <div class="queue-now-artist">${item.artist}</div>
-        <div class="queue-now-progress">
-          <div class="queue-now-progress-fill" id="queueProgressFill"></div>
-        </div>
+      <div class="queue-np-info">
+        <div class="queue-np-title">${item.title}</div>
+        <div class="queue-np-artist">${item.artist}</div>
       </div>
+      <button class="queue-np-menu" id="queueNpMenu" aria-label="Opciones">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
+          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+        </svg>
+      </button>
+    </div>
+    <div class="queue-np-progress">
+      <div class="queue-np-progress-fill" id="queueProgressFill"></div>
     </div>`;
-  // Update ambient glow with cover color
+
+  // Wire up context menu on the ⋯ button
+  const menuBtn = el.querySelector('#queueNpMenu');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openContextMenu === 'function') openContextMenu(item);
+    });
+  }
+
+  // Ambient glow
   const ambient = document.getElementById('queueAmbient');
   if (ambient) {
-    ambient.style.background = `radial-gradient(ellipse 90% 45% at 50% -5%, rgba(139,92,246,.22) 0%, transparent 70%)`;
+    ambient.style.background = `radial-gradient(ellipse 80% 40% at 50% 0%, rgba(139,92,246,.28) 0%, transparent 70%)`;
   }
-  // Sync progress bar
+
   _syncQueueProgress();
 }
 
@@ -6188,9 +6206,10 @@ function _autoFillQueue() {
 function renderQueueList() {
   if (!queueList) return;
   const countBadge = document.getElementById('queueCountBadge');
+  const nextSection = document.getElementById('queueNextSection');
 
   if (queue.length === 0) {
-    if (queueNextLabel) queueNextLabel.style.display = 'none';
+    if (nextSection) nextSection.style.display = 'none';
     queueList.innerHTML = `
       <div class="queue-empty">
         <div class="queue-empty-icon">
@@ -6203,7 +6222,7 @@ function renderQueueList() {
     return;
   }
 
-  if (queueNextLabel) queueNextLabel.style.display = '';
+  if (nextSection) nextSection.style.display = '';
   if (countBadge) countBadge.textContent = queue.length;
 
   const prevItems = new Set([...queueList.querySelectorAll('.queue-item')].map(el => el.dataset.file));
@@ -6217,28 +6236,26 @@ function renderQueueList() {
 
     // ── Wrapper for swipe-to-delete ──
     const wrap = document.createElement('div');
-    wrap.className = 'queue-item-wrap';
-    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;';
+    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;overflow:hidden;';
 
-    // Red delete bg revealed on left swipe
+    // Red delete bg — Apple Music red, right side
     const delBg = document.createElement('div');
-    delBg.className = 'queue-item-del-bg';
     delBg.innerHTML = `
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      <span style="font-size:.68rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;margin-top:2px">Quitar</span>`;
     delBg.style.cssText = `
-      position:absolute;top:0;bottom:0;right:0;width:90px;
-      display:flex;align-items:center;justify-content:center;gap:.35rem;
-      background:#e94f4f;color:#fff;border-radius:12px;
-      pointer-events:none;opacity:0;transition:opacity .1s;`;
+      position:absolute;top:0;bottom:0;right:0;width:88px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      background:#ff3b30;color:#fff;border-radius:12px;
+      pointer-events:none;opacity:0;transition:opacity .08s;`;
 
     const row = document.createElement('div');
     row.className = 'queue-item' + (isNew ? ' queue-item-new' : '');
     row.dataset.file = file;
     row.dataset.index = i;
-    if (isNew) row.style.animationDelay = (i * 30) + 'ms';
+    if (isNew) row.style.animationDelay = (i * 25) + 'ms';
     row.draggable = true;
-    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;background:transparent;';
     row.innerHTML = `
       <div class="queue-item-drag" title="Arrastrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
@@ -6251,18 +6268,31 @@ function renderQueueList() {
         <div class="queue-item-title">${item.title}</div>
         <div class="queue-item-artist">${item.artist}</div>
       </div>
-      <div class="queue-item-actions">
-        <button class="queue-item-btn" data-action="remove" title="Quitar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>`;
+      <button class="queue-item-btn" data-action="menu" aria-label="Opciones">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none">
+          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+        </svg>
+      </button>`;
+
+    // Tap ⋯ → context menu
+    row.querySelector('[data-action="menu"]').addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openContextMenu === 'function') openContextMenu(item);
+    });
 
     const SWIPE_THRESHOLD = 80;
     let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
 
     function _removeItem() {
       if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-      row.style.transition = 'transform .28s cubic-bezier(.4,0,1,1), opacity .28s';
+      wrap.style.transition = 'max-height .3s cubic-bezier(.4,0,1,1), opacity .25s, margin .3s';
+      wrap.style.maxHeight = wrap.offsetHeight + 'px';
+      requestAnimationFrame(() => {
+        wrap.style.maxHeight = '0';
+        wrap.style.opacity = '0';
+        wrap.style.marginBottom = '0';
+      });
+      row.style.transition = 'transform .25s cubic-bezier(.4,0,1,1)';
       row.style.transform = 'translateX(-110%)';
       row.style.opacity = '0';
       setTimeout(() => {
