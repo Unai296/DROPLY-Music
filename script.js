@@ -6561,6 +6561,24 @@ function renderSheetQueue() {
   listEl.innerHTML = '';
   listEl.style.touchAction = 'pan-y';
 
+  // ── HISTORIAL (más reciente arriba, justo encima de la que suena) ──
+  // historyTracks[0] es la actual, [1] la anterior inmediata, [2] la de antes, etc.
+  const histItems = historyTracks.slice(1, 8)
+    .map(h => getTrackByFile(h.file))
+    .filter(Boolean)
+    .reverse(); // más antigua arriba, más reciente justo antes de "ahora"
+
+  if (histItems.length > 0) {
+    const histHeader = document.createElement('div');
+    histHeader.className = 'sheet-queue-section-header';
+    histHeader.innerHTML = `<span>Historial</span>`;
+    listEl.appendChild(histHeader);
+
+    histItems.forEach(item => {
+      listEl.appendChild(createSheetQueueRow(item, true));
+    });
+  }
+
   // ── REPRODUCIENDO AHORA ──
   const npHeader = document.createElement('div');
   npHeader.className = 'sheet-queue-section-header';
@@ -6586,26 +6604,22 @@ function renderSheetQueue() {
     });
   }
 
-  // ── HISTORIAL (reciente primero, sin la que suena) ──
-  // historyTracks[0] es la actual, [1] es la anterior, etc.
-  const histItems = historyTracks.slice(1, 8)
-    .map(h => getTrackByFile(h.file))
-    .filter(Boolean);
-
-  if (histItems.length > 0) {
-    const histHeader = document.createElement('div');
-    histHeader.className = 'sheet-queue-section-header';
-    histHeader.innerHTML = `<span>Historial reciente</span>`;
-    listEl.appendChild(histHeader);
-
-    histItems.forEach(item => {
-      listEl.appendChild(createSheetQueueRow(item, true));
-    });
-  }
-
   if (!currentItem && queue.length === 0 && histItems.length === 0) {
     listEl.innerHTML = `<div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">La cola está vacía</div>`;
   }
+
+  // Al abrir, hacer scroll para que "Reproduciendo ahora" esté visible arriba
+  // (el historial queda arriba scrolleable)
+  requestAnimationFrame(() => {
+    const npEl = listEl.querySelector('.sheet-queue-section-header:last-of-type');
+    const allHeaders = listEl.querySelectorAll('.sheet-queue-section-header');
+    // Buscar el header de "Reproduciendo ahora"
+    let npHeaderEl = null;
+    allHeaders.forEach(h => { if (h.textContent.includes('Reproduciendo')) npHeaderEl = h; });
+    if (npHeaderEl) {
+      listEl.scrollTop = Math.max(0, npHeaderEl.offsetTop - 6);
+    }
+  });
 }
 
 function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
