@@ -2977,7 +2977,6 @@ let playlist        = [];        // current PLAYBACK context (playlist, favorite
 let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
 let shuffleMode     = false;
 let repeatMode      = loadRepeatMode(); // 'off' | 'one' | 'all'
-let autoplayMode    = true; // Cola infinita
 
 // ── PERSISTENCE KEYS ──
 const LIKED_KEY    = "droply_liked_v2";
@@ -3004,12 +3003,6 @@ function updateRepeatUI() {
   sheetRepeat.classList.toggle("repeat-all", repeatMode === "all");
   const labels = { off: "Repetir", one: "Repetir canción", all: "Repetir playlist" };
   sheetRepeat.setAttribute("aria-label", labels[repeatMode] || labels.off);
-
-  if (queueRepeatBtn) {
-    queueRepeatBtn.classList.toggle("active", repeatMode !== "off");
-    queueRepeatBtn.classList.toggle("repeat-one", repeatMode === "one");
-    queueRepeatBtn.classList.toggle("repeat-all", repeatMode === "all");
-  }
 }
 function cycleRepeatMode() {
   repeatMode = repeatMode === "off" ? "one" : repeatMode === "one" ? "all" : "off";
@@ -3105,12 +3098,6 @@ const queueList        = document.getElementById("queueList");
 const queueNowPlaying  = document.getElementById("queueNowPlaying");
 const queueNextLabel   = document.getElementById("queueNextLabel");
 const queueClearBtn    = document.getElementById("queueClearBtn");
-const queueHistoryList = document.getElementById("queueHistoryList");
-const queueHistoryClearBtn = document.getElementById("queueHistoryClearBtn");
-const queueScrollArea  = document.getElementById("queueScrollArea");
-const queueScrollHint  = document.getElementById("queueScrollHint");
-const queueInfiniteBtn = document.getElementById("queueInfiniteBtn");
-const queueRepeatBtn   = document.getElementById("queueRepeatBtn");
 const queueCloseBtn    = document.getElementById("queueCloseBtn");
 const contextMenu      = document.getElementById("contextMenu");
 const ctxPlayNow       = document.getElementById("ctxPlayNow");
@@ -3713,19 +3700,12 @@ activeAudio.addEventListener("error", function () {
   setTimeout(() => {
     if (myToken !== _playToken) { _retryInFlight = false; return; } // ya se cargó otra cosa, no interferir
     if (!activeAudio.src || (activeAudio.currentSrc || activeAudio.src) !== failedSrc) { _retryInFlight = false; return; }
-    // Escuchar canplay antes de llamar a play() para no lanzar otro AbortError
-    const onCanPlay = () => {
+    try { activeAudio.load(); } catch(_) {}
+    setTimeout(() => {
       _retryInFlight = false;
       if (myToken !== _playToken) return;
       activeAudio.play().catch(() => {});
-    };
-    activeAudio.addEventListener('canplay', onCanPlay, { once: true });
-    try { activeAudio.load(); } catch(_) {}
-    // Seguro: si canplay tarda más de 5s algo va mal, limpiamos el flag
-    setTimeout(() => {
-      activeAudio.removeEventListener('canplay', onCanPlay);
-      _retryInFlight = false;
-    }, 5000);
+    }, 100);
   }, 800);
 }, { passive: true });
 
@@ -3984,7 +3964,6 @@ function isIOSForOfflineCheck() {
    al cambiar de canción": dos reintentos compitiendo por el mismo audioEl). */
 function _clearPendingAudioWatchers() {
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
-  _watchdogCheckpoint = null;
   _retryInFlight = false;
 }
 
@@ -4240,10 +4219,8 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
-    // Asignar src es suficiente: el navegador inicia la carga internamente.
-    // NO llamar a load() aquí — load() aborta la promesa de play() que viene
-    // justo después y lanza AbortError, dejando el audio cargando pero mudo.
     activeAudio.src = audioSrc;
+    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
@@ -4256,6 +4233,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     window._droplyFromLockscreen = false;
 
     // Llamada síncrona a play() para no perder el user gesture del lockscreen.
+    // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -4264,10 +4242,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       })
       .catch(err => {
         if (myToken !== _playToken) return;
-        // AbortError es normal: el navegador cancela play() cuando se cambia
-        // src antes de que la promesa resuelva (cambio rápido de canción).
-        // No actualizar isPlaying en ese caso — la nueva pista ya gestiona su propio estado.
-        if (err && err.name === 'AbortError') return;
         console.warn("[DROPLY] play error:", err.name, err.message);
         isPlaying = false;
         updatePlayIcons(false);
@@ -6081,51 +6055,33 @@ function addToQueue(item) {
 
 /* ── Render queue now playing ───────────────────────── */
 function renderQueueNowPlaying(item) {
-  const el = document.getElementById('queueNowPlaying');
-  if (!el) return;
+  if (!queueNowPlaying) return;
   const cover = item.cover || getPlaceholderCover(item.category);
-  const isPlaying = !(document.getElementById('mainAudio')?.paused ?? true);
-
-  el.innerHTML = `
-    <p class="queue-np-label">Reproduciendo ahora</p>
-    <div class="queue-np-row">
-      <div class="queue-np-cover">
-        <img src="${cover}" alt="${item.title}" />
-        <div class="queue-np-bars" id="queueNpBars" style="${isPlaying ? '' : 'display:none'}">
-          <div class="queue-np-bar"></div>
-          <div class="queue-np-bar"></div>
-          <div class="queue-np-bar"></div>
+  queueNowPlaying.innerHTML = `
+    <p class="queue-now-label">Reproduciendo ahora</p>
+    <div class="queue-now-card">
+      <div class="queue-now-cover-wrap">
+        <img class="queue-now-img" src="${cover}" alt="${item.title}" />
+        <div class="queue-now-bars">
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
         </div>
       </div>
-      <div class="queue-np-info">
-        <div class="queue-np-title">${item.title}</div>
-        <div class="queue-np-artist">${item.artist}</div>
+      <div class="queue-now-info">
+        <div class="queue-now-title">${item.title}</div>
+        <div class="queue-now-artist">${item.artist}</div>
+        <div class="queue-now-progress">
+          <div class="queue-now-progress-fill" id="queueProgressFill"></div>
+        </div>
       </div>
-      <button class="queue-np-menu" id="queueNpMenu" aria-label="Opciones">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
-          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-        </svg>
-      </button>
-    </div>
-    <div class="queue-np-progress">
-      <div class="queue-np-progress-fill" id="queueProgressFill"></div>
     </div>`;
-
-  // Wire up context menu on the ⋯ button
-  const menuBtn = el.querySelector('#queueNpMenu');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (typeof openContextMenu === 'function') openContextMenu(item);
-    });
-  }
-
-  // Ambient glow
+  // Update ambient glow with cover color
   const ambient = document.getElementById('queueAmbient');
   if (ambient) {
-    ambient.style.background = `radial-gradient(ellipse 80% 40% at 50% 0%, rgba(139,92,246,.28) 0%, transparent 70%)`;
+    ambient.style.background = `radial-gradient(ellipse 90% 45% at 50% -5%, rgba(139,92,246,.22) 0%, transparent 70%)`;
   }
-
+  // Sync progress bar
   _syncQueueProgress();
 }
 
@@ -6192,7 +6148,6 @@ function _getSimilarTracks(seedItem, count = 3) {
 }
 
 function _autoFillQueue() {
-  if (!autoplayMode) return;
   if (queue.length >= INFINITE_QUEUE_MIN) return;
   const hint = document.getElementById('queueInfiniteHint');
   const seed = playlist[currentTrackIdx] ||
@@ -6217,58 +6172,12 @@ function _autoFillQueue() {
 }
 
 /* ── Render queue list ──────────────────────────────── */
-function renderQueueHistory() {
-  if (!queueHistoryList) return;
-  const historySection = document.getElementById('queueHistorySection');
-  const historyDivider = document.getElementById('queueHistoryDivider');
-
-  if (historyTracks.length <= 1) { // 0 o solo la actual
-    if (historySection) historySection.style.display = 'none';
-    if (historyDivider) historyDivider.style.display = 'none';
-    if (queueScrollHint) queueScrollHint.classList.remove('visible');
-    return;
-  }
-
-  if (historySection) historySection.style.display = '';
-  if (historyDivider) historyDivider.style.display = '';
-
-  // No mostramos la canción actual (índice 0) en el historial de "pasadas"
-  const pastTracks = historyTracks.slice(1, 21); // Top 20 pasadas
-  queueHistoryList.innerHTML = '';
-
-  pastTracks.forEach((h, i) => {
-    const item = getTrackByFile(h.file);
-    if (!item) return;
-    const cover = item.cover || getPlaceholderCover(item.category);
-
-    const row = document.createElement('div');
-    row.className = 'queue-history-item';
-    row.innerHTML = `
-      <div class="queue-history-cover">
-        <img src="${cover}" alt="${item.title}" loading="lazy" />
-      </div>
-      <div class="queue-history-info">
-        <div class="queue-history-title">${item.title}</div>
-        <div class="queue-history-artist">${item.artist}</div>
-      </div>
-    `;
-    row.addEventListener('click', () => {
-      loadTrack(item, true);
-      if (typeof closeQueuePanel === 'function') closeQueuePanel();
-    });
-    queueHistoryList.appendChild(row);
-  });
-}
-
 function renderQueueList() {
   if (!queueList) return;
   const countBadge = document.getElementById('queueCountBadge');
-  const nextSection = document.getElementById('queueNextSection');
-
-  renderQueueHistory();
 
   if (queue.length === 0) {
-    if (nextSection) nextSection.style.display = 'none';
+    if (queueNextLabel) queueNextLabel.style.display = 'none';
     queueList.innerHTML = `
       <div class="queue-empty">
         <div class="queue-empty-icon">
@@ -6281,7 +6190,7 @@ function renderQueueList() {
     return;
   }
 
-  if (nextSection) nextSection.style.display = '';
+  if (queueNextLabel) queueNextLabel.style.display = '';
   if (countBadge) countBadge.textContent = queue.length;
 
   const prevItems = new Set([...queueList.querySelectorAll('.queue-item')].map(el => el.dataset.file));
@@ -6295,26 +6204,28 @@ function renderQueueList() {
 
     // ── Wrapper for swipe-to-delete ──
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;overflow:hidden;';
+    wrap.className = 'queue-item-wrap';
+    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;';
 
-    // Red delete bg — Apple Music red, right side
+    // Red delete bg revealed on left swipe
     const delBg = document.createElement('div');
+    delBg.className = 'queue-item-del-bg';
     delBg.innerHTML = `
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      <span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;margin-top:2px">Quitar</span>`;
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
     delBg.style.cssText = `
-      position:absolute;top:0;bottom:0;right:0;width:88px;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-      background:#ff3b30;color:#fff;border-radius:12px;
-      pointer-events:none;opacity:0;transition:opacity .08s;`;
+      position:absolute;top:0;bottom:0;right:0;width:90px;
+      display:flex;align-items:center;justify-content:center;gap:.35rem;
+      background:#e94f4f;color:#fff;border-radius:12px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
 
     const row = document.createElement('div');
     row.className = 'queue-item' + (isNew ? ' queue-item-new' : '');
     row.dataset.file = file;
     row.dataset.index = i;
-    if (isNew) row.style.animationDelay = (i * 25) + 'ms';
+    if (isNew) row.style.animationDelay = (i * 30) + 'ms';
     row.draggable = true;
-    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;background:transparent;';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
     row.innerHTML = `
       <div class="queue-item-drag" title="Arrastrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
@@ -6327,31 +6238,18 @@ function renderQueueList() {
         <div class="queue-item-title">${item.title}</div>
         <div class="queue-item-artist">${item.artist}</div>
       </div>
-      <button class="queue-item-btn" data-action="menu" aria-label="Opciones">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none">
-          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-        </svg>
-      </button>`;
-
-    // Tap ⋯ → context menu
-    row.querySelector('[data-action="menu"]').addEventListener('click', e => {
-      e.stopPropagation();
-      if (typeof openContextMenu === 'function') openContextMenu(item);
-    });
+      <div class="queue-item-actions">
+        <button class="queue-item-btn" data-action="remove" title="Quitar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
 
     const SWIPE_THRESHOLD = 80;
     let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
 
     function _removeItem() {
       if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-      wrap.style.transition = 'max-height .3s cubic-bezier(.4,0,1,1), opacity .25s, margin .3s';
-      wrap.style.maxHeight = wrap.offsetHeight + 'px';
-      requestAnimationFrame(() => {
-        wrap.style.maxHeight = '0';
-        wrap.style.opacity = '0';
-        wrap.style.marginBottom = '0';
-      });
-      row.style.transition = 'transform .25s cubic-bezier(.4,0,1,1)';
+      row.style.transition = 'transform .28s cubic-bezier(.4,0,1,1), opacity .28s';
       row.style.transform = 'translateX(-110%)';
       row.style.opacity = '0';
       setTimeout(() => {
@@ -6447,97 +6345,69 @@ function renderQueueList() {
 function renderSheetQueue() {
   const listEl   = document.getElementById('sheetQueueList');
   const countEl  = document.getElementById('sheetQueueAreaCount');
-  const areaEl   = document.getElementById('sheetQueueArea');
   if (!listEl) return;
 
   if (countEl) countEl.textContent = queue.length ? `${queue.length} canciones` : '';
 
-  listEl.innerHTML = '';
-
-  if (historyTracks.length > 1) {
-    const histHeader = document.createElement('div');
-    histHeader.className = 'sheet-queue-section-header';
-    histHeader.innerHTML = `<span>Historial</span>`;
-    listEl.appendChild(histHeader);
-
-    historyTracks.slice(1, 6).forEach(h => {
-      const item = getTrackByFile(h.file);
-      if (!item) return;
-      listEl.appendChild(createSheetQueueRow(item, true));
-    });
-  }
-
-  const npHeader = document.createElement('div');
-  npHeader.className = 'sheet-queue-section-header';
-  npHeader.innerHTML = `<span>Reproduciendo ahora</span>`;
-  listEl.appendChild(npHeader);
-  
-  const currentItem = playlist[currentTrackIdx];
-  if (currentItem) {
-    listEl.appendChild(createSheetQueueRow(currentItem, false, true));
-  }
-
-  if (queue.length > 0) {
-    const nextHeader = document.createElement('div');
-    nextHeader.className = 'sheet-queue-section-header';
-    nextHeader.innerHTML = `<span>A continuación</span>`;
-    listEl.appendChild(nextHeader);
-
-    queue.forEach((file, i) => {
-      const item = getTrackByFile(file);
-      if (!item) return;
-      listEl.appendChild(createSheetQueueRow(item));
-    });
-  } else if (historyTracks.length <= 1) {
+  if (queue.length === 0) {
     listEl.innerHTML = `
       <div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">
         La cola está vacía
       </div>`;
+    return;
   }
 
-  if (areaEl) {
-    const updateSheetHint = () => {
-      const hint = document.getElementById('sheetQueueScrollHint');
-      if (!hint) return;
-      const isAtTop = areaEl.scrollTop < 10;
-      hint.classList.toggle('visible', historyTracks.length > 1 && !isAtTop);
-    };
-    areaEl.removeEventListener('scroll', updateSheetHint);
-    areaEl.addEventListener('scroll', updateSheetHint, { passive: true });
-    if (!document.getElementById('sheetQueueScrollHint')) {
-      const hint = document.createElement('div');
-      hint.id = 'sheetQueueScrollHint';
-      hint.className = 'queue-scroll-hint';
-      hint.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg><span>Desliza para ver el historial</span>`;
-      areaEl.appendChild(hint);
-    }
-  }
-}
+  listEl.innerHTML = '';
+  queue.forEach((file, i) => {
+    const item = getTrackByFile(file);
+    if (!item) return;
+    const cover = item.cover || getPlaceholderCover(item.category);
 
-function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
-  const cover = item.cover || getPlaceholderCover(item.category);
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:relative;border-radius:10px;margin-bottom:2px;overflow:hidden;';
+    // ── Wrapper para swipe-to-delete ──
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;border-radius:10px;margin-bottom:2px;overflow:hidden;';
 
-  const delBg = document.createElement('div');
-  delBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg><span style="font-size:.62rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
-  delBg.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:80px;display:flex;align-items:center;justify-content:center;gap:.3rem;background:#e94f4f;color:#fff;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .1s;`;
+    // Fondo rojo revelado al deslizar izquierda
+    const delBg = document.createElement('div');
+    delBg.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
+    delBg.style.cssText = `
+      position:absolute;top:0;bottom:0;right:0;width:80px;
+      display:flex;align-items:center;justify-content:center;gap:.3rem;
+      background:#e94f4f;color:#fff;border-radius:10px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
 
-  const row = document.createElement('div');
-  row.className = 'sq-item' + (isHistory ? ' is-history' : '') + (isNowPlaying ? ' is-now-playing' : '');
-  row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
-  row.innerHTML = `
-    <div class="sq-item-cover"><img src="${cover}" alt="" /></div>
-    <div class="sq-item-info">
-      <div class="sq-item-title">${item.title}</div>
-      <div class="sq-item-artist">${item.artist}</div>
-    </div>
-    ${!isNowPlaying ? '<div class="sq-item-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>' : ''}
-  `;
+    const row = document.createElement('div');
+    row.className = 'sq-item';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
+    row.innerHTML = `
+      <div class="sq-item-cover">
+        <img src="${cover}" alt="${item.title}" loading="lazy" />
+      </div>
+      <div class="sq-item-info">
+        <div class="sq-item-title">${item.title}</div>
+        <div class="sq-item-artist">${item.artist}</div>
+      </div>
+      <div class="sq-item-drag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+      </div>`;
 
-  if (!isNowPlaying) {
     const SWIPE_THRESHOLD = 80;
     let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
+
+    function _removeSqItem() {
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
+      row.style.transition = 'transform .26s cubic-bezier(.4,0,1,1), opacity .26s';
+      row.style.transform = 'translateX(-110%)';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        const idx = queue.indexOf(file);
+        if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderSheetQueue(); }
+      }, 260);
+    }
 
     row.addEventListener('touchstart', e => {
       _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
@@ -6553,7 +6423,8 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
         if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
       }
       if (!_swiping) return;
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       _dx = Math.min(0, dx);
       row.style.transform = `translateX(${_dx}px)`;
       const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
@@ -6563,19 +6434,7 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
     row.addEventListener('touchend', () => {
       if (!_swiping) return;
       if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
-        if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-        row.style.transition = 'transform .26s cubic-bezier(.4,0,1,1), opacity .26s';
-        row.style.transform = 'translateX(-110%)';
-        row.style.opacity = '0';
-        setTimeout(() => {
-          if (isHistory) {
-            const idx = historyTracks.findIndex(h => h.file === item.file);
-            if (idx !== -1) { historyTracks.splice(idx, 1); saveHistory(); renderSheetQueue(); }
-          } else {
-            const idx = queue.indexOf(item.file);
-            if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderSheetQueue(); }
-          }
-        }, 260);
+        _removeSqItem();
       } else {
         row.style.transition = 'transform .32s cubic-bezier(.34,1.56,.64,1)';
         row.style.transform = 'translateX(0)';
@@ -6583,54 +6442,27 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
       }
       _dx = 0; _swiping = false;
     });
-  }
 
-  row.addEventListener('click', () => {
-    if (isNowPlaying) return;
-    if (!isHistory) {
-      const qIdx = queue.indexOf(item.file);
+    row.addEventListener('click', () => {
+      if (Math.abs(_dx) > 5) return;
+      const qIdx = queue.indexOf(file);
       if (qIdx >= 0) { queue.splice(0, qIdx + 1); saveQueue(); }
-    }
-    loadTrack(item, true);
-    renderSheetQueue();
-  });
+      loadTrack(item, true);
+      renderSheetQueue();
+    });
 
-  wrap.appendChild(delBg);
-  wrap.appendChild(row);
-  return wrap;
+    wrap.appendChild(delBg);
+    wrap.appendChild(row);
+    listEl.appendChild(wrap);
+  });
 }
 
 /* ── Open / close queue panel ───────────────────────── */
 function openQueuePanel() {
   if (!queuePanel) return;
-  
-  renderQueueList();
-  renderQueueNowPlaying(playlist[currentTrackIdx]);
-
   queuePanel.classList.add('open');
   if (queueOverlay) queueOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-
-  // Posicionar el scroll en el "Now Playing" para que el historial esté arriba oculto
-  if (queueScrollArea) {
-    const npSection = document.getElementById('queueNowPlaying');
-    if (npSection) {
-      queueScrollArea.scrollTop = npSection.offsetTop - 10;
-    }
-    
-    // Lógica del scroll-hint
-    const updateHint = () => {
-      if (!queueScrollHint) return;
-      const hasHistory = historyTracks.length > 1;
-      const isAtTop = queueScrollArea.scrollTop < 20;
-      queueScrollHint.classList.toggle('visible', hasHistory && !isAtTop);
-    };
-    queueScrollArea.removeEventListener('scroll', updateHint);
-    queueScrollArea.addEventListener('scroll', updateHint, { passive: true });
-    updateHint();
-  }
-
-  if (typeof hapticFeedback === 'function') hapticFeedback('medium');
 }
 
 function closeQueuePanel() {
