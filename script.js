@@ -10236,335 +10236,200 @@ function checkAuthWall() {
   }
 }
 /* ══════════════════════════════════════════════════════
-   ESTADÍSTICAS REALES — Racha · Minutos · Género · Artistas Top
-   Toda la lógica se basa en datos reales de localStorage
+   BIBLIOTECA — Apple Music style
+   Paneles: Playlists · Artistas · Canciones · Descargado
 ══════════════════════════════════════════════════════ */
+(function initBiblioteca() {
 
-const STATS_KEYS = {
-  streak:        'droply_streak_v1',   // { lastDay: 'YYYY-MM-DD', count: N }
-  minutesBase:   'droply_minutes_v2',  // { month: 'YYYY-MM', total: N }
-};
+  const panels = {
+    playlists:  { btn: 'libCatPlaylists',  panel: 'libPanelPlaylists',  render: renderLibPlaylists  },
+    artists:    { btn: 'libCatArtists',    panel: 'libPanelArtists',    render: renderLibArtists    },
+    songs:      { btn: 'libCatSongs',      panel: 'libPanelSongs',      render: renderLibSongs      },
+    downloaded: { btn: 'libCatDownloaded', panel: 'libPanelDownloaded', render: renderLibDownloaded },
+  };
 
-/* ── Utilidades de fecha ─────────────────────────────── */
-function todayStr() {
-  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-}
-function thisMonthStr() {
-  return new Date().toISOString().slice(0, 7);  // 'YYYY-MM'
-}
-function daysBetween(a, b) {
-  return Math.round((new Date(b) - new Date(a)) / 86400000);
-}
+  let activePanel = 'playlists';
 
-/* ── RACHA: calcular y actualizar ───────────────────── */
-function updateStreak() {
-  const today = todayStr();
-  let data = { lastDay: null, count: 0 };
-  try { data = JSON.parse(localStorage.getItem(STATS_KEYS.streak) || '{}'); } catch(_) {}
-  data.count = data.count || 0;
-  data.lastDay = data.lastDay || null;
-
-  if (data.lastDay === today) {
-    // Ya contabilizado hoy
-    return data.count;
+  function showPanel(key) {
+    activePanel = key;
+    // Toggle panels
+    Object.keys(panels).forEach(k => {
+      const p = document.getElementById(panels[k].panel);
+      const b = document.getElementById(panels[k].btn);
+      if (p) p.classList.toggle('active', k === key);
+      if (b) b.classList.toggle('lib-cat-row--active', k === key);
+    });
+    // Render content
+    panels[key]?.render();
   }
 
-  const diff = data.lastDay ? daysBetween(data.lastDay, today) : null;
-  if (diff === null || diff > 1) {
-    // Primera vez o se rompió la racha
-    data.count = 1;
-  } else if (diff === 1) {
-    // Día consecutivo
-    data.count += 1;
+  /* ── Playlists ──────────────────────────────────── */
+  function renderLibPlaylists() {
+    if (typeof renderPlaylists === 'function') renderPlaylists();
   }
-  data.lastDay = today;
 
-  try { localStorage.setItem(STATS_KEYS.streak, JSON.stringify(data)); } catch(_) {}
-  return data.count;
-}
+  /* ── Artistas ───────────────────────────────────── */
+  function renderLibArtists() {
+    const container = document.getElementById('libArtistsList');
+    if (!container) return;
 
-function getStreakCount() {
-  try {
-    const data = JSON.parse(localStorage.getItem(STATS_KEYS.streak) || '{}');
-    const today = todayStr();
-    const diff = data.lastDay ? daysBetween(data.lastDay, today) : 999;
-    // Si han pasado más de 1 día sin escuchar, la racha está rota
-    if (diff > 1) return 0;
-    return data.count || 0;
-  } catch(_) { return 0; }
-}
+    const plays = (() => { try { return JSON.parse(localStorage.getItem('droply_plays_v2') || '{}'); } catch(_) { return {}; } })();
+    const allMedia = typeof media !== 'undefined' ? media.filter(m => m.type === 'music') : [];
 
-/* ── MINUTOS ESTE MES: basado en historial real ─────── */
-function calcMinutesThisMonth() {
-  const month = thisMonthStr(); // 'YYYY-MM'
-  // Contar reproducciones de historyTracks este mes
-  // historyTracks = [{file, timestamp}, ...]
-  let count = 0;
-  try {
-    const hist = JSON.parse(localStorage.getItem('droply_history_v2') || '[]');
-    hist.forEach(h => {
-      if (h.timestamp) {
-        const d = new Date(h.timestamp).toISOString().slice(0, 7);
-        if (d === month) count++;
-      }
-    });
-  } catch(_) {}
-
-  // Además sumamos los minutos acumulados por el contador en tiempo real
-  let extraMinutes = 0;
-  try {
-    const mdata = JSON.parse(localStorage.getItem(STATS_KEYS.minutesBase) || '{}');
-    if (mdata.month === month) extraMinutes = mdata.total || 0;
-  } catch(_) {}
-
-  // Estimación: cada reproducción = ~3.5 min promedio + minutos acumulados en tiempo real
-  return (count * 3.5 | 0) + extraMinutes;
-}
-
-/* ── GÉNERO FAVORITO: basado en playCounts ──────────── */
-function calcFavoriteGenre() {
-  try {
-    const plays = JSON.parse(localStorage.getItem('droply_plays_v2') || '{}');
-    const tracks = JSON.parse(localStorage.getItem('droply_history_v2') || '[]');
-
-    // Construir mapa género → reproducciones
-    const genreScores = {};
-
-    // Usar media global si está disponible
-    const allMedia = (typeof media !== 'undefined') ? media : [];
+    const artistMap = {};
     allMedia.forEach(item => {
-      const cnt = plays[item.file] || 0;
-      if (cnt === 0) return;
-      const genre = item.category || item.genre;
-      if (!genre) return;
-      genreScores[genre] = (genreScores[genre] || 0) + cnt;
-    });
-
-    const sorted = Object.entries(genreScores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0) return sorted[0][0];
-
-    // Fallback: género más común en la biblioteca
-    const genreCount = {};
-    allMedia.forEach(item => {
-      const g = item.category || item.genre;
-      if (g) genreCount[g] = (genreCount[g] || 0) + 1;
-    });
-    const fallback = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
-    return fallback.length > 0 ? fallback[0][0] : '—';
-  } catch(_) { return '—'; }
-}
-
-/* ── ARTISTAS TOP: ordenados por reproducciones reales ── */
-function calcTopArtists(limit = 5) {
-  try {
-    const plays = JSON.parse(localStorage.getItem('droply_plays_v2') || '{}');
-    const allMedia = (typeof media !== 'undefined') ? media : [];
-
-    const artistScores = {};
-    allMedia.forEach(item => {
-      const cnt = plays[item.file] || 0;
       const primary = (item.artist || '').split(',')[0].trim();
       if (!primary) return;
-      if (!artistScores[primary]) {
-        artistScores[primary] = { name: primary, count: 0, cover: item.cover, category: item.category };
-      }
-      artistScores[primary].count += cnt;
+      if (!artistMap[primary]) artistMap[primary] = { name: primary, count: 0, cover: item.cover, category: item.category, tracks: [] };
+      artistMap[primary].count += (plays[item.file] || 0);
+      artistMap[primary].tracks.push(item);
     });
 
-    const sorted = Object.values(artistScores)
-      .filter(a => a.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit);
+    const sorted = Object.values(artistMap).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-    // Si no hay datos reales aún, devolver muestra aleatoria
-    if (sorted.length < 3) {
-      const allArtists = Object.values(artistScores);
-      return shuffleArray(allArtists).slice(0, limit);
-    }
-    return sorted;
-  } catch(_) { return []; }
-}
-
-/* ── RENDER de estadísticas en perfil ───────────────── */
-function renderRealStats() {
-  // 1. Racha
-  const streak = getStreakCount();
-  const streakEl = document.getElementById('streakCount');
-  if (streakEl) {
-    streakEl.textContent = streak;
-    // Cambiar emoji del fuego según racha
-    const fireEl = streakEl.closest('.streak-card')?.querySelector('.streak-icon svg');
-    if (streak === 0) {
-      const label = streakEl.closest('.streak-card')?.querySelector('.streak-label');
-      if (label) label.textContent = 'Sin racha activa — ¡escucha hoy!';
-    }
-  }
-
-  // 2. Minutos este mes
-  const minutes = calcMinutesThisMonth();
-  const minEl = document.getElementById('statMinutes');
-  if (minEl) minEl.textContent = minutes.toLocaleString('es-ES');
-
-  // 3. Género favorito
-  const genre = calcFavoriteGenre();
-  const genreEl = document.getElementById('statGenre');
-  if (genreEl) genreEl.textContent = genre;
-
-  // 4. Artistas top (reescribir el grid del perfil con datos reales ordenados)
-  const grid = document.getElementById('profileArtistsGrid');
-  if (!grid) return;
-
-  const topArtists = calcTopArtists(5);
-  if (topArtists.length === 0) return;
-
-  grid.innerHTML = '';
-  topArtists.forEach((artist, idx) => {
-    const photo = (typeof ARTIST_PHOTOS !== 'undefined' && ARTIST_PHOTOS[artist.name])
-      || artist.cover
-      || (typeof getPlaceholderCover === 'function' ? getPlaceholderCover(artist.category) : '');
-
-    const el = document.createElement('div');
-    el.className = 'home-artist-card';
-    el.innerHTML = `
-      <div class="home-artist-photo" style="position:relative;">
-        <img src="${photo}" alt="${artist.name}" loading="lazy" />
-        ${artist.count > 0 ? `<span class="artist-play-badge">#${idx + 1}</span>` : ''}
-      </div>
-      <p class="home-artist-name">${artist.name}</p>
-      ${artist.count > 0 ? `<p class="home-artist-plays">${artist.count} reproducciones</p>` : ''}
-    `;
-
-    const img = el.querySelector('img');
-    if (img && typeof fetchArtistPhotoFromWiki === 'function') {
-      img.onerror = () => { img.onerror = null; fetchArtistPhotoFromWiki(artist.name, img, photo); };
-      if (typeof ARTIST_PHOTOS !== 'undefined' && !ARTIST_PHOTOS[artist.name]) {
-        fetchArtistPhotoFromWiki(artist.name, img, photo);
+    container.innerHTML = '';
+    sorted.forEach(artist => {
+      const photo = (typeof ARTIST_PHOTOS !== 'undefined' && ARTIST_PHOTOS[artist.name]) || artist.cover || '';
+      const row = document.createElement('div');
+      row.className = 'lib-row';
+      row.innerHTML = `
+        <div class="lib-row-thumb lib-row-thumb--circle">
+          <img src="${photo}" alt="${artist.name}" loading="lazy" />
+        </div>
+        <div class="lib-row-info">
+          <span class="lib-row-title">${artist.name}</span>
+          <span class="lib-row-sub">${artist.tracks.length} cancion${artist.tracks.length !== 1 ? 'es' : ''}</span>
+        </div>
+        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const img = row.querySelector('img');
+      if (img && typeof fetchArtistPhotoFromWiki === 'function') {
+        img.onerror = () => { img.onerror = null; fetchArtistPhotoFromWiki(artist.name, img, photo); };
+        if (typeof ARTIST_PHOTOS !== 'undefined' && !ARTIST_PHOTOS[artist.name]) {
+          fetchArtistPhotoFromWiki(artist.name, img, photo);
+        }
       }
-    }
-
-    el.addEventListener('click', () => {
-      if (typeof media !== 'undefined') {
-        const artistTracks = media.filter(s => s.artist && s.artist.includes(artist.name));
-        if (artistTracks.length > 0 && typeof loadTrack === 'function') {
-          playlist = artistTracks;
+      row.addEventListener('click', () => {
+        if (typeof loadTrack === 'function' && artist.tracks.length > 0) {
+          playlist = artist.tracks;
           currentTrackIdx = 0;
           loadTrack(playlist[0]);
+          if (typeof showToast === 'function') showToast(`Reproduciendo ${artist.name}`, 'info');
         }
-      }
+      });
+      container.appendChild(row);
     });
 
-    grid.appendChild(el);
-  });
-}
+    if (sorted.length === 0) {
+      container.innerHTML = '<p class="lib-empty">Aún no has escuchado ningún artista.</p>';
+    }
+  }
 
-/* ── Conectar al ciclo de reproducción ──────────────── */
-// Actualizar racha y minutos cada vez que empieza una canción
-const _origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
-if (_origLoadTrack) {
-  const __origLoadTrack = window._droplyLoadTrackWrapped ? null : loadTrack;
-  if (__origLoadTrack) {
-    window._droplyLoadTrackWrapped = true;
-    // Hook via evento ya existente
-    document.addEventListener('droply:trackchange', () => {
-      updateStreak();
-      // Actualizar UI si el perfil está visible
-      if (document.getElementById('pageProfile')?.classList.contains('active')) {
-        renderRealStats();
-      }
+  /* ── Canciones ──────────────────────────────────── */
+  function renderLibSongs() {
+    const container = document.getElementById('libSongsList');
+    if (!container) return;
+
+    const plays = (() => { try { return JSON.parse(localStorage.getItem('droply_plays_v2') || '{}'); } catch(_) { return {}; } })();
+    const allMedia = typeof media !== 'undefined' ? media.filter(m => m.type === 'music') : [];
+
+    // Ordenar: más escuchadas primero, luego alfabético
+    const sorted = [...allMedia].sort((a, b) => {
+      const diff = (plays[b.file] || 0) - (plays[a.file] || 0);
+      return diff !== 0 ? diff : (a.title || '').localeCompare(b.title || '');
+    });
+
+    container.innerHTML = '';
+    sorted.forEach(item => {
+      const isDownloaded = typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file);
+      const playCount = plays[item.file] || 0;
+      const row = document.createElement('div');
+      row.className = 'lib-row';
+      row.innerHTML = `
+        <div class="lib-row-thumb">
+          <img src="${item.cover || ''}" alt="${item.title}" loading="lazy" />
+          ${isDownloaded ? '<span class="lib-dl-dot"></span>' : ''}
+        </div>
+        <div class="lib-row-info">
+          <span class="lib-row-title">${item.title}</span>
+          <span class="lib-row-sub">${(item.artist || '').split(',')[0].trim()}${playCount > 0 ? ` · ${playCount} rep.` : ''}</span>
+        </div>
+        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
+      row.addEventListener('click', () => {
+        if (typeof loadTrack === 'function') {
+          playlist = sorted;
+          currentTrackIdx = sorted.indexOf(item);
+          loadTrack(item);
+        }
+      });
+      container.appendChild(row);
+    });
+
+    if (sorted.length === 0) {
+      container.innerHTML = '<p class="lib-empty">No hay canciones en la biblioteca.</p>';
+    }
+  }
+
+  /* ── Descargado ─────────────────────────────────── */
+  function renderLibDownloaded() {
+    const container = document.getElementById('libDownloadedList');
+    const countEl   = document.getElementById('libDownloadedCount');
+    if (!container) return;
+
+    const allMedia   = typeof media !== 'undefined' ? media : [];
+    const downloaded = allMedia.filter(t => typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(t.file));
+
+    if (countEl) countEl.textContent = downloaded.length > 0 ? `${downloaded.length} canciones` : '';
+
+    container.innerHTML = '';
+    if (downloaded.length === 0) {
+      container.innerHTML = '<p class="lib-empty">No tienes canciones descargadas.</p>';
+      return;
+    }
+
+    downloaded.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'lib-row';
+      row.innerHTML = `
+        <div class="lib-row-thumb" style="position:relative;">
+          <img src="${item.cover || ''}" alt="${item.title}" loading="lazy" />
+          <span class="lib-dl-dot"></span>
+        </div>
+        <div class="lib-row-info">
+          <span class="lib-row-title">${item.title}</span>
+          <span class="lib-row-sub">${(item.artist || '').split(',')[0].trim()}</span>
+        </div>
+        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
+      row.addEventListener('click', () => {
+        if (typeof loadTrack === 'function') {
+          playlist = downloaded;
+          currentTrackIdx = downloaded.indexOf(item);
+          loadTrack(item);
+        }
+      });
+      container.appendChild(row);
     });
   }
-}
 
-// Contador de minutos reales en tiempo real (cada 60s de reproducción activa)
-let _statsLastMinute = Date.now();
-setInterval(() => {
-  if (typeof isPlaying !== 'undefined' && isPlaying && !document.hidden) {
-    const now = Date.now();
-    if (now - _statsLastMinute >= 60000) {
-      const month = thisMonthStr();
-      let mdata = { month, total: 0 };
-      try { mdata = JSON.parse(localStorage.getItem(STATS_KEYS.minutesBase) || '{}'); } catch(_) {}
-      if (mdata.month !== month) mdata = { month, total: 0 };
-      mdata.total += 1;
-      try { localStorage.setItem(STATS_KEYS.minutesBase, JSON.stringify(mdata)); } catch(_) {}
-      _statsLastMinute = now;
-      // Actualizar UI si está visible
-      const minEl = document.getElementById('statMinutes');
-      if (minEl && document.getElementById('pageProfile')?.classList.contains('active')) {
-        minEl.textContent = calcMinutesThisMonth().toLocaleString('es-ES');
-      }
-    }
-  } else {
-    _statsLastMinute = Date.now();
-  }
-}, 10000);
-
-// Sobreescribir renderProfile para incluir stats reales
-const _origRenderProfile = typeof renderProfile === 'function' ? renderProfile : null;
-renderProfile = function() {
-  if (_origRenderProfile) _origRenderProfile();
-  renderRealStats();
-};
-
-// Llamar al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-  updateStreak();
-  renderRealStats();
-});
-// Y también de inmediato por si DOMContentLoaded ya pasó
-setTimeout(() => { updateStreak(); renderRealStats(); }, 200);
-
-/* ══════════════════════════════════════════════════════
-   COMPARTIR APP — Share / Copy link
-══════════════════════════════════════════════════════ */
-(function initShareApp() {
-  const APP_URL  = window.location.origin + '/';
-  const APP_NAME = 'DROPLY Music';
-  const MSG      = `🎵 Escucha música sin anuncios en ${APP_NAME}\n${APP_URL}`;
-
-  function doShare() {
-    if (navigator.share) {
-      navigator.share({
-        title: APP_NAME,
-        text:  '🎵 Escucha música sin anuncios, gratis.',
-        url:   APP_URL
-      }).catch(() => {});
-    } else {
-      copyLink();
-    }
+  /* ── Init ────────────────────────────────────────── */
+  function init() {
+    Object.keys(panels).forEach(key => {
+      const btn = document.getElementById(panels[key].btn);
+      if (btn) btn.addEventListener('click', () => showPanel(key));
+    });
+    // Mostrar playlists por defecto
+    showPanel('playlists');
   }
 
-  function copyLink() {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(APP_URL).then(() => {
-        showToast('Enlace copiado al portapapeles', 'success');
-        // Feedback visual en el botón copiar
-        const btn = document.getElementById('btnCopyLink');
-        if (btn) {
-          btn.classList.add('copied');
-          setTimeout(() => btn.classList.remove('copied'), 2000);
-        }
-      }).catch(() => showToast('No se pudo copiar', 'error'));
-    } else {
-      // Fallback antiguo
-      const ta = document.createElement('textarea');
-      ta.value = APP_URL;
-      ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); showToast('Enlace copiado', 'success'); }
-      catch(_) { showToast('Copia: ' + APP_URL, 'info'); }
-      document.body.removeChild(ta);
-    }
+  document.addEventListener('DOMContentLoaded', init);
+  setTimeout(init, 300);
+
+  // Re-render cuando se navega a la página
+  const _origShowPage = typeof showPage === 'function' ? showPage : null;
+  if (_origShowPage && !window._biblioHooked) {
+    window._biblioHooked = true;
+    document.addEventListener('droply:pagechange', e => {
+      if (e.detail === 'pagePlaylists') showPanel(activePanel);
+    });
   }
 
-  function bind() {
-    const btnShare = document.getElementById('btnShareApp');
-    const btnCopy  = document.getElementById('btnCopyLink');
-    if (btnShare) btnShare.addEventListener('click', doShare);
-    if (btnCopy)  btnCopy.addEventListener('click', copyLink);
-  }
-
-  document.addEventListener('DOMContentLoaded', bind);
-  setTimeout(bind, 300); // por si DOMContentLoaded ya pasó
 })();

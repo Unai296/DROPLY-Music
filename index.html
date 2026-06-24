@@ -264,14 +264,92 @@
 
     <!-- PAGE: PLAYLISTS -->
     <div class="page" id="pagePlaylists">
-      <div class="library-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
-        <h2 class="library-title">Mis Playlists</h2>
-        <button class="btn-create-playlist" id="btnCreatePlaylist">
-          <svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nueva playlist
+
+      <!-- Biblioteca header — estilo Apple Music -->
+      <div class="lib-header">
+        <h1 class="lib-title">Biblioteca</h1>
+        <div class="lib-header-actions">
+          <button class="lib-icon-btn" id="btnCreatePlaylist" title="Nueva playlist">
+            <svg viewBox="0 0 24 24" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="lib-icon-btn" id="btnLibMore" title="Más opciones">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Categorías de biblioteca — filas con chevron -->
+      <div class="lib-categories">
+        <button class="lib-cat-row" id="libCatPlaylists">
+          <div class="lib-cat-icon" style="background:#fc3c44;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </div>
+          <span class="lib-cat-label">Playlists</span>
+          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="lib-cat-divider"></div>
+        <button class="lib-cat-row" id="libCatArtists">
+          <div class="lib-cat-icon" style="background:#fc3c44;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span class="lib-cat-label">Artistas</span>
+          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="lib-cat-divider"></div>
+        <button class="lib-cat-row" id="libCatSongs">
+          <div class="lib-cat-icon" style="background:#fc3c44;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <span class="lib-cat-label">Canciones</span>
+          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="lib-cat-divider"></div>
+        <button class="lib-cat-row" id="libCatDownloaded">
+          <div class="lib-cat-icon" style="background:#30d158;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <span class="lib-cat-label">Descargado</span>
+          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
-      <div id="playlistsGrid" class="playlists-grid"></div>
+
+      <!-- Sección activa (se inyecta por JS) -->
+      <div id="libSectionWrap">
+
+        <!-- PLAYLISTS (visible por defecto) -->
+        <div id="libPanelPlaylists" class="lib-panel active">
+          <div class="lib-panel-header">
+            <span class="lib-panel-title">Playlists</span>
+          </div>
+          <div id="playlistsGrid" class="playlists-grid lib-playlists-grid"></div>
+        </div>
+
+        <!-- ARTISTAS -->
+        <div id="libPanelArtists" class="lib-panel">
+          <div class="lib-panel-header">
+            <span class="lib-panel-title">Artistas</span>
+          </div>
+          <div id="libArtistsList" class="lib-rows-list"></div>
+        </div>
+
+        <!-- CANCIONES -->
+        <div id="libPanelSongs" class="lib-panel">
+          <div class="lib-panel-header">
+            <span class="lib-panel-title">Canciones</span>
+          </div>
+          <div id="libSongsList" class="lib-rows-list"></div>
+        </div>
+
+        <!-- DESCARGADO -->
+        <div id="libPanelDownloaded" class="lib-panel">
+          <div class="lib-panel-header">
+            <span class="lib-panel-title">Descargado</span>
+            <span class="lib-panel-count" id="libDownloadedCount"></span>
+          </div>
+          <div id="libDownloadedList" class="lib-rows-list"></div>
+        </div>
+
+      </div>
     </div>
 
     <!-- PAGE: FEED -->
@@ -370,42 +448,6 @@
               <span class="setting-label">Sesión privada</span>
               <div class="setting-toggle" data-setting="private-session"></div>
             </button>
-          </div>
-        </section>
-
-        <!-- Apoya DROPLY compartiendo -->
-        <section class="profile-section share-support-section">
-          <h2 class="profile-section-title">Apoya DROPLY</h2>
-          <div class="share-support-card">
-            <div class="share-support-top">
-              <div class="share-support-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                  <polyline points="16 6 12 2 8 6"/>
-                  <line x1="12" y1="2" x2="12" y2="15"/>
-                </svg>
-              </div>
-              <div class="share-support-text">
-                <p class="share-support-title">Comparte la app</p>
-                <p class="share-support-sub">Sin anuncios, gratis, para todos. Cuantos más seamos, mejor.</p>
-              </div>
-            </div>
-            <div class="share-support-actions">
-              <button class="btn-share-main" id="btnShareApp">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                  <polyline points="16 6 12 2 8 6"/>
-                  <line x1="12" y1="2" x2="12" y2="15"/>
-                </svg>
-                Compartir enlace
-              </button>
-              <button class="btn-share-copy" id="btnCopyLink" title="Copiar enlace">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                </svg>
-              </button>
-            </div>
           </div>
         </section>
 
@@ -857,9 +899,9 @@
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
       <span>Buscar</span>
     </button>
-    <button class="bnav-btn" data-page="pagePlaylists" aria-label="Playlists">
-      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      <span>Playlists</span>
+    <button class="bnav-btn" data-page="pagePlaylists" aria-label="Biblioteca">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><rect x="3" y="4" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/><rect x="3" y="10" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/><rect x="3" y="16" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/></svg>
+      <span>Biblioteca</span>
     </button>
     <button class="bnav-btn" data-page="pageFeed" aria-label="Feed">
       <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
