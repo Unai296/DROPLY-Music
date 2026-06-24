@@ -10119,19 +10119,14 @@ async function renderLibDownloads() {
 
 // ── Wire up Library Hub buttons ───────────────────────────
 (function initLibraryHub() {
-  // Hub card buttons
+  // Hub card buttons (Artists removed)
   const cardPl = document.getElementById('libCardPlaylists');
-  const cardAr = document.getElementById('libCardArtists');
   const cardLi = document.getElementById('libCardLiked');
   const cardDl = document.getElementById('libCardDownloads');
 
   if (cardPl) cardPl.addEventListener('click', () => {
     renderPlaylists();
     openLibSubpage('libPagePlaylists');
-  });
-  if (cardAr) cardAr.addEventListener('click', () => {
-    renderLibArtists();
-    openLibSubpage('libPageArtists');
   });
   if (cardLi) cardLi.addEventListener('click', () => {
     renderLibLiked();
@@ -10144,11 +10139,9 @@ async function renderLibDownloads() {
 
   // Back buttons
   const backPl = document.getElementById('libBackPlaylists');
-  const backAr = document.getElementById('libBackArtists');
   const backLi = document.getElementById('libBackLiked');
   const backDl = document.getElementById('libBackDownloads');
   if (backPl) backPl.addEventListener('click', () => closeLibSubpage('libPagePlaylists'));
-  if (backAr) backAr.addEventListener('click', () => closeLibSubpage('libPageArtists'));
   if (backLi) backLi.addEventListener('click', () => closeLibSubpage('libPageLiked'));
   if (backDl) backDl.addEventListener('click', () => closeLibSubpage('libPageDownloads'));
 

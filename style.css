@@ -4709,72 +4709,70 @@ body.liquid-enabled .liquid-bg {
   color: var(--text-soft);
 }
 /* ═══════════════════════════════════════════════════════════
-   LIBRARY HUB
+   LIBRARY HUB — Apple Music style
 ═══════════════════════════════════════════════════════════ */
-.lib-hub-header {
-  padding: 3.5rem 1.25rem 1rem;
+.lib-am-header {
+  padding: max(env(safe-area-inset-top), 3rem) 1.25rem .4rem;
 }
-.lib-hub-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -.03em;
+.lib-am-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -.04em;
   color: var(--text-primary);
 }
-.lib-hub-grid {
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-  padding: 0 1.1rem 7rem;
+.lib-am-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 7rem;
 }
-.lib-hub-card {
+.lib-am-section {
+  margin: .8rem 0 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
+}
+.lib-am-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 16px;
-  padding: 1rem 1.1rem;
-  cursor: pointer;
-  text-align: left;
+  gap: .85rem;
   width: 100%;
-  transition: background .15s, transform .12s;
+  padding: .8rem 1rem .8rem 1rem;
+  text-align: left;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background .12s;
 }
-.lib-hub-card:active {
-  background: rgba(255,255,255,.1);
-  transform: scale(.98);
+.lib-am-row:active {
+  background: rgba(255,255,255,.07);
 }
-.lib-hub-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+.lib-am-row-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.lib-hub-icon--purple { background: rgba(139,92,246,.22); color: #a78bfa; }
-.lib-hub-icon--blue   { background: rgba(59,130,246,.22); color: #60a5fa; }
-.lib-hub-icon--pink   { background: rgba(236,72,153,.22); color: #f472b6; }
-.lib-hub-icon--green  { background: rgba(16,185,129,.22); color: #34d399; }
-.lib-hub-card-info {
+.lib-am-row-label {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-}
-.lib-hub-card-name {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text-primary);
 }
-.lib-hub-card-sub {
+.lib-am-row-count {
   font-size: .8rem;
   color: var(--text-soft);
+  margin-right: .3rem;
 }
-.lib-hub-chevron {
-  color: var(--text-soft);
+.lib-am-row-chevron {
+  color: rgba(255,255,255,.3);
   flex-shrink: 0;
+}
+.lib-am-sep {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin-left: 3.5rem;
 }
 
 /* ═══════════════════════════════════════════════════════════
