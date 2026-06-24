@@ -4894,3 +4894,107 @@ body.liquid-enabled .liquid-bg {
   font-size: .75rem;
   color: var(--text-soft);
 }
+/* ══════════════════════════════════════════════════════
+   ARTISTAS TOP — badge de ranking y play count
+══════════════════════════════════════════════════════ */
+.artist-play-badge {
+  position: absolute;
+  bottom: 4px; left: 4px;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 700;
+  padding: .15rem .38rem;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,.15);
+  pointer-events: none;
+  letter-spacing: -.01em;
+}
+.home-artist-plays {
+  font-size: .65rem;
+  color: rgba(255,255,255,.35);
+  text-align: center;
+  margin-top: .1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════
+   SHARE SUPPORT CARD
+══════════════════════════════════════════════════════ */
+.share-support-card {
+  background: rgba(252,60,68,.08);
+  border: 1px solid rgba(252,60,68,.18);
+  border-radius: 18px;
+  padding: 1.1rem 1.1rem .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.share-support-top {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+.share-support-icon {
+  width: 42px; height: 42px;
+  flex-shrink: 0;
+  background: rgba(252,60,68,.14);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+}
+.share-support-icon svg { width: 20px; height: 20px; }
+.share-support-text { flex: 1; min-width: 0; }
+.share-support-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .15rem;
+  letter-spacing: -.01em;
+}
+.share-support-sub {
+  font-size: .76rem;
+  color: rgba(255,255,255,.45);
+  line-height: 1.4;
+}
+.share-support-actions {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+}
+.btn-share-main {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: .5rem;
+  padding: .7rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  transition: background .18s, transform .15s;
+  box-shadow: 0 4px 16px rgba(252,60,68,.3);
+}
+.btn-share-main:active { transform: scale(.97); background: var(--accent-dk); }
+.btn-share-copy {
+  width: 42px; height: 42px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  color: rgba(255,255,255,.55);
+  transition: background .18s, color .18s, transform .15s, border-color .18s;
+}
+.btn-share-copy:active { transform: scale(.93); }
+.btn-share-copy:hover { background: rgba(255,255,255,.12); color: #fff; }
+.btn-share-copy.copied {
+  background: rgba(48,209,88,.15);
+  border-color: rgba(48,209,88,.35);
+  color: #30d158;
+}

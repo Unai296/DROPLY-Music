@@ -10235,3 +10235,336 @@ function checkAuthWall() {
     fresh.addEventListener("click", handleAuth);
   }
 }
+/* ══════════════════════════════════════════════════════
+   ESTADÍSTICAS REALES — Racha · Minutos · Género · Artistas Top
+   Toda la lógica se basa en datos reales de localStorage
+══════════════════════════════════════════════════════ */
+
+const STATS_KEYS = {
+  streak:        'droply_streak_v1',   // { lastDay: 'YYYY-MM-DD', count: N }
+  minutesBase:   'droply_minutes_v2',  // { month: 'YYYY-MM', total: N }
+};
+
+/* ── Utilidades de fecha ─────────────────────────────── */
+function todayStr() {
+  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+}
+function thisMonthStr() {
+  return new Date().toISOString().slice(0, 7);  // 'YYYY-MM'
+}
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+/* ── RACHA: calcular y actualizar ───────────────────── */
+function updateStreak() {
+  const today = todayStr();
+  let data = { lastDay: null, count: 0 };
+  try { data = JSON.parse(localStorage.getItem(STATS_KEYS.streak) || '{}'); } catch(_) {}
+  data.count = data.count || 0;
+  data.lastDay = data.lastDay || null;
+
+  if (data.lastDay === today) {
+    // Ya contabilizado hoy
+    return data.count;
+  }
+
+  const diff = data.lastDay ? daysBetween(data.lastDay, today) : null;
+  if (diff === null || diff > 1) {
+    // Primera vez o se rompió la racha
+    data.count = 1;
+  } else if (diff === 1) {
+    // Día consecutivo
+    data.count += 1;
+  }
+  data.lastDay = today;
+
+  try { localStorage.setItem(STATS_KEYS.streak, JSON.stringify(data)); } catch(_) {}
+  return data.count;
+}
+
+function getStreakCount() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STATS_KEYS.streak) || '{}');
+    const today = todayStr();
+    const diff = data.lastDay ? daysBetween(data.lastDay, today) : 999;
+    // Si han pasado más de 1 día sin escuchar, la racha está rota
+    if (diff > 1) return 0;
+    return data.count || 0;
+  } catch(_) { return 0; }
+}
+
+/* ── MINUTOS ESTE MES: basado en historial real ─────── */
+function calcMinutesThisMonth() {
+  const month = thisMonthStr(); // 'YYYY-MM'
+  // Contar reproducciones de historyTracks este mes
+  // historyTracks = [{file, timestamp}, ...]
+  let count = 0;
+  try {
+    const hist = JSON.parse(localStorage.getItem('droply_history_v2') || '[]');
+    hist.forEach(h => {
+      if (h.timestamp) {
+        const d = new Date(h.timestamp).toISOString().slice(0, 7);
+        if (d === month) count++;
+      }
+    });
+  } catch(_) {}
+
+  // Además sumamos los minutos acumulados por el contador en tiempo real
+  let extraMinutes = 0;
+  try {
+    const mdata = JSON.parse(localStorage.getItem(STATS_KEYS.minutesBase) || '{}');
+    if (mdata.month === month) extraMinutes = mdata.total || 0;
+  } catch(_) {}
+
+  // Estimación: cada reproducción = ~3.5 min promedio + minutos acumulados en tiempo real
+  return (count * 3.5 | 0) + extraMinutes;
+}
+
+/* ── GÉNERO FAVORITO: basado en playCounts ──────────── */
+function calcFavoriteGenre() {
+  try {
+    const plays = JSON.parse(localStorage.getItem('droply_plays_v2') || '{}');
+    const tracks = JSON.parse(localStorage.getItem('droply_history_v2') || '[]');
+
+    // Construir mapa género → reproducciones
+    const genreScores = {};
+
+    // Usar media global si está disponible
+    const allMedia = (typeof media !== 'undefined') ? media : [];
+    allMedia.forEach(item => {
+      const cnt = plays[item.file] || 0;
+      if (cnt === 0) return;
+      const genre = item.category || item.genre;
+      if (!genre) return;
+      genreScores[genre] = (genreScores[genre] || 0) + cnt;
+    });
+
+    const sorted = Object.entries(genreScores).sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) return sorted[0][0];
+
+    // Fallback: género más común en la biblioteca
+    const genreCount = {};
+    allMedia.forEach(item => {
+      const g = item.category || item.genre;
+      if (g) genreCount[g] = (genreCount[g] || 0) + 1;
+    });
+    const fallback = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
+    return fallback.length > 0 ? fallback[0][0] : '—';
+  } catch(_) { return '—'; }
+}
+
+/* ── ARTISTAS TOP: ordenados por reproducciones reales ── */
+function calcTopArtists(limit = 5) {
+  try {
+    const plays = JSON.parse(localStorage.getItem('droply_plays_v2') || '{}');
+    const allMedia = (typeof media !== 'undefined') ? media : [];
+
+    const artistScores = {};
+    allMedia.forEach(item => {
+      const cnt = plays[item.file] || 0;
+      const primary = (item.artist || '').split(',')[0].trim();
+      if (!primary) return;
+      if (!artistScores[primary]) {
+        artistScores[primary] = { name: primary, count: 0, cover: item.cover, category: item.category };
+      }
+      artistScores[primary].count += cnt;
+    });
+
+    const sorted = Object.values(artistScores)
+      .filter(a => a.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+
+    // Si no hay datos reales aún, devolver muestra aleatoria
+    if (sorted.length < 3) {
+      const allArtists = Object.values(artistScores);
+      return shuffleArray(allArtists).slice(0, limit);
+    }
+    return sorted;
+  } catch(_) { return []; }
+}
+
+/* ── RENDER de estadísticas en perfil ───────────────── */
+function renderRealStats() {
+  // 1. Racha
+  const streak = getStreakCount();
+  const streakEl = document.getElementById('streakCount');
+  if (streakEl) {
+    streakEl.textContent = streak;
+    // Cambiar emoji del fuego según racha
+    const fireEl = streakEl.closest('.streak-card')?.querySelector('.streak-icon svg');
+    if (streak === 0) {
+      const label = streakEl.closest('.streak-card')?.querySelector('.streak-label');
+      if (label) label.textContent = 'Sin racha activa — ¡escucha hoy!';
+    }
+  }
+
+  // 2. Minutos este mes
+  const minutes = calcMinutesThisMonth();
+  const minEl = document.getElementById('statMinutes');
+  if (minEl) minEl.textContent = minutes.toLocaleString('es-ES');
+
+  // 3. Género favorito
+  const genre = calcFavoriteGenre();
+  const genreEl = document.getElementById('statGenre');
+  if (genreEl) genreEl.textContent = genre;
+
+  // 4. Artistas top (reescribir el grid del perfil con datos reales ordenados)
+  const grid = document.getElementById('profileArtistsGrid');
+  if (!grid) return;
+
+  const topArtists = calcTopArtists(5);
+  if (topArtists.length === 0) return;
+
+  grid.innerHTML = '';
+  topArtists.forEach((artist, idx) => {
+    const photo = (typeof ARTIST_PHOTOS !== 'undefined' && ARTIST_PHOTOS[artist.name])
+      || artist.cover
+      || (typeof getPlaceholderCover === 'function' ? getPlaceholderCover(artist.category) : '');
+
+    const el = document.createElement('div');
+    el.className = 'home-artist-card';
+    el.innerHTML = `
+      <div class="home-artist-photo" style="position:relative;">
+        <img src="${photo}" alt="${artist.name}" loading="lazy" />
+        ${artist.count > 0 ? `<span class="artist-play-badge">#${idx + 1}</span>` : ''}
+      </div>
+      <p class="home-artist-name">${artist.name}</p>
+      ${artist.count > 0 ? `<p class="home-artist-plays">${artist.count} reproducciones</p>` : ''}
+    `;
+
+    const img = el.querySelector('img');
+    if (img && typeof fetchArtistPhotoFromWiki === 'function') {
+      img.onerror = () => { img.onerror = null; fetchArtistPhotoFromWiki(artist.name, img, photo); };
+      if (typeof ARTIST_PHOTOS !== 'undefined' && !ARTIST_PHOTOS[artist.name]) {
+        fetchArtistPhotoFromWiki(artist.name, img, photo);
+      }
+    }
+
+    el.addEventListener('click', () => {
+      if (typeof media !== 'undefined') {
+        const artistTracks = media.filter(s => s.artist && s.artist.includes(artist.name));
+        if (artistTracks.length > 0 && typeof loadTrack === 'function') {
+          playlist = artistTracks;
+          currentTrackIdx = 0;
+          loadTrack(playlist[0]);
+        }
+      }
+    });
+
+    grid.appendChild(el);
+  });
+}
+
+/* ── Conectar al ciclo de reproducción ──────────────── */
+// Actualizar racha y minutos cada vez que empieza una canción
+const _origLoadTrack = typeof loadTrack === 'function' ? loadTrack : null;
+if (_origLoadTrack) {
+  const __origLoadTrack = window._droplyLoadTrackWrapped ? null : loadTrack;
+  if (__origLoadTrack) {
+    window._droplyLoadTrackWrapped = true;
+    // Hook via evento ya existente
+    document.addEventListener('droply:trackchange', () => {
+      updateStreak();
+      // Actualizar UI si el perfil está visible
+      if (document.getElementById('pageProfile')?.classList.contains('active')) {
+        renderRealStats();
+      }
+    });
+  }
+}
+
+// Contador de minutos reales en tiempo real (cada 60s de reproducción activa)
+let _statsLastMinute = Date.now();
+setInterval(() => {
+  if (typeof isPlaying !== 'undefined' && isPlaying && !document.hidden) {
+    const now = Date.now();
+    if (now - _statsLastMinute >= 60000) {
+      const month = thisMonthStr();
+      let mdata = { month, total: 0 };
+      try { mdata = JSON.parse(localStorage.getItem(STATS_KEYS.minutesBase) || '{}'); } catch(_) {}
+      if (mdata.month !== month) mdata = { month, total: 0 };
+      mdata.total += 1;
+      try { localStorage.setItem(STATS_KEYS.minutesBase, JSON.stringify(mdata)); } catch(_) {}
+      _statsLastMinute = now;
+      // Actualizar UI si está visible
+      const minEl = document.getElementById('statMinutes');
+      if (minEl && document.getElementById('pageProfile')?.classList.contains('active')) {
+        minEl.textContent = calcMinutesThisMonth().toLocaleString('es-ES');
+      }
+    }
+  } else {
+    _statsLastMinute = Date.now();
+  }
+}, 10000);
+
+// Sobreescribir renderProfile para incluir stats reales
+const _origRenderProfile = typeof renderProfile === 'function' ? renderProfile : null;
+renderProfile = function() {
+  if (_origRenderProfile) _origRenderProfile();
+  renderRealStats();
+};
+
+// Llamar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+  updateStreak();
+  renderRealStats();
+});
+// Y también de inmediato por si DOMContentLoaded ya pasó
+setTimeout(() => { updateStreak(); renderRealStats(); }, 200);
+
+/* ══════════════════════════════════════════════════════
+   COMPARTIR APP — Share / Copy link
+══════════════════════════════════════════════════════ */
+(function initShareApp() {
+  const APP_URL  = window.location.origin + '/';
+  const APP_NAME = 'DROPLY Music';
+  const MSG      = `🎵 Escucha música sin anuncios en ${APP_NAME}\n${APP_URL}`;
+
+  function doShare() {
+    if (navigator.share) {
+      navigator.share({
+        title: APP_NAME,
+        text:  '🎵 Escucha música sin anuncios, gratis.',
+        url:   APP_URL
+      }).catch(() => {});
+    } else {
+      copyLink();
+    }
+  }
+
+  function copyLink() {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(APP_URL).then(() => {
+        showToast('Enlace copiado al portapapeles', 'success');
+        // Feedback visual en el botón copiar
+        const btn = document.getElementById('btnCopyLink');
+        if (btn) {
+          btn.classList.add('copied');
+          setTimeout(() => btn.classList.remove('copied'), 2000);
+        }
+      }).catch(() => showToast('No se pudo copiar', 'error'));
+    } else {
+      // Fallback antiguo
+      const ta = document.createElement('textarea');
+      ta.value = APP_URL;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Enlace copiado', 'success'); }
+      catch(_) { showToast('Copia: ' + APP_URL, 'info'); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  function bind() {
+    const btnShare = document.getElementById('btnShareApp');
+    const btnCopy  = document.getElementById('btnCopyLink');
+    if (btnShare) btnShare.addEventListener('click', doShare);
+    if (btnCopy)  btnCopy.addEventListener('click', copyLink);
+  }
+
+  document.addEventListener('DOMContentLoaded', bind);
+  setTimeout(bind, 300); // por si DOMContentLoaded ya pasó
+})();
