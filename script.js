@@ -3264,6 +3264,11 @@ function showPage(pageId) {
   if (pageId === "pageMixes") { /* Mixes removed */ }
   closeContextMenu();
   updateBottomNavSlider();
+
+  // Restaurar nav y volver al top al cambiar de página
+  if (typeof window._droplyShowNav === 'function') window._droplyShowNav();
+  window.scrollTo(0, 0);
+
   try {
     const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists", pageFeed: "feed", pageProfile: "profile" };
     const hash = hashMap[pageId];
@@ -3657,7 +3662,6 @@ activeAudio.addEventListener("loadedmetadata", function () {
 /* ── playing: se dispara cuando el audio empieza a reproducirse de verdad ──── */
 /* En iOS/Safari loadedmetadata llega tarde; 'playing' es más fiable           */
 activeAudio.addEventListener("playing", function () {
-  document.body.classList.remove("is-buffering");
   _updateMediaSessionPosition();
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
   if ("mediaSession" in navigator) {
@@ -3671,26 +3675,11 @@ activeAudio.addEventListener("pause", function () {
   // Solo actualiza si el audio está realmente pausado
   // (evita falsos positivos por cambio de src)
   if (!this.paused) return;
-  document.body.classList.remove("is-buffering");
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
   }
-}, { passive: true });
-
-/* ── Buffering: muestra spinner cuando el browser espera datos de red ── */
-activeAudio.addEventListener("waiting", function () {
-  if (isPlaying) document.body.classList.add("is-buffering");
-}, { passive: true });
-activeAudio.addEventListener("stalled", function () {
-  if (isPlaying) document.body.classList.add("is-buffering");
-}, { passive: true });
-activeAudio.addEventListener("canplay", function () {
-  document.body.classList.remove("is-buffering");
-}, { passive: true });
-activeAudio.addEventListener("canplaythrough", function () {
-  document.body.classList.remove("is-buffering");
 }, { passive: true });
 
 /* ── Lock compartido para que el handler "error" y el watchdog nunca
@@ -3715,7 +3704,6 @@ activeAudio.addEventListener("error", function () {
   // src/abort, no un fallo de carga. Ignorar.
   if (!activeAudio.error) return;
 
-  document.body.classList.remove("is-buffering");
   isPlaying = false;
   updatePlayIcons(false);
   if ("mediaSession" in navigator) {
@@ -3826,7 +3814,7 @@ function _armPlaybackWatchdog() {
     }, 100);
   }
 
-  _watchdogTimer = setTimeout(() => check(true), 2500);
+  _watchdogTimer = setTimeout(() => check(true), 4000);
 }
 
 /* ── Reanudar reproducción (resume) con vigilancia de watchdog ──────────────
@@ -4003,7 +3991,6 @@ function _clearPendingAudioWatchers() {
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
   _watchdogCheckpoint = null;
   _retryInFlight = false;
-  document.body.classList.remove("is-buffering");
 }
 
 /* ── Background blur transition (visual only) ─────── */
@@ -4279,20 +4266,15 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 
     window._droplyFromLockscreen = false;
 
-    // Mostrar spinner de buffering inmediatamente al iniciar carga
-    document.body.classList.add("is-buffering");
-
     // Llamada síncrona a play() para no perder el user gesture del lockscreen.
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
         isPlaying = true;
         updatePlayIcons(true);
-        // El evento "playing" quitará is-buffering cuando el audio realmente suene
       })
       .catch(err => {
         if (myToken !== _playToken) return;
-        document.body.classList.remove("is-buffering");
         // AbortError es normal: el navegador cancela play() cuando se cambia
         // src antes de que la promesa resuelva (cambio rápido de canción).
         // No actualizar isPlaying en ese caso — la nueva pista ya gestiona su propio estado.
@@ -5605,14 +5587,18 @@ window.addEventListener("scroll", () => {
     const dy = y - lastY;
     lastY    = y;
 
+    // Si volvemos al top (por showPage) ignorar el evento para no
+    // calcular un delta erróneo que ocultaría la nav recién restaurada
+    if (y === 0) { clearTimeout(hideTimer); return; }
+
     clearTimeout(hideTimer);
 
     if (dy > 4) {
-      /* Scrolling down → show nav */
-      showNav();
-    } else if (dy < -4) {
-      /* Scrolling up → collapse to pill */
+      /* Scrolling down → hide nav */
       hideNav();
+    } else if (dy < -4) {
+      /* Scrolling up → show nav */
+      showNav();
     }
 
     /* After 5s idle → restore nav */
