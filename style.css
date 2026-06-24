@@ -4782,7 +4782,7 @@ body.liquid-enabled .liquid-bg {
   position: fixed;
   inset: 0;
   background: #080808;
-  z-index: 300;
+  z-index: 700;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -4826,7 +4826,7 @@ body.liquid-enabled .liquid-bg {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 6rem;
+  padding-bottom: calc(var(--miniplayer-h, 0px) + var(--bottomnav-h, 56px) + var(--safe-bottom, 0px) + 1rem);
 }
 
 /* ── Artists grid in library ── */
