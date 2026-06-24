@@ -3700,12 +3700,19 @@ activeAudio.addEventListener("error", function () {
   setTimeout(() => {
     if (myToken !== _playToken) { _retryInFlight = false; return; } // ya se cargó otra cosa, no interferir
     if (!activeAudio.src || (activeAudio.currentSrc || activeAudio.src) !== failedSrc) { _retryInFlight = false; return; }
-    try { activeAudio.load(); } catch(_) {}
-    setTimeout(() => {
+    // Escuchar canplay antes de llamar a play() para no lanzar otro AbortError
+    const onCanPlay = () => {
       _retryInFlight = false;
       if (myToken !== _playToken) return;
       activeAudio.play().catch(() => {});
-    }, 100);
+    };
+    activeAudio.addEventListener('canplay', onCanPlay, { once: true });
+    try { activeAudio.load(); } catch(_) {}
+    // Seguro: si canplay tarda más de 5s algo va mal, limpiamos el flag
+    setTimeout(() => {
+      activeAudio.removeEventListener('canplay', onCanPlay);
+      _retryInFlight = false;
+    }, 5000);
   }, 800);
 }, { passive: true });
 
@@ -3964,6 +3971,7 @@ function isIOSForOfflineCheck() {
    al cambiar de canción": dos reintentos compitiendo por el mismo audioEl). */
 function _clearPendingAudioWatchers() {
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
+  _watchdogCheckpoint = null;
   _retryInFlight = false;
 }
 
@@ -4219,8 +4227,10 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
+    // Asignar src es suficiente: el navegador inicia la carga internamente.
+    // NO llamar a load() aquí — load() aborta la promesa de play() que viene
+    // justo después y lanza AbortError, dejando el audio cargando pero mudo.
     activeAudio.src = audioSrc;
-    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
@@ -4233,7 +4243,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     window._droplyFromLockscreen = false;
 
     // Llamada síncrona a play() para no perder el user gesture del lockscreen.
-    // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -4242,6 +4251,10 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       })
       .catch(err => {
         if (myToken !== _playToken) return;
+        // AbortError es normal: el navegador cancela play() cuando se cambia
+        // src antes de que la promesa resuelva (cambio rápido de canción).
+        // No actualizar isPlaying en ese caso — la nueva pista ya gestiona su propio estado.
+        if (err && err.name === 'AbortError') return;
         console.warn("[DROPLY] play error:", err.name, err.message);
         isPlaying = false;
         updatePlayIcons(false);
