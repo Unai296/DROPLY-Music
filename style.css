@@ -1121,6 +1121,8 @@ input { font-family: inherit; }
   padding: 1rem 2rem 0.5rem;
   gap: 1rem;
   transition: opacity .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
+  /* Isolated layer — never shows behind queue/lyrics */
+  isolation: isolate;
 }
 .sheet-cover-area.slide-out {
   opacity: 0;
@@ -1259,13 +1261,16 @@ input { font-family: inherit; }
 }
 /* ── QUEUE AREA — inside now playing sheet ── */
 .sheet-queue-area {
+  /* Full-page takeover — sits above cover/lyrics in the sheet flex flow */
   flex: 1; min-height: 0;
   display: none;
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
-  transform: translateY(22px);
-  transition: opacity .3s ease, transform .35s cubic-bezier(.16,1,.3,1);
+  transform: translateY(18px);
+  transition: opacity .28s ease, transform .32s cubic-bezier(.16,1,.3,1);
+  /* Solid background so nothing leaks through from below */
+  background: transparent;
 }
 .sheet-queue-area.visible { display: flex; }
 .sheet-queue-area.active {

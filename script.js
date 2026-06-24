@@ -4033,7 +4033,12 @@ function setSheetView(view) {
       coverArea.style.display = '';
       requestAnimationFrame(() => coverArea.classList.remove('slide-out'));
     } else {
-      coverArea.classList.add('slide-out');
+      // When switching to queue or lyrics, hide cover immediately — no bleed-through
+      if (view === 'queue') {
+        coverArea.style.display = 'none';
+      } else {
+        coverArea.classList.add('slide-out');
+      }
     }
   }
 
@@ -4071,9 +4076,10 @@ function setSheetView(view) {
     }
   }
 
-  // Tras la animación más larga, oculta del todo lo que ya no es la vista activa
+  // Tras la animación, oculta lo que ya no es la vista activa
   _sheetViewHideTimer = setTimeout(() => {
-    if (coverArea  && view !== 'cover')  coverArea.style.display  = 'none';
+    // Cover already hidden instantly when queue opened; only restore needs cleanup
+    if (coverArea  && view !== 'cover'  && view !== 'queue') coverArea.style.display = 'none';
     if (lyricsArea && view !== 'lyrics') lyricsArea.style.display = 'none';
     if (queueArea  && view !== 'queue')  queueArea.classList.remove('visible');
     _sheetViewHideTimer = null;
@@ -6549,35 +6555,24 @@ function renderSheetQueue() {
   const areaEl   = document.getElementById('sheetQueueArea');
   if (!listEl) return;
 
-  if (countEl) countEl.textContent = queue.length ? `${queue.length} canciones` : '';
+  // Contar solo las de "a continuación" para el badge
+  if (countEl) countEl.textContent = queue.length ? `${queue.length}` : '';
 
   listEl.innerHTML = '';
-  // Ensure the list can scroll without triggering sheet-dismiss
   listEl.style.touchAction = 'pan-y';
 
-  if (historyTracks.length > 1) {
-    const histHeader = document.createElement('div');
-    histHeader.className = 'sheet-queue-section-header';
-    histHeader.innerHTML = `<span>Historial</span>`;
-    listEl.appendChild(histHeader);
-
-    historyTracks.slice(1, 6).forEach(h => {
-      const item = getTrackByFile(h.file);
-      if (!item) return;
-      listEl.appendChild(createSheetQueueRow(item, true));
-    });
-  }
-
+  // ── REPRODUCIENDO AHORA ──
   const npHeader = document.createElement('div');
   npHeader.className = 'sheet-queue-section-header';
   npHeader.innerHTML = `<span>Reproduciendo ahora</span>`;
   listEl.appendChild(npHeader);
-  
+
   const currentItem = playlist[currentTrackIdx];
   if (currentItem) {
     listEl.appendChild(createSheetQueueRow(currentItem, false, true));
   }
 
+  // ── A CONTINUACIÓN ──
   if (queue.length > 0) {
     const nextHeader = document.createElement('div');
     nextHeader.className = 'sheet-queue-section-header';
@@ -6589,40 +6584,27 @@ function renderSheetQueue() {
       if (!item) return;
       listEl.appendChild(createSheetQueueRow(item));
     });
-  } else if (historyTracks.length <= 1) {
-    listEl.innerHTML = `
-      <div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">
-        La cola está vacía
-      </div>`;
   }
 
-  // Scroll the list so "Reproduciendo ahora" is at the top on open
-  if (areaEl) {
-    requestAnimationFrame(() => {
-      const npHeader = Array.from(listEl.querySelectorAll('.sheet-queue-section-header'))
-        .find(el => el.textContent.includes('Reproduciendo'));
-      if (npHeader) {
-        listEl.scrollTop = Math.max(0, npHeader.offsetTop - 8);
-      }
+  // ── HISTORIAL (reciente primero, sin la que suena) ──
+  // historyTracks[0] es la actual, [1] es la anterior, etc.
+  const histItems = historyTracks.slice(1, 8)
+    .map(h => getTrackByFile(h.file))
+    .filter(Boolean);
+
+  if (histItems.length > 0) {
+    const histHeader = document.createElement('div');
+    histHeader.className = 'sheet-queue-section-header';
+    histHeader.innerHTML = `<span>Historial reciente</span>`;
+    listEl.appendChild(histHeader);
+
+    histItems.forEach(item => {
+      listEl.appendChild(createSheetQueueRow(item, true));
     });
   }
 
-  if (areaEl) {
-    const updateSheetHint = () => {
-      const hint = document.getElementById('sheetQueueScrollHint');
-      if (!hint) return;
-      const isAtTop = areaEl.scrollTop < 10;
-      hint.classList.toggle('visible', historyTracks.length > 1 && !isAtTop);
-    };
-    areaEl.removeEventListener('scroll', updateSheetHint);
-    areaEl.addEventListener('scroll', updateSheetHint, { passive: true });
-    if (!document.getElementById('sheetQueueScrollHint')) {
-      const hint = document.createElement('div');
-      hint.id = 'sheetQueueScrollHint';
-      hint.className = 'queue-scroll-hint';
-      hint.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg><span>Desliza para ver el historial</span>`;
-      areaEl.appendChild(hint);
-    }
+  if (!currentItem && queue.length === 0 && histItems.length === 0) {
+    listEl.innerHTML = `<div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">La cola está vacía</div>`;
   }
 }
 
@@ -6733,16 +6715,7 @@ function openQueuePanel() {
       queueScrollArea.scrollTop = npSection.offsetTop - 10;
     }
     
-    // Lógica del scroll-hint
-    const updateHint = () => {
-      if (!queueScrollHint) return;
-      const hasHistory = historyTracks.length > 1;
-      const isAtTop = queueScrollArea.scrollTop < 20;
-      queueScrollHint.classList.toggle('visible', hasHistory && !isAtTop);
-    };
-    queueScrollArea.removeEventListener('scroll', updateHint);
-    queueScrollArea.addEventListener('scroll', updateHint, { passive: true });
-    updateHint();
+    // No scroll hint — historial visible directamente en la lista
   }
 
   if (typeof hapticFeedback === 'function') hapticFeedback('medium');
