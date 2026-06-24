@@ -2977,7 +2977,6 @@ let playlist        = [];        // current PLAYBACK context (playlist, favorite
 let playlistSource  = "library"; // "library" | "playlist:<id>" | "favorites" | "history"
 let shuffleMode     = false;
 let repeatMode      = loadRepeatMode(); // 'off' | 'one' | 'all'
-let autoplayMode    = true; // Cola infinita
 
 // ── PERSISTENCE KEYS ──
 const LIKED_KEY    = "droply_liked_v2";
@@ -3004,12 +3003,6 @@ function updateRepeatUI() {
   sheetRepeat.classList.toggle("repeat-all", repeatMode === "all");
   const labels = { off: "Repetir", one: "Repetir canción", all: "Repetir playlist" };
   sheetRepeat.setAttribute("aria-label", labels[repeatMode] || labels.off);
-
-  if (queueRepeatBtn) {
-    queueRepeatBtn.classList.toggle("active", repeatMode !== "off");
-    queueRepeatBtn.classList.toggle("repeat-one", repeatMode === "one");
-    queueRepeatBtn.classList.toggle("repeat-all", repeatMode === "all");
-  }
 }
 function cycleRepeatMode() {
   repeatMode = repeatMode === "off" ? "one" : repeatMode === "one" ? "all" : "off";
@@ -3105,12 +3098,6 @@ const queueList        = document.getElementById("queueList");
 const queueNowPlaying  = document.getElementById("queueNowPlaying");
 const queueNextLabel   = document.getElementById("queueNextLabel");
 const queueClearBtn    = document.getElementById("queueClearBtn");
-const queueHistoryList = document.getElementById("queueHistoryList");
-const queueHistoryClearBtn = document.getElementById("queueHistoryClearBtn");
-const queueScrollArea  = document.getElementById("queueScrollArea");
-const queueScrollHint  = document.getElementById("queueScrollHint");
-const queueInfiniteBtn = document.getElementById("queueInfiniteBtn");
-const queueRepeatBtn   = document.getElementById("queueRepeatBtn");
 const queueCloseBtn    = document.getElementById("queueCloseBtn");
 const contextMenu      = document.getElementById("contextMenu");
 const ctxPlayNow       = document.getElementById("ctxPlayNow");
@@ -3255,7 +3242,7 @@ function showPage(pageId) {
   bottomNav.querySelectorAll(".bnav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.page === pageId);
   });
-  if (pageId === "pagePlaylists") renderPlaylists();
+  if (pageId === "pageLibrary") { renderLibraryHub(); }
   if (pageId === "pageFeed") { if (typeof Feed !== "undefined") Feed.init(); }
   if (pageId === "pageProfile") {
     renderProfile();
@@ -3264,13 +3251,8 @@ function showPage(pageId) {
   if (pageId === "pageMixes") { /* Mixes removed */ }
   closeContextMenu();
   updateBottomNavSlider();
-
-  // Restaurar nav y volver al top al cambiar de página
-  if (typeof window._droplyShowNav === 'function') window._droplyShowNav();
-  window.scrollTo(0, 0);
-
   try {
-    const hashMap = { pageHome: "", pageSearch: "search", pagePlaylists: "playlists", pageFeed: "feed", pageProfile: "profile" };
+    const hashMap = { pageHome: "", pageSearch: "search", pageLibrary: "library", pageFeed: "feed", pageProfile: "profile" };
     const hash = hashMap[pageId];
     if (hash !== undefined && location.hash !== "#" + hash) {
       history.replaceState(null, "", hash ? "#" + hash : location.pathname + location.search);
@@ -3280,7 +3262,7 @@ function showPage(pageId) {
 
 function handleHashRoute() {
   const route = (location.hash || "").slice(1).toLowerCase();
-  const map = { search: "pageSearch", playlists: "pagePlaylists", feed: "pageFeed", profile: "pageProfile", home: "pageHome", "": "pageHome" };
+  const map = { search: "pageSearch", library: "pageLibrary", playlists: "pageLibrary", feed: "pageFeed", profile: "pageProfile", home: "pageHome", "": "pageHome" };
   const pageId = map[route];
   if (pageId) showPage(pageId);
 }
@@ -3718,19 +3700,12 @@ activeAudio.addEventListener("error", function () {
   setTimeout(() => {
     if (myToken !== _playToken) { _retryInFlight = false; return; } // ya se cargó otra cosa, no interferir
     if (!activeAudio.src || (activeAudio.currentSrc || activeAudio.src) !== failedSrc) { _retryInFlight = false; return; }
-    // Escuchar canplay antes de llamar a play() para no lanzar otro AbortError
-    const onCanPlay = () => {
+    try { activeAudio.load(); } catch(_) {}
+    setTimeout(() => {
       _retryInFlight = false;
       if (myToken !== _playToken) return;
       activeAudio.play().catch(() => {});
-    };
-    activeAudio.addEventListener('canplay', onCanPlay, { once: true });
-    try { activeAudio.load(); } catch(_) {}
-    // Seguro: si canplay tarda más de 5s algo va mal, limpiamos el flag
-    setTimeout(() => {
-      activeAudio.removeEventListener('canplay', onCanPlay);
-      _retryInFlight = false;
-    }, 5000);
+    }, 100);
   }, 800);
 }, { passive: true });
 
@@ -3989,7 +3964,6 @@ function isIOSForOfflineCheck() {
    al cambiar de canción": dos reintentos compitiendo por el mismo audioEl). */
 function _clearPendingAudioWatchers() {
   if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
-  _watchdogCheckpoint = null;
   _retryInFlight = false;
 }
 
@@ -4038,12 +4012,7 @@ function setSheetView(view) {
       coverArea.style.display = '';
       requestAnimationFrame(() => coverArea.classList.remove('slide-out'));
     } else {
-      // When switching to queue or lyrics, hide cover immediately — no bleed-through
-      if (view === 'queue') {
-        coverArea.style.display = 'none';
-      } else {
-        coverArea.classList.add('slide-out');
-      }
+      coverArea.classList.add('slide-out');
     }
   }
 
@@ -4081,10 +4050,9 @@ function setSheetView(view) {
     }
   }
 
-  // Tras la animación, oculta lo que ya no es la vista activa
+  // Tras la animación más larga, oculta del todo lo que ya no es la vista activa
   _sheetViewHideTimer = setTimeout(() => {
-    // Cover already hidden instantly when queue opened; only restore needs cleanup
-    if (coverArea  && view !== 'cover'  && view !== 'queue') coverArea.style.display = 'none';
+    if (coverArea  && view !== 'cover')  coverArea.style.display  = 'none';
     if (lyricsArea && view !== 'lyrics') lyricsArea.style.display = 'none';
     if (queueArea  && view !== 'queue')  queueArea.classList.remove('visible');
     _sheetViewHideTimer = null;
@@ -4251,10 +4219,8 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
-    // Asignar src es suficiente: el navegador inicia la carga internamente.
-    // NO llamar a load() aquí — load() aborta la promesa de play() que viene
-    // justo después y lanza AbortError, dejando el audio cargando pero mudo.
     activeAudio.src = audioSrc;
+    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
@@ -4267,6 +4233,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     window._droplyFromLockscreen = false;
 
     // Llamada síncrona a play() para no perder el user gesture del lockscreen.
+    // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
     activeAudio.play()
       .then(() => {
         if (myToken !== _playToken) return;
@@ -4275,10 +4242,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       })
       .catch(err => {
         if (myToken !== _playToken) return;
-        // AbortError es normal: el navegador cancela play() cuando se cambia
-        // src antes de que la promesa resuelva (cambio rápido de canción).
-        // No actualizar isPlaying en ese caso — la nueva pista ya gestiona su propio estado.
-        if (err && err.name === 'AbortError') return;
         console.warn("[DROPLY] play error:", err.name, err.message);
         isPlaying = false;
         updatePlayIcons(false);
@@ -4354,36 +4317,19 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
 /* ── Swipe-down-to-close: drag sheet with finger ─────── */
 (function sheetSwipeDismiss() {
   const sheet = nowPlayingSheet;
-  const THRESHOLD    = 130;
-  const VELOCITY_MIN = 0.45;
+  const THRESHOLD    = 120;
+  const VELOCITY_MIN = 0.5;
   let startY = 0, startX = 0, dy = 0, startTime = 0;
   let dragging = false, locked = false;
 
-  function _isInsideScrollable(target) {
-    // Returns true if the touch started inside a scrollable inner area
-    // (queue list or lyrics scroll) that still has scroll room upward
-    const queueArea  = document.getElementById('sheetQueueArea');
-    const queueList  = document.getElementById('sheetQueueList');
-    const lyricsScroll = document.getElementById('sheetLyricsScroll');
-    if (queueArea && queueArea.classList.contains('active')) {
-      // We're in queue view — only allow dismiss from the drag handle or header
-      const handle = document.getElementById('sheetDragHandle');
-      const topBar = sheet.querySelector('.sheet-top-bar');
-      if (handle && handle.contains(target)) return false;
-      if (topBar  && topBar.contains(target))  return false;
-      // Everything else inside queue view is scrollable territory
-      return true;
-    }
-    if (lyricsScroll && lyricsScroll.contains(target)) {
-      return lyricsScroll.scrollTop > 4;
-    }
-    return false;
-  }
-
   sheet.addEventListener('touchstart', e => {
-    if (_isInsideScrollable(e.target)) { locked = true; dragging = false; return; }
+    const lyricsScroll = document.getElementById('sheetLyricsScroll');
+    const atTop = !lyricsScroll || lyricsScroll.scrollTop < 4;
     const touchY = e.touches[0].clientY;
     const touchX = e.touches[0].clientX;
+    const relY = touchY - sheet.getBoundingClientRect().top;
+    const inTopZone = relY < sheet.clientHeight * 0.25;
+    if (!inTopZone && !atTop) return;
     startY = touchY; startX = touchX;
     startTime = Date.now(); dy = 0;
     dragging = false; locked = false;
@@ -4398,20 +4344,18 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
     const ddy  = curY - startY;
     if (!dragging) {
       if (Math.abs(ddy) < 6 && ddx < 6) return;
-      if (ddx > Math.abs(ddy) + 2) { locked = true; return; }
+      if (ddx > Math.abs(ddy)) { locked = true; return; }
       if (ddy < 0) { locked = true; return; }
       dragging = true;
     }
     dy = Math.max(0, ddy);
-    // Rubber-band effect — resistance increases past threshold
-    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.18;
+    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.25;
     sheet.style.transform = `translateY(${t}px)`;
-    sheet.style.opacity   = String(1 - Math.min(1, dy / (THRESHOLD * 2.2)) * 0.3);
-    e.preventDefault();
+    sheet.style.opacity   = String(1 - Math.min(1, dy / (THRESHOLD * 2)) * 0.28);
+    if (dy > 10) e.preventDefault();
   }, { passive: false });
 
   sheet.addEventListener('touchend', () => {
-    if (locked) { locked = false; return; }
     if (!dragging) {
       sheet.style.transition = '';
       sheet.style.transform  = '';
@@ -4419,10 +4363,9 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
       return;
     }
     const velocity = dy / Math.max(1, Date.now() - startTime);
-    sheet.style.transition = 'transform .4s cubic-bezier(.32,0,.67,0), opacity .35s ease';
+    sheet.style.transition = 'transform .38s cubic-bezier(.32,0,.67,0), opacity .32s ease';
     if (dy > THRESHOLD || velocity > VELOCITY_MIN) {
-      if (typeof hapticFeedback === 'function') hapticFeedback('medium');
-      sheet.style.transform = 'translateY(105%)';
+      sheet.style.transform = 'translateY(100%)';
       sheet.style.opacity   = '0';
       setTimeout(() => {
         sheet.classList.remove('open');
@@ -4430,90 +4373,11 @@ sheetBar.addEventListener("touchend",   () => { barDragging = false; }, { passiv
         sheet.style.transform  = '';
         sheet.style.opacity    = '';
         if (typeof window._droplyResetSheetView === 'function') window._droplyResetSheetView();
-      }, 400);
+      }, 380);
     } else {
-      // Spring back
-      sheet.style.transition = 'transform .5s cubic-bezier(.34,1.56,.64,1), opacity .3s ease';
       sheet.style.transform = '';
       sheet.style.opacity   = '';
-      setTimeout(() => { sheet.style.transition = ''; }, 500);
-    }
-    dragging = false; locked = false; dy = 0;
-  }, { passive: true });
-})();
-
-/* ── Queue panel: native swipe-down-to-close ──────────── */
-(function queuePanelSwipeDismiss() {
-  const panel = document.getElementById('queuePanel');
-  if (!panel) return;
-  const THRESHOLD    = 110;
-  const VELOCITY_MIN = 0.4;
-  let startY = 0, dy = 0, startTime = 0;
-  let dragging = false, locked = false;
-
-  function _canDrag(target) {
-    const handle = document.getElementById('queueDragHandle');
-    const header = panel.querySelector('.queue-panel-header');
-    const nowCard = panel.querySelector('.queue-now-playing');
-    if (handle && handle.contains(target)) return true;
-    if (header && header.contains(target)) return true;
-    if (nowCard && nowCard.contains(target)) return true;
-    // Also allow drag from list wrap only when scrolled to top
-    const listWrap = panel.querySelector('.queue-list-wrap');
-    if (listWrap && listWrap.contains(target)) {
-      return listWrap.scrollTop < 6;
-    }
-    return false;
-  }
-
-  panel.addEventListener('touchstart', e => {
-    if (!_canDrag(e.target)) { locked = true; return; }
-    startY = e.touches[0].clientY;
-    startTime = Date.now(); dy = 0;
-    dragging = false; locked = false;
-    panel.style.transition = 'none';
-  }, { passive: true });
-
-  panel.addEventListener('touchmove', e => {
-    if (locked) return;
-    const ddy = e.touches[0].clientY - startY;
-    if (!dragging) {
-      if (Math.abs(ddy) < 6) return;
-      if (ddy < 0) { locked = true; return; }
-      dragging = true;
-    }
-    dy = Math.max(0, ddy);
-    const t = dy < THRESHOLD ? dy : THRESHOLD + (dy - THRESHOLD) * 0.2;
-    panel.style.transform = `translateY(${t}px)`;
-    panel.style.opacity   = String(Math.max(0.3, 1 - (dy / (THRESHOLD * 2.5))));
-    e.preventDefault();
-  }, { passive: false });
-
-  panel.addEventListener('touchend', () => {
-    if (locked) { locked = false; return; }
-    if (!dragging) {
-      panel.style.transition = '';
-      panel.style.transform  = '';
-      panel.style.opacity    = '';
-      return;
-    }
-    const velocity = dy / Math.max(1, Date.now() - startTime);
-    if (dy > THRESHOLD || velocity > VELOCITY_MIN) {
-      if (typeof hapticFeedback === 'function') hapticFeedback('medium');
-      panel.style.transition = 'transform .36s cubic-bezier(.32,0,.67,0), opacity .3s ease';
-      panel.style.transform  = 'translateY(100%)';
-      panel.style.opacity    = '0';
-      setTimeout(() => {
-        if (typeof closeQueuePanel === 'function') closeQueuePanel();
-        panel.style.transition = '';
-        panel.style.transform  = '';
-        panel.style.opacity    = '';
-      }, 360);
-    } else {
-      panel.style.transition = 'transform .48s cubic-bezier(.34,1.56,.64,1), opacity .28s ease';
-      panel.style.transform  = '';
-      panel.style.opacity    = '';
-      setTimeout(() => { panel.style.transition = ''; }, 480);
+      setTimeout(() => { sheet.style.transition = ''; }, 380);
     }
     dragging = false; locked = false; dy = 0;
   }, { passive: true });
@@ -5587,18 +5451,14 @@ window.addEventListener("scroll", () => {
     const dy = y - lastY;
     lastY    = y;
 
-    // Si volvemos al top (por showPage) ignorar el evento para no
-    // calcular un delta erróneo que ocultaría la nav recién restaurada
-    if (y === 0) { clearTimeout(hideTimer); return; }
-
     clearTimeout(hideTimer);
 
     if (dy > 4) {
-      /* Scrolling down → hide nav */
-      hideNav();
-    } else if (dy < -4) {
-      /* Scrolling up → show nav */
+      /* Scrolling down → show nav */
       showNav();
+    } else if (dy < -4) {
+      /* Scrolling up → collapse to pill */
+      hideNav();
     }
 
     /* After 5s idle → restore nav */
@@ -6195,51 +6055,33 @@ function addToQueue(item) {
 
 /* ── Render queue now playing ───────────────────────── */
 function renderQueueNowPlaying(item) {
-  const el = document.getElementById('queueNowPlaying');
-  if (!el) return;
+  if (!queueNowPlaying) return;
   const cover = item.cover || getPlaceholderCover(item.category);
-  const isPlaying = !(document.getElementById('mainAudio')?.paused ?? true);
-
-  el.innerHTML = `
-    <p class="queue-np-label">Reproduciendo ahora</p>
-    <div class="queue-np-row">
-      <div class="queue-np-cover">
-        <img src="${cover}" alt="${item.title}" />
-        <div class="queue-np-bars" id="queueNpBars" style="${isPlaying ? '' : 'display:none'}">
-          <div class="queue-np-bar"></div>
-          <div class="queue-np-bar"></div>
-          <div class="queue-np-bar"></div>
+  queueNowPlaying.innerHTML = `
+    <p class="queue-now-label">Reproduciendo ahora</p>
+    <div class="queue-now-card">
+      <div class="queue-now-cover-wrap">
+        <img class="queue-now-img" src="${cover}" alt="${item.title}" />
+        <div class="queue-now-bars">
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
+          <div class="queue-now-bar"></div>
         </div>
       </div>
-      <div class="queue-np-info">
-        <div class="queue-np-title">${item.title}</div>
-        <div class="queue-np-artist">${item.artist}</div>
+      <div class="queue-now-info">
+        <div class="queue-now-title">${item.title}</div>
+        <div class="queue-now-artist">${item.artist}</div>
+        <div class="queue-now-progress">
+          <div class="queue-now-progress-fill" id="queueProgressFill"></div>
+        </div>
       </div>
-      <button class="queue-np-menu" id="queueNpMenu" aria-label="Opciones">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
-          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-        </svg>
-      </button>
-    </div>
-    <div class="queue-np-progress">
-      <div class="queue-np-progress-fill" id="queueProgressFill"></div>
     </div>`;
-
-  // Wire up context menu on the ⋯ button
-  const menuBtn = el.querySelector('#queueNpMenu');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (typeof openContextMenu === 'function') openContextMenu(item);
-    });
-  }
-
-  // Ambient glow
+  // Update ambient glow with cover color
   const ambient = document.getElementById('queueAmbient');
   if (ambient) {
-    ambient.style.background = `radial-gradient(ellipse 80% 40% at 50% 0%, rgba(139,92,246,.28) 0%, transparent 70%)`;
+    ambient.style.background = `radial-gradient(ellipse 90% 45% at 50% -5%, rgba(139,92,246,.22) 0%, transparent 70%)`;
   }
-
+  // Sync progress bar
   _syncQueueProgress();
 }
 
@@ -6306,7 +6148,6 @@ function _getSimilarTracks(seedItem, count = 3) {
 }
 
 function _autoFillQueue() {
-  if (!autoplayMode) return;
   if (queue.length >= INFINITE_QUEUE_MIN) return;
   const hint = document.getElementById('queueInfiniteHint');
   const seed = playlist[currentTrackIdx] ||
@@ -6331,58 +6172,12 @@ function _autoFillQueue() {
 }
 
 /* ── Render queue list ──────────────────────────────── */
-function renderQueueHistory() {
-  if (!queueHistoryList) return;
-  const historySection = document.getElementById('queueHistorySection');
-  const historyDivider = document.getElementById('queueHistoryDivider');
-
-  if (historyTracks.length <= 1) { // 0 o solo la actual
-    if (historySection) historySection.style.display = 'none';
-    if (historyDivider) historyDivider.style.display = 'none';
-    if (queueScrollHint) queueScrollHint.classList.remove('visible');
-    return;
-  }
-
-  if (historySection) historySection.style.display = '';
-  if (historyDivider) historyDivider.style.display = '';
-
-  // No mostramos la canción actual (índice 0) en el historial de "pasadas"
-  const pastTracks = historyTracks.slice(1, 21); // Top 20 pasadas
-  queueHistoryList.innerHTML = '';
-
-  pastTracks.forEach((h, i) => {
-    const item = getTrackByFile(h.file);
-    if (!item) return;
-    const cover = item.cover || getPlaceholderCover(item.category);
-
-    const row = document.createElement('div');
-    row.className = 'queue-history-item';
-    row.innerHTML = `
-      <div class="queue-history-cover">
-        <img src="${cover}" alt="${item.title}" loading="lazy" />
-      </div>
-      <div class="queue-history-info">
-        <div class="queue-history-title">${item.title}</div>
-        <div class="queue-history-artist">${item.artist}</div>
-      </div>
-    `;
-    row.addEventListener('click', () => {
-      loadTrack(item, true);
-      if (typeof closeQueuePanel === 'function') closeQueuePanel();
-    });
-    queueHistoryList.appendChild(row);
-  });
-}
-
 function renderQueueList() {
   if (!queueList) return;
   const countBadge = document.getElementById('queueCountBadge');
-  const nextSection = document.getElementById('queueNextSection');
-
-  renderQueueHistory();
 
   if (queue.length === 0) {
-    if (nextSection) nextSection.style.display = 'none';
+    if (queueNextLabel) queueNextLabel.style.display = 'none';
     queueList.innerHTML = `
       <div class="queue-empty">
         <div class="queue-empty-icon">
@@ -6395,7 +6190,7 @@ function renderQueueList() {
     return;
   }
 
-  if (nextSection) nextSection.style.display = '';
+  if (queueNextLabel) queueNextLabel.style.display = '';
   if (countBadge) countBadge.textContent = queue.length;
 
   const prevItems = new Set([...queueList.querySelectorAll('.queue-item')].map(el => el.dataset.file));
@@ -6409,26 +6204,28 @@ function renderQueueList() {
 
     // ── Wrapper for swipe-to-delete ──
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;overflow:hidden;';
+    wrap.className = 'queue-item-wrap';
+    wrap.style.cssText = 'position:relative;border-radius:12px;margin-bottom:2px;';
 
-    // Red delete bg — Apple Music red, right side
+    // Red delete bg revealed on left swipe
     const delBg = document.createElement('div');
+    delBg.className = 'queue-item-del-bg';
     delBg.innerHTML = `
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      <span style="font-size:.65rem;font-weight:700;letter-spacing:.05em;margin-top:2px">Quitar</span>`;
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
     delBg.style.cssText = `
-      position:absolute;top:0;bottom:0;right:0;width:88px;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-      background:#ff3b30;color:#fff;border-radius:12px;
-      pointer-events:none;opacity:0;transition:opacity .08s;`;
+      position:absolute;top:0;bottom:0;right:0;width:90px;
+      display:flex;align-items:center;justify-content:center;gap:.35rem;
+      background:#e94f4f;color:#fff;border-radius:12px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
 
     const row = document.createElement('div');
     row.className = 'queue-item' + (isNew ? ' queue-item-new' : '');
     row.dataset.file = file;
     row.dataset.index = i;
-    if (isNew) row.style.animationDelay = (i * 25) + 'ms';
+    if (isNew) row.style.animationDelay = (i * 30) + 'ms';
     row.draggable = true;
-    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;background:transparent;';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
     row.innerHTML = `
       <div class="queue-item-drag" title="Arrastrar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
@@ -6441,31 +6238,18 @@ function renderQueueList() {
         <div class="queue-item-title">${item.title}</div>
         <div class="queue-item-artist">${item.artist}</div>
       </div>
-      <button class="queue-item-btn" data-action="menu" aria-label="Opciones">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none">
-          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-        </svg>
-      </button>`;
-
-    // Tap ⋯ → context menu
-    row.querySelector('[data-action="menu"]').addEventListener('click', e => {
-      e.stopPropagation();
-      if (typeof openContextMenu === 'function') openContextMenu(item);
-    });
+      <div class="queue-item-actions">
+        <button class="queue-item-btn" data-action="remove" title="Quitar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
 
     const SWIPE_THRESHOLD = 80;
     let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
 
     function _removeItem() {
       if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-      wrap.style.transition = 'max-height .3s cubic-bezier(.4,0,1,1), opacity .25s, margin .3s';
-      wrap.style.maxHeight = wrap.offsetHeight + 'px';
-      requestAnimationFrame(() => {
-        wrap.style.maxHeight = '0';
-        wrap.style.opacity = '0';
-        wrap.style.marginBottom = '0';
-      });
-      row.style.transition = 'transform .25s cubic-bezier(.4,0,1,1)';
+      row.style.transition = 'transform .28s cubic-bezier(.4,0,1,1), opacity .28s';
       row.style.transform = 'translateX(-110%)';
       row.style.opacity = '0';
       setTimeout(() => {
@@ -6561,103 +6345,69 @@ function renderQueueList() {
 function renderSheetQueue() {
   const listEl   = document.getElementById('sheetQueueList');
   const countEl  = document.getElementById('sheetQueueAreaCount');
-  const areaEl   = document.getElementById('sheetQueueArea');
   if (!listEl) return;
 
-  // Contar solo las de "a continuación" para el badge
-  if (countEl) countEl.textContent = queue.length ? `${queue.length}` : '';
+  if (countEl) countEl.textContent = queue.length ? `${queue.length} canciones` : '';
+
+  if (queue.length === 0) {
+    listEl.innerHTML = `
+      <div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">
+        La cola está vacía
+      </div>`;
+    return;
+  }
 
   listEl.innerHTML = '';
-  listEl.style.touchAction = 'pan-y';
+  queue.forEach((file, i) => {
+    const item = getTrackByFile(file);
+    if (!item) return;
+    const cover = item.cover || getPlaceholderCover(item.category);
 
-  // ── HISTORIAL (más reciente arriba, justo encima de la que suena) ──
-  // historyTracks[0] es la actual, [1] la anterior inmediata, [2] la de antes, etc.
-  const histItems = historyTracks.slice(1, 8)
-    .map(h => getTrackByFile(h.file))
-    .filter(Boolean)
-    .reverse(); // más antigua arriba, más reciente justo antes de "ahora"
+    // ── Wrapper para swipe-to-delete ──
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;border-radius:10px;margin-bottom:2px;overflow:hidden;';
 
-  if (histItems.length > 0) {
-    const histHeader = document.createElement('div');
-    histHeader.className = 'sheet-queue-section-header';
-    histHeader.innerHTML = `<span>Historial</span>`;
-    listEl.appendChild(histHeader);
+    // Fondo rojo revelado al deslizar izquierda
+    const delBg = document.createElement('div');
+    delBg.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span style="font-size:.62rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
+    delBg.style.cssText = `
+      position:absolute;top:0;bottom:0;right:0;width:80px;
+      display:flex;align-items:center;justify-content:center;gap:.3rem;
+      background:#e94f4f;color:#fff;border-radius:10px;
+      pointer-events:none;opacity:0;transition:opacity .1s;`;
 
-    histItems.forEach(item => {
-      listEl.appendChild(createSheetQueueRow(item, true));
-    });
-  }
+    const row = document.createElement('div');
+    row.className = 'sq-item';
+    row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
+    row.innerHTML = `
+      <div class="sq-item-cover">
+        <img src="${cover}" alt="${item.title}" loading="lazy" />
+      </div>
+      <div class="sq-item-info">
+        <div class="sq-item-title">${item.title}</div>
+        <div class="sq-item-artist">${item.artist}</div>
+      </div>
+      <div class="sq-item-drag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+      </div>`;
 
-  // ── REPRODUCIENDO AHORA ──
-  const npHeader = document.createElement('div');
-  npHeader.className = 'sheet-queue-section-header';
-  npHeader.innerHTML = `<span>Reproduciendo ahora</span>`;
-  listEl.appendChild(npHeader);
-
-  const currentItem = playlist[currentTrackIdx];
-  if (currentItem) {
-    listEl.appendChild(createSheetQueueRow(currentItem, false, true));
-  }
-
-  // ── A CONTINUACIÓN ──
-  if (queue.length > 0) {
-    const nextHeader = document.createElement('div');
-    nextHeader.className = 'sheet-queue-section-header';
-    nextHeader.innerHTML = `<span>A continuación</span>`;
-    listEl.appendChild(nextHeader);
-
-    queue.forEach((file, i) => {
-      const item = getTrackByFile(file);
-      if (!item) return;
-      listEl.appendChild(createSheetQueueRow(item));
-    });
-  }
-
-  if (!currentItem && queue.length === 0 && histItems.length === 0) {
-    listEl.innerHTML = `<div style="padding:2.5rem 1rem;text-align:center;color:rgba(255,255,255,.3);font-size:.82rem;line-height:1.6">La cola está vacía</div>`;
-  }
-
-  // Al abrir, hacer scroll para que "Reproduciendo ahora" esté visible arriba
-  // (el historial queda arriba scrolleable)
-  requestAnimationFrame(() => {
-    const npEl = listEl.querySelector('.sheet-queue-section-header:last-of-type');
-    const allHeaders = listEl.querySelectorAll('.sheet-queue-section-header');
-    // Buscar el header de "Reproduciendo ahora"
-    let npHeaderEl = null;
-    allHeaders.forEach(h => { if (h.textContent.includes('Reproduciendo')) npHeaderEl = h; });
-    if (npHeaderEl) {
-      listEl.scrollTop = Math.max(0, npHeaderEl.offsetTop - 6);
-    }
-  });
-}
-
-function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
-  const cover = item.cover || getPlaceholderCover(item.category);
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:relative;border-radius:10px;margin-bottom:2px;overflow:hidden;';
-
-  const delBg = document.createElement('div');
-  delBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg><span style="font-size:.62rem;font-weight:700;letter-spacing:.04em;">Quitar</span>`;
-  delBg.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:80px;display:flex;align-items:center;justify-content:center;gap:.3rem;background:#e94f4f;color:#fff;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .1s;`;
-
-  const row = document.createElement('div');
-  row.className = 'sq-item' + (isHistory ? ' is-history' : '') + (isNowPlaying ? ' is-now-playing' : '');
-  row.style.cssText = 'position:relative;z-index:1;will-change:transform;touch-action:pan-y;';
-  row.innerHTML = `
-    <div class="sq-item-cover"><img src="${cover}" alt="" /></div>
-    <div class="sq-item-info">
-      <div class="sq-item-title">${item.title}</div>
-      <div class="sq-item-artist">${item.artist}</div>
-    </div>
-    ${isNowPlaying
-      ? '<div class="sq-item-now-bars"><span></span><span></span><span></span></div>'
-      : '<div class="sq-item-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>'
-    }
-  `;
-
-  if (!isNowPlaying) {
     const SWIPE_THRESHOLD = 80;
     let _sx = 0, _sy = 0, _dx = 0, _swiping = false, _locked = false;
+
+    function _removeSqItem() {
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
+      row.style.transition = 'transform .26s cubic-bezier(.4,0,1,1), opacity .26s';
+      row.style.transform = 'translateX(-110%)';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        const idx = queue.indexOf(file);
+        if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderSheetQueue(); }
+      }, 260);
+    }
 
     row.addEventListener('touchstart', e => {
       _sx = e.touches[0].clientX; _sy = e.touches[0].clientY;
@@ -6673,7 +6423,8 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
         if (Math.abs(dx) > 6) { _swiping = true; _locked = true; }
       }
       if (!_swiping) return;
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       _dx = Math.min(0, dx);
       row.style.transform = `translateX(${_dx}px)`;
       const ratio = Math.min(1, Math.abs(_dx) / SWIPE_THRESHOLD);
@@ -6683,19 +6434,7 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
     row.addEventListener('touchend', () => {
       if (!_swiping) return;
       if (Math.abs(_dx) >= SWIPE_THRESHOLD) {
-        if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
-        row.style.transition = 'transform .26s cubic-bezier(.4,0,1,1), opacity .26s';
-        row.style.transform = 'translateX(-110%)';
-        row.style.opacity = '0';
-        setTimeout(() => {
-          if (isHistory) {
-            const idx = historyTracks.findIndex(h => h.file === item.file);
-            if (idx !== -1) { historyTracks.splice(idx, 1); saveHistory(); renderSheetQueue(); }
-          } else {
-            const idx = queue.indexOf(item.file);
-            if (idx !== -1) { queue.splice(idx, 1); saveQueue(); renderSheetQueue(); }
-          }
-        }, 260);
+        _removeSqItem();
       } else {
         row.style.transition = 'transform .32s cubic-bezier(.34,1.56,.64,1)';
         row.style.transform = 'translateX(0)';
@@ -6703,56 +6442,32 @@ function createSheetQueueRow(item, isHistory = false, isNowPlaying = false) {
       }
       _dx = 0; _swiping = false;
     });
-  }
 
-  row.addEventListener('click', () => {
-    if (isNowPlaying) return;
-    if (!isHistory) {
-      const qIdx = queue.indexOf(item.file);
+    row.addEventListener('click', () => {
+      if (Math.abs(_dx) > 5) return;
+      const qIdx = queue.indexOf(file);
       if (qIdx >= 0) { queue.splice(0, qIdx + 1); saveQueue(); }
-    }
-    loadTrack(item, true);
-    renderSheetQueue();
-  });
+      loadTrack(item, true);
+      renderSheetQueue();
+    });
 
-  wrap.appendChild(delBg);
-  wrap.appendChild(row);
-  return wrap;
+    wrap.appendChild(delBg);
+    wrap.appendChild(row);
+    listEl.appendChild(wrap);
+  });
 }
 
 /* ── Open / close queue panel ───────────────────────── */
 function openQueuePanel() {
   if (!queuePanel) return;
-  
-  renderQueueList();
-  renderQueueNowPlaying(playlist[currentTrackIdx]);
-
   queuePanel.classList.add('open');
   if (queueOverlay) queueOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-
-  // Posicionar el scroll en el "Now Playing" para que el historial esté arriba oculto
-  if (queueScrollArea) {
-    const npSection = document.getElementById('queueNowPlaying');
-    if (npSection) {
-      queueScrollArea.scrollTop = npSection.offsetTop - 10;
-    }
-    
-    // No scroll hint — historial visible directamente en la lista
-  }
-
-  if (typeof hapticFeedback === 'function') hapticFeedback('medium');
 }
 
-function closeQueuePanel(skipAnimation) {
+function closeQueuePanel() {
   if (!queuePanel) return;
-  if (!skipAnimation) {
-    // Normal close — let CSS transition handle it
-    queuePanel.classList.remove('open');
-  } else {
-    // Called after a swipe-dismiss animation already played; just reset class
-    queuePanel.classList.remove('open');
-  }
+  queuePanel.classList.remove('open');
   if (queueOverlay) queueOverlay.classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -6813,13 +6528,6 @@ function closeQueuePanel(skipAnimation) {
   if (sheetQueueBtn) sheetQueueBtn.addEventListener('click', () => {
     setSheetView(_sheetView === 'queue' ? 'cover' : 'queue');
   });
-  const sheetQueueBackBtn = document.getElementById('sheetQueueBackBtn');
-  if (sheetQueueBackBtn) {
-    sheetQueueBackBtn.addEventListener('click', () => {
-      setSheetView('cover');
-      if (typeof hapticFeedback === 'function') hapticFeedback('light');
-    });
-  }
   if (queueCloseBtn) queueCloseBtn.addEventListener('click', closeQueuePanel);
   if (queueOverlay)  queueOverlay.addEventListener('click', closeQueuePanel);
   const queueDragHandle = document.getElementById('queueDragHandle');
@@ -6830,29 +6538,6 @@ function closeQueuePanel(skipAnimation) {
       saveQueue();
       renderQueueList();
       showToast('Cola vaciada');
-    });
-  }
-  if (queueInfiniteBtn) {
-    queueInfiniteBtn.classList.toggle('active', autoplayMode);
-    queueInfiniteBtn.addEventListener('click', () => {
-      autoplayMode = !autoplayMode;
-      queueInfiniteBtn.classList.toggle('active', autoplayMode);
-      showToast(autoplayMode ? 'Cola infinita activada' : 'Cola infinita desactivada');
-      if (autoplayMode) _autoFillQueue();
-    });
-  }
-  if (queueRepeatBtn) {
-    queueRepeatBtn.addEventListener('click', cycleRepeatMode);
-  }
-  if (queueHistoryClearBtn) {
-    queueHistoryClearBtn.addEventListener('click', () => {
-      if (historyTracks.length > 0) {
-        const current = historyTracks[0];
-        historyTracks = [current];
-        saveHistory();
-        renderQueueHistory();
-        showToast('Historial limpiado');
-      }
     });
   }
 
@@ -7235,7 +6920,7 @@ const OfflineManager = (() => {
     if (!navigator.onLine) updateStatus();
   }
 
-  return { init, downloadTrack, getOfflineSrc, deleteDownload, renderDownloadsList, isDownloaded: k => downloadedKeys.has(k), updateAllCardDownloadButtons, setupOfflineDetection };
+  return { init, downloadTrack, getOfflineSrc, deleteDownload, renderDownloadsList, getAllDownloads, getStorageEstimate, isDownloaded: k => downloadedKeys.has(k), updateAllCardDownloadButtons, setupOfflineDetection };
 })();
 
 
@@ -8590,9 +8275,6 @@ function bootPremium() {
   CloudSync.init();
   if (typeof SupabaseCloud !== "undefined" && typeof SupabaseCloud.init === "function") {
     SupabaseCloud.init();
-    setTimeout(() => {
-      if (typeof checkAuthWall === "function") checkAuthWall();
-    }, 600);
   }
 
   // Render offline playlist (after IDB is ready, slight delay)
@@ -10125,49 +9807,51 @@ function initAccountManagement() {
 // Función para actualizar el estado visual de Supabase (llamada desde supabase-cloud.js)
 window.updateSupabaseUI = function(user) {
   const statusText = document.getElementById("authStatusText");
-  const btnGoogle  = document.getElementById("btnGoogleLogin");
+  const btnGoogle = document.getElementById("btnGoogleLogin");
   const authDetail = document.getElementById("authUserDetail");
-  const authEmail  = document.getElementById("authUserEmail");
-  const authWall   = document.getElementById("authWall");
+  const authEmail = document.getElementById("authUserEmail");
 
   if (user) {
     if (statusText) statusText.textContent = "Conectado a la nube";
-    if (btnGoogle)  btnGoogle.style.display  = "none";
+    if (btnGoogle) btnGoogle.style.display = "none";
     if (authDetail) authDetail.style.display = "flex";
-    if (authEmail)  authEmail.textContent    = user.email;
-
+    if (authEmail) authEmail.textContent = user.email;
+    
+    // Si el usuario de Supabase tiene metadatos, actualizar perfil local y ocultar muro
     const meta = user.user_metadata || {};
     saveUserData({
-      name:     meta.full_name   || user.email.split('@')[0],
+      name: meta.full_name || user.email.split('@')[0],
       username: user.email.split('@')[0],
-      avatar:   meta.avatar_url  || currentUser.avatar
+      avatar: meta.avatar_url || currentUser.avatar
     });
-
+    
+    // Ocultar muro de autenticación
+    const authWall = document.getElementById("authWall");
     if (authWall) {
       authWall.classList.add("hidden");
       document.body.style.overflow = "";
     }
   } else {
-    if (statusText) statusText.textContent  = "No conectado";
-    if (btnGoogle)  btnGoogle.style.display = "flex";
+    if (statusText) statusText.textContent = "No conectado";
+    if (btnGoogle) btnGoogle.style.display = "flex";
     if (authDetail) authDetail.style.display = "none";
-
-    const saved = (() => { try { return localStorage.getItem("droply_user_data_v1"); } catch(_) { return null; } })();
-    const savedUser = saved ? JSON.parse(saved) : null;
-    const isGuest = !savedUser || savedUser.username === "guest";
-
-    if (isGuest && authWall) {
-      authWall.classList.remove("hidden");
-      document.body.style.overflow = "hidden";
+    
+    // Si no hay usuario de Supabase y tampoco local, mostrar muro
+    if (currentUser.username === "guest") {
+      const authWall = document.getElementById("authWall");
+      if (authWall) {
+        authWall.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
     }
   }
 }
 
 // Inyectar en el flujo de inicio
 document.addEventListener("DOMContentLoaded", () => {
-  if (typeof updateUserUI === "function") updateUserUI();
-  if (typeof initAccountManagement === "function") initAccountManagement();
-  if (typeof checkAuthWall === "function") checkAuthWall();
+  updateUserUI();
+  initAccountManagement();
+  checkAuthWall();
 });
 
 function initAuthMosaic() {
@@ -10176,10 +9860,8 @@ function initAuthMosaic() {
   const col3 = document.getElementById("mosaicCol3");
   if (!col1 || !col2 || !col3) return;
 
-  const allCovers = (typeof media !== "undefined") ? media.map(m => m.cover).filter(Boolean) : [];
-  if (allCovers.length === 0) return;
-
-  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  const allCovers = media.map(m => m.cover).filter(Boolean);
+  const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
   const picked = shuffle(allCovers).slice(0, 9);
 
   [col1, col2, col3].forEach((col, i) => {
@@ -10188,19 +9870,17 @@ function initAuthMosaic() {
 }
 
 function checkAuthWall() {
-  const authWall  = document.getElementById("authWall");
+  const authWall = document.getElementById("authWall");
   const btnCreate = document.getElementById("btnGoogleAuthWall");
-  const btnLogin  = document.getElementById("btnGoogleLoginWall");
+  const btnLogin = document.getElementById("btnGoogleLoginWall");
 
   if (!authWall) return;
 
+  // Generar mosaico dinámico con imágenes que sí cargan
   initAuthMosaic();
 
-  const saved = (() => { try { return localStorage.getItem("droply_user_data_v1"); } catch(_) { return null; } })();
-  const savedUser = saved ? JSON.parse(saved) : null;
-  const isGuest = !savedUser || savedUser.username === "guest";
-
-  if (isGuest) {
+  // Si el usuario es invitado (no registrado), mostrar muro
+  if (currentUser.username === "guest") {
     authWall.classList.remove("hidden");
     document.body.style.overflow = "hidden";
   } else {
@@ -10208,228 +9888,286 @@ function checkAuthWall() {
     document.body.style.overflow = "";
   }
 
-  function handleAuth(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAuth = (e) => {
+    if (e) e.preventDefault();
+    // Prioridad: Usar la lógica de Supabase original si está disponible
     if (typeof SupabaseCloud !== "undefined" && typeof SupabaseCloud.loginWithGoogle === "function") {
       SupabaseCloud.loginWithGoogle();
     } else {
+      // Fallback: Si Supabase no está configurado, usar el simulador premium original
+      showToast("Conectando...", "success");
       setTimeout(() => {
-        if (typeof SupabaseCloud !== "undefined" && typeof SupabaseCloud.loginWithGoogle === "function") {
-          SupabaseCloud.loginWithGoogle();
-        } else {
-          showToast("Error: Supabase no configurado", "error");
-        }
-      }, 800);
+        const fakeUser = {
+          name: "Usuario Premium",
+          username: "premium_user",
+          avatar: "https://i.pravatar.cc/300?img=12"
+        };
+        saveUserData(fakeUser);
+        location.reload();
+      }, 1000);
     }
-  }
-
-  if (btnCreate) {
-    const fresh = btnCreate.cloneNode(true);
-    btnCreate.parentNode.replaceChild(fresh, btnCreate);
-    fresh.addEventListener("click", handleAuth);
-  }
-  if (btnLogin) {
-    const fresh = btnLogin.cloneNode(true);
-    btnLogin.parentNode.replaceChild(fresh, btnLogin);
-    fresh.addEventListener("click", handleAuth);
-  }
-}
-/* ══════════════════════════════════════════════════════
-   BIBLIOTECA — Apple Music style
-   Paneles: Playlists · Artistas · Canciones · Descargado
-══════════════════════════════════════════════════════ */
-(function initBiblioteca() {
-
-  const panels = {
-    playlists:  { btn: 'libCatPlaylists',  panel: 'libPanelPlaylists',  render: renderLibPlaylists  },
-    artists:    { btn: 'libCatArtists',    panel: 'libPanelArtists',    render: renderLibArtists    },
-    songs:      { btn: 'libCatSongs',      panel: 'libPanelSongs',      render: renderLibSongs      },
-    downloaded: { btn: 'libCatDownloaded', panel: 'libPanelDownloaded', render: renderLibDownloaded },
   };
 
-  let activePanel = 'playlists';
+  if (btnCreate) btnCreate.addEventListener("click", handleAuth);
+  if (btnLogin) btnLogin.addEventListener("click", handleAuth);
+}
+/* ═══════════════════════════════════════════════════════════
+   LIBRARY HUB + SUBPAGES
+═══════════════════════════════════════════════════════════ */
 
-  function showPanel(key) {
-    activePanel = key;
-    // Toggle panels
-    Object.keys(panels).forEach(k => {
-      const p = document.getElementById(panels[k].panel);
-      const b = document.getElementById(panels[k].btn);
-      if (p) p.classList.toggle('active', k === key);
-      if (b) b.classList.toggle('lib-cat-row--active', k === key);
+function renderLibraryHub() {
+  // Update subtitle counters
+  const subPl = document.getElementById('libSubPlaylists');
+  const subLiked = document.getElementById('libSubLiked');
+  const subDl = document.getElementById('libSubDownloads');
+
+  if (subPl) {
+    const count = (typeof playlists !== 'undefined') ? playlists.length : 0;
+    subPl.textContent = count === 1 ? '1 playlist' : `${count} playlists`;
+  }
+  if (subLiked) {
+    const count = (typeof likedTracks !== 'undefined') ? likedTracks.size : 0;
+    subLiked.textContent = count === 1 ? '1 me gusta' : `${count} me gustas`;
+  }
+  if (subDl && typeof OfflineManager !== 'undefined') {
+    OfflineManager.getAllDownloads().then(items => {
+      if (subDl) subDl.textContent = items.length === 1 ? '1 canción' : `${items.length} canciones`;
     });
-    // Render content
-    panels[key]?.render();
+  }
+}
+
+// ── Open / close helpers ──────────────────────────────────
+function openLibSubpage(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeLibSubpage(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+// ── Render artists subpage ────────────────────────────────
+function renderLibArtists() {
+  const grid = document.getElementById('libArtistsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const artistMap = {};
+  if (typeof media !== 'undefined') {
+    media.forEach(item => {
+      const cnt = (typeof playCounts !== 'undefined') ? (playCounts[item.file] || 0) : 0;
+      if (!artistMap[item.artist]) artistMap[item.artist] = { name: item.artist, count: 0, cover: item.cover, category: item.category };
+      artistMap[item.artist].count += cnt;
+    });
   }
 
-  /* ── Playlists ──────────────────────────────────── */
-  function renderLibPlaylists() {
-    if (typeof renderPlaylists === 'function') renderPlaylists();
+  let artists = Object.values(artistMap);
+  // Sort: played first, then alphabetical
+  artists.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  // Limit to artists the user has actually played, or show all if none
+  const played = artists.filter(a => a.count > 0);
+  const displayArtists = played.length > 0 ? played : artists.slice(0, 30);
+
+  if (displayArtists.length === 0) {
+    grid.innerHTML = `<div class="lib-empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <h3>Sin artistas aún</h3><p>Escucha música y aquí aparecerán tus artistas más frecuentes.</p></div>`;
+    return;
   }
 
-  /* ── Artistas ───────────────────────────────────── */
-  function renderLibArtists() {
-    const container = document.getElementById('libArtistsList');
-    if (!container) return;
+  // Update subtitle
+  const sub = document.getElementById('libSubArtists');
+  if (sub) sub.textContent = `${displayArtists.length} artistas`;
 
-    const plays = (() => { try { return JSON.parse(localStorage.getItem('droply_plays_v2') || '{}'); } catch(_) { return {}; } })();
-    const allMedia = typeof media !== 'undefined' ? media.filter(m => m.type === 'music') : [];
-
-    const artistMap = {};
-    allMedia.forEach(item => {
-      const primary = (item.artist || '').split(',')[0].trim();
-      if (!primary) return;
-      if (!artistMap[primary]) artistMap[primary] = { name: primary, count: 0, cover: item.cover, category: item.category, tracks: [] };
-      artistMap[primary].count += (plays[item.file] || 0);
-      artistMap[primary].tracks.push(item);
-    });
-
-    const sorted = Object.values(artistMap).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-
-    container.innerHTML = '';
-    sorted.forEach(artist => {
-      const photo = (typeof ARTIST_PHOTOS !== 'undefined' && ARTIST_PHOTOS[artist.name]) || artist.cover || '';
-      const row = document.createElement('div');
-      row.className = 'lib-row';
-      row.innerHTML = `
-        <div class="lib-row-thumb lib-row-thumb--circle">
-          <img src="${photo}" alt="${artist.name}" loading="lazy" />
-        </div>
-        <div class="lib-row-info">
-          <span class="lib-row-title">${artist.name}</span>
-          <span class="lib-row-sub">${artist.tracks.length} cancion${artist.tracks.length !== 1 ? 'es' : ''}</span>
-        </div>
-        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
-      const img = row.querySelector('img');
-      if (img && typeof fetchArtistPhotoFromWiki === 'function') {
-        img.onerror = () => { img.onerror = null; fetchArtistPhotoFromWiki(artist.name, img, photo); };
-        if (typeof ARTIST_PHOTOS !== 'undefined' && !ARTIST_PHOTOS[artist.name]) {
-          fetchArtistPhotoFromWiki(artist.name, img, photo);
-        }
-      }
-      row.addEventListener('click', () => {
-        if (typeof loadTrack === 'function' && artist.tracks.length > 0) {
-          playlist = artist.tracks;
-          currentTrackIdx = 0;
-          loadTrack(playlist[0]);
-          if (typeof showToast === 'function') showToast(`Reproduciendo ${artist.name}`, 'info');
-        }
-      });
-      container.appendChild(row);
-    });
-
-    if (sorted.length === 0) {
-      container.innerHTML = '<p class="lib-empty">Aún no has escuchado ningún artista.</p>';
+  displayArtists.forEach(artist => {
+    const photo = (typeof getArtistPhoto === 'function') ? getArtistPhoto(artist.name) : null;
+    const cover = photo || artist.cover || ((typeof getPlaceholderCover === 'function') ? getPlaceholderCover(artist.category) : '');
+    const card = document.createElement('div');
+    card.className = 'lib-artist-card';
+    const displayName = artist.name.split(/[,&\/]/)[0].trim();
+    card.innerHTML = `<img src="${cover}" alt="${displayName}" loading="lazy"><p class="lib-artist-card-name">${displayName}</p>`;
+    const img = card.querySelector('img');
+    img.onerror = () => {
+      img.onerror = null;
+      if (typeof fetchArtistPhotoFromWiki === 'function') fetchArtistPhotoFromWiki(artist.name, img, cover);
+    };
+    if (!photo && typeof fetchArtistPhotoFromWiki === 'function') {
+      fetchArtistPhotoFromWiki(artist.name, img, cover);
     }
+    card.addEventListener('click', () => {
+      closeLibSubpage('libPageArtists');
+      const si = document.getElementById('searchInput');
+      if (si) { si.value = displayName; si.dispatchEvent(new Event('input')); }
+      showPage('pageSearch');
+    });
+    grid.appendChild(card);
+  });
+}
+
+// ── Render liked tracks subpage ───────────────────────────
+function renderLibLiked() {
+  const list = document.getElementById('libLikedList');
+  const countEl = document.getElementById('libLikedCount');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const likedItems = (typeof media !== 'undefined' && typeof likedTracks !== 'undefined')
+    ? media.filter(m => m.type === 'music' && likedTracks.has(m.file))
+    : [];
+
+  if (countEl) countEl.textContent = likedItems.length === 1 ? '1 canción' : `${likedItems.length} canciones`;
+
+  // Update hub subtitle
+  const sub = document.getElementById('libSubLiked');
+  if (sub) sub.textContent = likedItems.length === 1 ? '1 me gusta' : `${likedItems.length} me gustas`;
+
+  if (likedItems.length === 0) {
+    list.innerHTML = `<div class="lib-empty-state">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <h3>Sin canciones guardadas</h3><p>Pulsa el corazón en cualquier canción para guardarla aquí.</p></div>`;
+    return;
   }
 
-  /* ── Canciones ──────────────────────────────────── */
-  function renderLibSongs() {
-    const container = document.getElementById('libSongsList');
-    if (!container) return;
-
-    const plays = (() => { try { return JSON.parse(localStorage.getItem('droply_plays_v2') || '{}'); } catch(_) { return {}; } })();
-    const allMedia = typeof media !== 'undefined' ? media.filter(m => m.type === 'music') : [];
-
-    // Ordenar: más escuchadas primero, luego alfabético
-    const sorted = [...allMedia].sort((a, b) => {
-      const diff = (plays[b.file] || 0) - (plays[a.file] || 0);
-      return diff !== 0 ? diff : (a.title || '').localeCompare(b.title || '');
+  likedItems.forEach((item, idx) => {
+    const cover = item.cover || ((typeof getPlaceholderCover === 'function') ? getPlaceholderCover(item.category) : '');
+    const row = document.createElement('div');
+    row.className = 'lib-track-row';
+    row.innerHTML = `
+      <img class="lib-track-row-cover" src="${cover}" alt="${item.title}" onerror="this.src='${cover}'">
+      <div class="lib-track-row-info">
+        <div class="lib-track-row-title">${item.title}</div>
+        <div class="lib-track-row-artist">${item.artist}</div>
+      </div>
+      <button class="lib-track-row-more" aria-label="Opciones">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </button>`;
+    row.addEventListener('click', e => {
+      if (e.target.closest('.lib-track-row-more')) { e.stopPropagation(); if (typeof openContextMenu === 'function') openContextMenu(item); return; }
+      if (typeof loadTrack === 'function') loadTrack(item, false, likedItems);
     });
-
-    container.innerHTML = '';
-    sorted.forEach(item => {
-      const isDownloaded = typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file);
-      const playCount = plays[item.file] || 0;
-      const row = document.createElement('div');
-      row.className = 'lib-row';
-      row.innerHTML = `
-        <div class="lib-row-thumb">
-          <img src="${item.cover || ''}" alt="${item.title}" loading="lazy" />
-          ${isDownloaded ? '<span class="lib-dl-dot"></span>' : ''}
-        </div>
-        <div class="lib-row-info">
-          <span class="lib-row-title">${item.title}</span>
-          <span class="lib-row-sub">${(item.artist || '').split(',')[0].trim()}${playCount > 0 ? ` · ${playCount} rep.` : ''}</span>
-        </div>
-        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
-      row.addEventListener('click', () => {
-        if (typeof loadTrack === 'function') {
-          playlist = sorted;
-          currentTrackIdx = sorted.indexOf(item);
-          loadTrack(item);
-        }
-      });
-      container.appendChild(row);
+    row.querySelector('.lib-track-row-more').addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openContextMenu === 'function') openContextMenu(item);
     });
+    list.appendChild(row);
+  });
 
-    if (sorted.length === 0) {
-      container.innerHTML = '<p class="lib-empty">No hay canciones en la biblioteca.</p>';
-    }
+  // Play all button
+  const playBtn = document.getElementById('libLikedPlayBtn');
+  if (playBtn) {
+    playBtn.onclick = () => {
+      if (likedItems.length > 0 && typeof loadTrack === 'function') loadTrack(likedItems[0], false, likedItems);
+    };
+  }
+}
+
+// ── Render downloads subpage ──────────────────────────────
+async function renderLibDownloads() {
+  const list = document.getElementById('libDownloadsList');
+  const fill = document.getElementById('libDlStorageFill');
+  const lbl  = document.getElementById('libDlStorageLbl');
+  if (!list || typeof OfflineManager === 'undefined') return;
+  list.innerHTML = '';
+
+  const { usage, quota } = await OfflineManager.getStorageEstimate();
+  if (fill && quota > 0) fill.style.width = Math.min(100, (usage / quota) * 100) + '%';
+  if (lbl) {
+    const usedMB  = (usage / 1024 / 1024).toFixed(1);
+    const totalGB = quota > 0 ? (quota / 1024 / 1024 / 1024).toFixed(1) : '—';
+    lbl.textContent = `${usedMB} MB / ${totalGB} GB usados`;
   }
 
-  /* ── Descargado ─────────────────────────────────── */
-  function renderLibDownloaded() {
-    const container = document.getElementById('libDownloadedList');
-    const countEl   = document.getElementById('libDownloadedCount');
-    if (!container) return;
+  const items = await OfflineManager.getAllDownloads();
+  // Update hub subtitle
+  const sub = document.getElementById('libSubDownloads');
+  if (sub) sub.textContent = items.length === 1 ? '1 canción' : `${items.length} canciones`;
 
-    const allMedia   = typeof media !== 'undefined' ? media : [];
-    const downloaded = allMedia.filter(t => typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(t.file));
-
-    if (countEl) countEl.textContent = downloaded.length > 0 ? `${downloaded.length} canciones` : '';
-
-    container.innerHTML = '';
-    if (downloaded.length === 0) {
-      container.innerHTML = '<p class="lib-empty">No tienes canciones descargadas.</p>';
-      return;
-    }
-
-    downloaded.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'lib-row';
-      row.innerHTML = `
-        <div class="lib-row-thumb" style="position:relative;">
-          <img src="${item.cover || ''}" alt="${item.title}" loading="lazy" />
-          <span class="lib-dl-dot"></span>
-        </div>
-        <div class="lib-row-info">
-          <span class="lib-row-title">${item.title}</span>
-          <span class="lib-row-sub">${(item.artist || '').split(',')[0].trim()}</span>
-        </div>
-        <svg class="lib-row-chevron" viewBox="0 0 24 24" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>`;
-      row.addEventListener('click', () => {
-        if (typeof loadTrack === 'function') {
-          playlist = downloaded;
-          currentTrackIdx = downloaded.indexOf(item);
-          loadTrack(item);
-        }
-      });
-      container.appendChild(row);
-    });
+  if (items.length === 0) {
+    list.innerHTML = `<div class="lib-empty-state">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <h3>Sin descargas</h3><p>Pulsa el ícono ↓ en cualquier canción para escucharla sin conexión.</p></div>`;
+    return;
   }
 
-  /* ── Init ────────────────────────────────────────── */
-  function init() {
-    Object.keys(panels).forEach(key => {
-      const btn = document.getElementById(panels[key].btn);
-      if (btn) btn.addEventListener('click', () => showPanel(key));
+  items.sort((a, b) => (b.downloadedAt || 0) - (a.downloadedAt || 0)).forEach(item => {
+    const cover = item.cover || ((typeof getPlaceholderCover === 'function') ? getPlaceholderCover(item.category) : '');
+    const row = document.createElement('div');
+    row.className = 'lib-track-row';
+    row.innerHTML = `
+      <img class="lib-track-row-cover" src="${cover}" alt="${item.title}" onerror="this.src='${cover}'">
+      <div class="lib-track-row-info">
+        <div class="lib-track-row-title">${item.title}</div>
+        <div class="lib-track-row-artist">${item.artist}</div>
+      </div>
+      <button class="lib-track-row-more" aria-label="Opciones">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </button>`;
+    // Find full item from media for playback
+    const mediaItem = (typeof media !== 'undefined') ? media.find(m => m.file === item.file) : null;
+    const playItem = mediaItem || item;
+    row.addEventListener('click', e => {
+      if (e.target.closest('.lib-track-row-more')) return;
+      if (typeof loadTrack === 'function') loadTrack(playItem);
     });
-    // Mostrar playlists por defecto
-    showPanel('playlists');
-  }
+    row.querySelector('.lib-track-row-more').addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openContextMenu === 'function') openContextMenu(playItem);
+    });
+    list.appendChild(row);
+  });
+}
 
-  document.addEventListener('DOMContentLoaded', init);
-  setTimeout(init, 300);
+// ── Wire up Library Hub buttons ───────────────────────────
+(function initLibraryHub() {
+  // Hub card buttons
+  const cardPl = document.getElementById('libCardPlaylists');
+  const cardAr = document.getElementById('libCardArtists');
+  const cardLi = document.getElementById('libCardLiked');
+  const cardDl = document.getElementById('libCardDownloads');
 
-  // Re-render cuando se navega a la página
-  const _origShowPage = typeof showPage === 'function' ? showPage : null;
-  if (_origShowPage && !window._biblioHooked) {
-    window._biblioHooked = true;
-    document.addEventListener('droply:pagechange', e => {
-      if (e.detail === 'pagePlaylists') showPanel(activePanel);
+  if (cardPl) cardPl.addEventListener('click', () => {
+    renderPlaylists();
+    openLibSubpage('libPagePlaylists');
+  });
+  if (cardAr) cardAr.addEventListener('click', () => {
+    renderLibArtists();
+    openLibSubpage('libPageArtists');
+  });
+  if (cardLi) cardLi.addEventListener('click', () => {
+    renderLibLiked();
+    openLibSubpage('libPageLiked');
+  });
+  if (cardDl) cardDl.addEventListener('click', () => {
+    renderLibDownloads();
+    openLibSubpage('libPageDownloads');
+  });
+
+  // Back buttons
+  const backPl = document.getElementById('libBackPlaylists');
+  const backAr = document.getElementById('libBackArtists');
+  const backLi = document.getElementById('libBackLiked');
+  const backDl = document.getElementById('libBackDownloads');
+  if (backPl) backPl.addEventListener('click', () => closeLibSubpage('libPagePlaylists'));
+  if (backAr) backAr.addEventListener('click', () => closeLibSubpage('libPageArtists'));
+  if (backLi) backLi.addEventListener('click', () => closeLibSubpage('libPageLiked'));
+  if (backDl) backDl.addEventListener('click', () => closeLibSubpage('libPageDownloads'));
+
+  // Home "Ver todo" playlists link
+  const homeVeroPl = document.getElementById('homeVeroPlaylists');
+  if (homeVeroPl) homeVeroPl.addEventListener('click', () => {
+    showPage('pageLibrary');
+    renderPlaylists();
+    openLibSubpage('libPagePlaylists');
+  });
+
+  // Liked play button (also wired in renderLibLiked, but set default)
+  const likedPlayBtn = document.getElementById('libLikedPlayBtn');
+  if (likedPlayBtn && !likedPlayBtn._wired) {
+    likedPlayBtn._wired = true;
+    likedPlayBtn.addEventListener('click', () => {
+      const likedItems = (typeof media !== 'undefined' && typeof likedTracks !== 'undefined')
+        ? media.filter(m => m.type === 'music' && likedTracks.has(m.file)) : [];
+      if (likedItems.length > 0 && typeof loadTrack === 'function') loadTrack(likedItems[0], false, likedItems);
     });
   }
-
 })();

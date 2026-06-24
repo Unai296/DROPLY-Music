@@ -140,7 +140,7 @@
         <section class="home-section" id="homePlSection" style="display:none">
           <div class="home-section-header">
             <h2 class="home-section-title">Tus playlists</h2>
-            <button class="home-section-link" data-page="pagePlaylists">Ver todo</button>
+            <button class="home-section-link" id="homeVeroPlaylists">Ver todo</button>
           </div>
           <div class="home-hscroll-wrap">
             <div class="home-hscroll" id="homePlGrid"></div>
@@ -262,93 +262,148 @@
 
 
 
-    <!-- PAGE: PLAYLISTS -->
-    <div class="page" id="pagePlaylists">
-
-      <!-- Biblioteca header — estilo Apple Music -->
-      <div class="lib-header">
-        <h1 class="lib-title">Biblioteca</h1>
-        <div class="lib-header-actions">
-          <button class="lib-icon-btn" id="btnCreatePlaylist" title="Nueva playlist">
-            <svg viewBox="0 0 24 24" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <button class="lib-icon-btn" id="btnLibMore" title="Más opciones">
-            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>
-          </button>
-        </div>
+    <!-- PAGE: LIBRARY (hub) -->
+    <div class="page" id="pageLibrary">
+      <div class="lib-hub-header">
+        <h2 class="lib-hub-title">Biblioteca</h2>
       </div>
-
-      <!-- Categorías de biblioteca — filas con chevron -->
-      <div class="lib-categories">
-        <button class="lib-cat-row" id="libCatPlaylists">
-          <div class="lib-cat-icon" style="background:#fc3c44;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <div class="lib-hub-grid">
+        <!-- Playlists -->
+        <button class="lib-hub-card" id="libCardPlaylists">
+          <div class="lib-hub-icon lib-hub-icon--purple">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
           </div>
-          <span class="lib-cat-label">Playlists</span>
-          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="lib-hub-card-info">
+            <span class="lib-hub-card-name">Playlists</span>
+            <span class="lib-hub-card-sub" id="libSubPlaylists">0 playlists</span>
+          </div>
+          <svg class="lib-hub-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-        <div class="lib-cat-divider"></div>
-        <button class="lib-cat-row" id="libCatArtists">
-          <div class="lib-cat-icon" style="background:#fc3c44;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <!-- Artistas -->
+        <button class="lib-hub-card" id="libCardArtists">
+          <div class="lib-hub-icon lib-hub-icon--blue">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+              <path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
           </div>
-          <span class="lib-cat-label">Artistas</span>
-          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="lib-hub-card-info">
+            <span class="lib-hub-card-name">Artistas</span>
+            <span class="lib-hub-card-sub" id="libSubArtists">Tus frecuentes</span>
+          </div>
+          <svg class="lib-hub-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-        <div class="lib-cat-divider"></div>
-        <button class="lib-cat-row" id="libCatSongs">
-          <div class="lib-cat-icon" style="background:#fc3c44;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <!-- Canciones (likes) -->
+        <button class="lib-hub-card" id="libCardLiked">
+          <div class="lib-hub-icon lib-hub-icon--pink">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
           </div>
-          <span class="lib-cat-label">Canciones</span>
-          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="lib-hub-card-info">
+            <span class="lib-hub-card-name">Canciones</span>
+            <span class="lib-hub-card-sub" id="libSubLiked">0 me gustas</span>
+          </div>
+          <svg class="lib-hub-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-        <div class="lib-cat-divider"></div>
-        <button class="lib-cat-row" id="libCatDownloaded">
-          <div class="lib-cat-icon" style="background:#30d158;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <!-- Descargadas -->
+        <button class="lib-hub-card" id="libCardDownloads">
+          <div class="lib-hub-icon lib-hub-icon--green">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
           </div>
-          <span class="lib-cat-label">Descargado</span>
-          <svg class="lib-cat-chevron" viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="lib-hub-card-info">
+            <span class="lib-hub-card-name">Descargadas</span>
+            <span class="lib-hub-card-sub" id="libSubDownloads">0 canciones</span>
+          </div>
+          <svg class="lib-hub-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
+    </div>
 
-      <!-- Sección activa (se inyecta por JS) -->
-      <div id="libSectionWrap">
+    <!-- ══ LIBRARY SUB: PLAYLISTS ══ -->
+    <div class="lib-subpage" id="libPagePlaylists">
+      <div class="lib-subpage-topbar">
+        <button class="lib-subpage-back" id="libBackPlaylists" aria-label="Volver">
+          <svg viewBox="0 0 24 24" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="lib-subpage-title">Playlists</span>
+        <button class="btn-create-playlist" id="btnCreatePlaylist" style="margin-right:.25rem">
+          <svg viewBox="0 0 24 24" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva
+        </button>
+      </div>
+      <div class="lib-subpage-scroll">
+        <div id="playlistsGrid" class="playlists-grid"></div>
+      </div>
+    </div>
 
-        <!-- PLAYLISTS (visible por defecto) -->
-        <div id="libPanelPlaylists" class="lib-panel active">
-          <div class="lib-panel-header">
-            <span class="lib-panel-title">Playlists</span>
+    <!-- ══ LIBRARY SUB: ARTISTAS ══ -->
+    <div class="lib-subpage" id="libPageArtists">
+      <div class="lib-subpage-topbar">
+        <button class="lib-subpage-back" id="libBackArtists" aria-label="Volver">
+          <svg viewBox="0 0 24 24" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="lib-subpage-title">Artistas</span>
+        <div style="width:44px"></div>
+      </div>
+      <div class="lib-subpage-scroll">
+        <div id="libArtistsGrid" class="lib-artists-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══ LIBRARY SUB: CANCIONES (LIKED) ══ -->
+    <div class="lib-subpage" id="libPageLiked">
+      <div class="lib-subpage-topbar">
+        <button class="lib-subpage-back" id="libBackLiked" aria-label="Volver">
+          <svg viewBox="0 0 24 24" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="lib-subpage-title">Canciones</span>
+        <div style="width:44px"></div>
+      </div>
+      <div class="lib-subpage-scroll">
+        <!-- Hero strip -->
+        <div class="lib-liked-hero">
+          <div class="lib-liked-hero-icon">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="#ec4899" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
-          <div id="playlistsGrid" class="playlists-grid lib-playlists-grid"></div>
-        </div>
-
-        <!-- ARTISTAS -->
-        <div id="libPanelArtists" class="lib-panel">
-          <div class="lib-panel-header">
-            <span class="lib-panel-title">Artistas</span>
+          <div class="lib-liked-hero-info">
+            <p class="lib-liked-hero-label">ME GUSTA</p>
+            <h2 class="lib-liked-hero-title">Canciones</h2>
+            <p class="lib-liked-hero-count" id="libLikedCount">0 canciones</p>
           </div>
-          <div id="libArtistsList" class="lib-rows-list"></div>
+          <button class="lib-liked-play-btn" id="libLikedPlayBtn" aria-label="Reproducir todas">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+          </button>
         </div>
+        <div id="libLikedList" class="lib-track-list"></div>
+      </div>
+    </div>
 
-        <!-- CANCIONES -->
-        <div id="libPanelSongs" class="lib-panel">
-          <div class="lib-panel-header">
-            <span class="lib-panel-title">Canciones</span>
+    <!-- ══ LIBRARY SUB: DESCARGADAS ══ -->
+    <div class="lib-subpage" id="libPageDownloads">
+      <div class="lib-subpage-topbar">
+        <button class="lib-subpage-back" id="libBackDownloads" aria-label="Volver">
+          <svg viewBox="0 0 24 24" width="22" height="22"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="lib-subpage-title">Descargadas</span>
+        <div style="width:44px"></div>
+      </div>
+      <div class="lib-subpage-scroll">
+        <!-- Storage bar -->
+        <div class="lib-dl-storage">
+          <div class="lib-dl-storage-bar">
+            <div class="lib-dl-storage-fill" id="libDlStorageFill"></div>
           </div>
-          <div id="libSongsList" class="lib-rows-list"></div>
+          <span class="lib-dl-storage-lbl" id="libDlStorageLbl">Calculando…</span>
         </div>
-
-        <!-- DESCARGADO -->
-        <div id="libPanelDownloaded" class="lib-panel">
-          <div class="lib-panel-header">
-            <span class="lib-panel-title">Descargado</span>
-            <span class="lib-panel-count" id="libDownloadedCount"></span>
-          </div>
-          <div id="libDownloadedList" class="lib-rows-list"></div>
-        </div>
-
+        <div id="libDownloadsList" class="lib-track-list"></div>
       </div>
     </div>
 
@@ -707,12 +762,8 @@
     <!-- ── QUEUE AREA (inside sheet) ── -->
     <div class="sheet-queue-area" id="sheetQueueArea">
       <div class="sheet-queue-area-header">
-        <span class="sheet-queue-area-label">Cola</span>
+        <span class="sheet-queue-area-label">A continuación</span>
         <span class="sheet-queue-area-sublabel" id="sheetQueueAreaCount"></span>
-        <button class="sheet-queue-back-btn" id="sheetQueueBackBtn" aria-label="Volver a portada">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
-          Portada
-        </button>
       </div>
       <div class="sheet-queue-list" id="sheetQueueList"></div>
     </div>
@@ -788,7 +839,7 @@
       <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
 
-    <audio id="mainAudio" preload="metadata"></audio>
+    <audio id="mainAudio" preload="auto"></audio>
   </div>
 
   <!-- ══ QUEUE PANEL — DROPLY PREMIUM ══ -->
@@ -899,8 +950,8 @@
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
       <span>Buscar</span>
     </button>
-    <button class="bnav-btn" data-page="pagePlaylists" aria-label="Biblioteca">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><rect x="3" y="4" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/><rect x="3" y="10" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/><rect x="3" y="16" width="4" height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/></svg>
+    <button class="bnav-btn" data-page="pageLibrary" aria-label="Biblioteca">
+      <svg viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v13"/><path d="M4 17h14"/><path d="M7 7h7"/><path d="M7 11h5"/></svg>
       <span>Biblioteca</span>
     </button>
     <button class="bnav-btn" data-page="pageFeed" aria-label="Feed">
