@@ -4,16 +4,25 @@
 const SupabaseCloud = (() => {
   let supabase = null;
   let user = null;
+  let _initialized = false;
 
-  // Reemplazar con tus credenciales reales si las tienes
   const SUPABASE_URL = 'https://fphbqbmibrtxesjlbydr.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_AUGdgqLUfXEvA7c-E9aL9Q_gHRay8bN';
 
   function init() {
-    // En la v2 de supabase-js cargada vía CDN, el objeto global suele ser 'supabase'
+    if (_initialized) return;
+
     const sdk = window.supabase;
-    if (!sdk) {
-      console.warn('[SUPABASE] SDK no encontrado en window.supabase');
+    if (!sdk || typeof sdk.createClient !== 'function') {
+      console.warn('[SUPABASE] SDK no encontrado. Reintentando en 500 ms…');
+      setTimeout(init, 500);
+      return;
+    }
+
+    // Validación mínima: solo rechazar si está vacía
+    if (!SUPABASE_KEY) {
+      console.warn('[SUPABASE] Falta SUPABASE_KEY.');
+      if (typeof window.updateSupabaseUI === 'function') window.updateSupabaseUI(null);
       return;
     }
 
@@ -24,67 +33,67 @@ const SupabaseCloud = (() => {
           storageKey: 'droply-auth',
           storage: window.localStorage,
           autoRefreshToken: true,
-          detectSessionInUrl: true
+          detectSessionInUrl: true,
+          flowType: 'pkce'
         }
       });
 
-      // Procesar sesión desde URL hash tras redirect OAuth (PWA vuelve como web tab)
-      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            user = session.user;
-            if (typeof window.updateSupabaseUI === 'function') {
-              window.updateSupabaseUI(user);
-            }
-            // Limpiar hash/params de la URL sin recargar
-            history.replaceState(null, '', window.location.pathname);
-          }
-        });
-      } else {
-        checkUser();
-      }
+      _initialized = true;
 
-      // Escuchar cambios de estado
+      // Escuchar cambios de auth PRIMERO
       supabase.auth.onAuthStateChange((event, session) => {
         user = session?.user || null;
-        console.info('[SUPABASE] Auth event:', event, user?.email);
+        console.info('[SUPABASE] Auth event:', event, user?.email ?? 'no user');
+        if (typeof window.updateSupabaseUI === 'function') {
+          window.updateSupabaseUI(user);
+        }
+        // Limpiar URL tras OAuth redirect
+        if (event === 'SIGNED_IN' && (
+          window.location.hash.includes('access_token') ||
+          window.location.search.includes('code=')
+        )) {
+          history.replaceState(null, '', window.location.pathname);
+        }
+      });
+
+      // Recuperar sesión existente
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) console.warn('[SUPABASE] getSession error:', error.message);
+        user = session?.user || null;
         if (typeof window.updateSupabaseUI === 'function') {
           window.updateSupabaseUI(user);
         }
       });
+
     } catch (e) {
       console.error('[SUPABASE] Error al inicializar:', e);
     }
   }
 
-  async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    user = session?.user || null;
-    if (typeof window.updateSupabaseUI === 'function') {
-      window.updateSupabaseUI(user);
-    }
-  }
-
   async function loginWithGoogle() {
-    if (!supabase) return;
-    // Usar origin + pathname para que el redirect vuelva a la raíz exacta
-    // Esto es clave en PWA: el browser tab que abre Google debe volver a la misma URL
+    if (!supabase) {
+      console.warn('[SUPABASE] No inicializado.');
+      if (typeof showToast === 'function') showToast('Supabase no configurado', 'error');
+      return;
+    }
     const redirectTo = window.location.origin + '/';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          prompt: 'select_account'
-        }
+        queryParams: { prompt: 'select_account' }
       }
     });
-    if (error) showToast("Error al conectar con Google", "error");
+    if (error) {
+      console.error('[SUPABASE] OAuth error:', error.message);
+      if (typeof showToast === 'function') showToast('Error al conectar con Google', 'error');
+    }
   }
 
   async function logout() {
     if (!supabase) return;
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) console.warn('[SUPABASE] Logout error:', error.message);
     user = null;
     if (typeof window.updateSupabaseUI === 'function') {
       window.updateSupabaseUI(null);
@@ -96,10 +105,10 @@ const SupabaseCloud = (() => {
     loginWithGoogle,
     logout,
     getUser: () => user,
+    isReady: () => _initialized,
     markDirty: () => {
       if (user && typeof CloudSync !== 'undefined') {
-        // Aquí iría la lógica para subir datos a Supabase DB
-        console.info('[SUPABASE] Sincronizando datos...');
+        console.info('[SUPABASE] Sincronizando datos…');
       }
     }
   };
