@@ -2935,6 +2935,24 @@ const media = [
     category: "Rap",
     duration: "3:55"
   },
+               {
+    type:     "music",
+    title:    "C'est La Cité",
+    artist:   "Jul, Naps",
+    cover:    "https://i1.sndcdn.com/artworks-NNT4nRz7mGeN-0-t500x500.jpg",
+    file:     "./Music/cestlacite.mp3",
+    category: "Rap",
+    duration: "3:51"
+  },
+              {
+    type:     "music",
+    title:    "Bumpy Ride",
+    artist:   "Mohombi",
+    cover:    "https://m.media-amazon.com/images/I/61vnIvGYK8L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/bumbyride.mp3",
+    category: "Dance-Pop",
+    duration: "3:46"
+  },
 
 
 
@@ -2965,6 +2983,8 @@ const media = [
 
 
 
+
+  
 ];
 /* ══════════════════════════════════════════════════════
    2. STATE
