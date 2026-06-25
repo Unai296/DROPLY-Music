@@ -4247,7 +4247,6 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
 
     activeAudio.src = audioSrc;
-    try { activeAudio.load(); } catch(_) {}
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
 
@@ -4262,21 +4261,47 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     // Mostrar spinner de carga inmediatamente — se quitará en el evento "playing"
     if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(true);
 
-    // Llamada síncrona a play() para no perder el user gesture del lockscreen.
-    // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
-    activeAudio.play()
-      .then(() => {
-        if (myToken !== _playToken) return;
-        isPlaying = true;
-        updatePlayIcons(true);
-      })
-      .catch(err => {
-        if (myToken !== _playToken) return;
-        console.warn("[DROPLY] play error:", err.name, err.message);
-        isPlaying = false;
-        updatePlayIcons(false);
-        if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(false);
-      });
+    // En móvil el navegador no buffea hasta que se llama play(). Pero play()
+    // sin buffer causa un delay de 1-4s. Estrategia: load() arranca la descarga,
+    // esperamos "canplay" (readyState >= 3) antes de play(). Si tarda >800ms
+    // reproducimos igualmente para no frustrar al usuario. En escritorio "canplay"
+    // llega casi inmediato ya que preload="metadata" + red rápida.
+    try { activeAudio.load(); } catch(_) {}
+
+    let _canplayFired = false;
+    const _canplayTimeout = setTimeout(() => {
+      if (_canplayFired) return;
+      _canplayFired = true;
+      activeAudio.removeEventListener('canplay', _onCanPlay);
+      _triggerPlay();
+    }, 800);
+
+    function _onCanPlay() {
+      if (_canplayFired) return;
+      _canplayFired = true;
+      clearTimeout(_canplayTimeout);
+      activeAudio.removeEventListener('canplay', _onCanPlay);
+      _triggerPlay();
+    }
+
+    function _triggerPlay() {
+      if (myToken !== _playToken) return;
+      activeAudio.play()
+        .then(() => {
+          if (myToken !== _playToken) return;
+          isPlaying = true;
+          updatePlayIcons(true);
+        })
+        .catch(err => {
+          if (myToken !== _playToken) return;
+          console.warn("[DROPLY] play error:", err.name, err.message);
+          isPlaying = false;
+          updatePlayIcons(false);
+          if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(false);
+        });
+    }
+
+    activeAudio.addEventListener('canplay', _onCanPlay, { once: true });
 
     _armPlaybackWatchdog();
   }
