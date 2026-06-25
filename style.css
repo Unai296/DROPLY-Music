@@ -1212,27 +1212,10 @@ input { font-family: inherit; }
   will-change: color, filter, transform;
 }
 .lyric-line.active {
-  color: rgba(255,255,255,.22);   /* texto "sin rellenar" — mismo tono que inactivo */
+  color: #fff;
   filter: blur(0);
   transform: scale(1);
   font-weight: 700;
-  position: relative;
-}
-
-/* Capa blanca que se "llena" de izquierda a derecha */
-.lyric-line.active::before {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  color: #fff;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  line-height: inherit;
-  white-space: pre-wrap;
-  /* clip-path controlado por JS mediante --lyric-fill (0→1) */
-  clip-path: inset(0 calc(100% - var(--lyric-fill, 0%) - 0.5px) 0 0);
-  pointer-events: none;
 }
 .lyric-line.prev-1 { color: rgba(255,255,255,.45); filter: blur(1px); transform: scale(.985); }
 .lyric-line.prev-2 { color: rgba(255,255,255,.28); filter: blur(1.5px); transform: scale(.98); }
