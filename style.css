@@ -2051,6 +2051,31 @@ input { font-family: inherit; }
 .mini-ctrl:active { transform: scale(.82); }
 .mini-ctrl svg { width: 18px; height: 18px; }
 
+/* ── Estado de carga de audio: spinner en botón play ─────────────────────
+   Se activa con .audio-loading mientras el buffer está vacío (waiting).    */
+@keyframes droply-spin {
+  to { transform: rotate(360deg); }
+}
+.audio-loading .icon-play,
+.audio-loading .icon-pause {
+  display: none !important;
+}
+.audio-loading::after {
+  content: '';
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: rgba(255,255,255,.9);
+  border-radius: 50%;
+  animation: droply-spin .7s linear infinite;
+  pointer-events: none;
+}
+/* En el botón grande del reproductor el spinner es oscuro (fondo blanco) */
+.sheet-play-btn.audio-loading::after {
+  border-color: rgba(26,26,26,.2);
+  border-top-color: rgba(26,26,26,.85);
+  width: 24px; height: 24px;
+}
+
 /* ══════════════════════════════════════════════════════
    COLLAPSED MODE — iOS 18 Liquid Glass pills
    [🏠]   [▉ cover · title · artist · ▶ · ▶▶]   [🔍]

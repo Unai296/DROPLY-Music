@@ -3649,6 +3649,8 @@ activeAudio.addEventListener("playing", function () {
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "playing"; } catch(_) {}
   }
+  // Quitar estado de carga
+  _setAudioLoadingState(false);
   // Precargar el siguiente track en segundo plano (ver bloque PREFETCH más abajo)
   if (typeof _prefetchNextTrack === 'function') _prefetchNextTrack();
 }, { passive: true });
@@ -3659,9 +3661,28 @@ activeAudio.addEventListener("pause", function () {
   if (!this.paused) return;
   isPlaying = false;
   updatePlayIcons(false);
+  _setAudioLoadingState(false);
   if ("mediaSession" in navigator) {
     try { navigator.mediaSession.playbackState = "paused"; } catch(_) {}
   }
+}, { passive: true });
+
+/* ── Estado de carga: spinner cuando el buffer está vacío ─────────────────
+   Se muestra automáticamente entre el play() y el primer chunk de audio.
+   Se quita en cuanto el audio empieza a sonar de verdad ("playing").       */
+function _setAudioLoadingState(loading) {
+  [miniPlay, sheetPlay].forEach(btn => {
+    if (!btn) return;
+    btn.classList.toggle('audio-loading', loading);
+  });
+}
+
+activeAudio.addEventListener("waiting", function () {
+  if (isPlaying) _setAudioLoadingState(true);
+}, { passive: true });
+
+activeAudio.addEventListener("canplay", function () {
+  _setAudioLoadingState(false);
 }, { passive: true });
 
 /* ── Lock compartido para que el handler "error" y el watchdog nunca
@@ -3881,7 +3902,7 @@ async function _resumeWithWatchdog() {
      aborta en cuanto cambia la pista (o se inicia uno nuevo).
 ══════════════════════════════════════════════════════ */
 const _prefetchedFiles      = new Set();
-const PREFETCH_BYTES        = 700 * 1024;  // ~700KB, suficiente para arrancar al instante
+const PREFETCH_BYTES        = 1536 * 1024;  // ~1.5MB, ~10s a 128kbps — suficiente para arrancar sin espera
 let   _prefetchController   = null;
 let   _prefetchTimer        = null;
 
@@ -3947,7 +3968,7 @@ function _prefetchNextTrack() {
       .then(r => { if (r.ok || r.status === 206) return r.blob(); })
       .catch(() => { _prefetchedFiles.delete(nextFile); })
       .finally(() => { if (myToken === _playToken) _prefetchController = null; });
-  }, 6000); // margen de 6s para no pisar el arranque de la pista actual
+  }, 2000); // margen de 2s para no pisar el arranque de la pista actual
 }
 
 
@@ -4238,6 +4259,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 
     window._droplyFromLockscreen = false;
 
+    // Mostrar spinner de carga inmediatamente — se quitará en el evento "playing"
+    if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(true);
+
     // Llamada síncrona a play() para no perder el user gesture del lockscreen.
     // Omitimos llamar a .load() explícitamente ya que lanza AbortError innecesarios.
     activeAudio.play()
@@ -4251,6 +4275,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         console.warn("[DROPLY] play error:", err.name, err.message);
         isPlaying = false;
         updatePlayIcons(false);
+        if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(false);
       });
 
     _armPlaybackWatchdog();
