@@ -3627,7 +3627,14 @@ activeAudio.addEventListener("ended", function () {
       .catch(err => { updatePlayIcons(false); console.warn("[DROPLY] repeat:", err); });
   } else {
     updatePlayIcons(false);
+    // Marcar que venimos del ended handler — iOS aún tiene el contexto de audio
+    // vivo en este momento, así que _doPlay debe saltar load()+canplay y llamar
+    // play() directamente para no perder ese contexto (de lo contrario el track
+    // siguiente carga pero no suena con pantalla bloqueada).
+    window._droplyFromEnded = true;
     _playNextImmediate();
+    // Limpiar la marca tras el tick para que plays manuales vayan por el flujo normal
+    setTimeout(() => { window._droplyFromEnded = false; }, 0);
   }
 }, { passive: true });
 
@@ -4280,6 +4287,30 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 
     // Mostrar spinner de carga inmediatamente — se quitará en el evento "playing"
     if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(true);
+
+    // iOS: cuando venimos del evento "ended", el elemento de audio aún tiene el
+    // contexto de gesto activo. Si llamamos load() primero lo destruimos y el
+    // play() siguiente se deniega en silencio (el track "cambia" en la pantalla
+    // de bloqueo pero no suena). Solución: llamar play() inmediatamente sin load().
+    // En cualquier otro caso (tap manual, etc.) usamos el flujo normal con
+    // load() + espera de canplay para minimizar el delay de buffering.
+    if (window._droplyFromEnded) {
+      activeAudio.play()
+        .then(() => {
+          if (myToken !== _playToken) return;
+          isPlaying = true;
+          updatePlayIcons(true);
+        })
+        .catch(err => {
+          if (myToken !== _playToken) return;
+          console.warn("[DROPLY] play (from ended) error:", err.name, err.message);
+          isPlaying = false;
+          updatePlayIcons(false);
+          if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(false);
+        });
+      _armPlaybackWatchdog();
+      return;
+    }
 
     // En móvil el navegador no buffea hasta que se llama play(). Pero play()
     // sin buffer causa un delay de 1-4s. Estrategia: load() arranca la descarga,
