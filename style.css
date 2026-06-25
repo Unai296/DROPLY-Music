@@ -768,24 +768,18 @@ input { font-family: inherit; }
 .playlist-page {
   position: fixed; inset: 0;
   background: var(--bg);
-  z-index: 750;
+  z-index: 600;
   display: flex; flex-direction: column;
   transform: translateX(100%);
-  transition: transform .38s cubic-bezier(.4,0,.2,1), visibility 0s linear .38s;
+  transition: transform .38s cubic-bezier(.4,0,.2,1);
   overflow: hidden;
-  will-change: transform;
-  visibility: hidden;
   /* Safe areas */
   padding-top: var(--safe-top);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
   padding-bottom: var(--safe-bottom);
 }
-.playlist-page.open {
-  transform: translateX(0);
-  visibility: visible;
-  transition: transform .38s cubic-bezier(.4,0,.2,1), visibility 0s linear 0s;
-}
+.playlist-page.open { transform: translateX(0); }
 
 .playlist-page-bg {
   position: absolute; inset: 0; z-index: 0;
@@ -1202,41 +1196,23 @@ input { font-family: inherit; }
 .lyric-line {
   font-size: 1.72rem; font-weight: 700; line-height: 1.25;
   letter-spacing: -.02em;
-  color: rgba(255,255,255,.18);
+  color: rgba(255,255,255,.22);
   padding: .18rem 0;
   cursor: default;
   filter: blur(2.5px);
   transform: scale(.97);
   transform-origin: left center;
-  transition: color .45s ease, filter .45s ease, transform .45s ease, opacity .45s ease;
+  transition: color .35s ease, filter .35s ease, transform .35s ease;
   will-change: color, filter, transform;
 }
 .lyric-line.active {
-  color: rgba(255,255,255,.22);   /* texto "sin rellenar" — mismo tono que inactivo */
+  color: #ffffff;
   filter: blur(0);
   transform: scale(1);
-  font-weight: 700;
-  position: relative;
 }
-
-/* Capa blanca que se "llena" de izquierda a derecha */
-.lyric-line.active::before {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  color: #fff;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  line-height: inherit;
-  white-space: pre-wrap;
-  /* clip-path controlado por JS mediante --lyric-fill (0→1) */
-  clip-path: inset(0 calc(100% - var(--lyric-fill, 0%) - 0.5px) 0 0);
-  pointer-events: none;
-}
-.lyric-line.prev-1 { color: rgba(255,255,255,.45); filter: blur(1px); transform: scale(.985); }
-.lyric-line.prev-2 { color: rgba(255,255,255,.28); filter: blur(1.5px); transform: scale(.98); }
-.lyric-line.next-1 { color: rgba(255,255,255,.38); filter: blur(1px); transform: scale(.985); }
+.lyric-line.prev-1 { color: rgba(255,255,255,.55); filter: blur(.8px); transform: scale(.99); }
+.lyric-line.prev-2 { color: rgba(255,255,255,.3);  filter: blur(1.6px); transform: scale(.985); }
+.lyric-line.next-1 { color: rgba(255,255,255,.45); filter: blur(.8px); transform: scale(.99); }
 .lyric-line.next-2 { color: rgba(255,255,255,.22); filter: blur(1.8px); transform: scale(.98); }
 
 /* No-lyrics placeholder */
@@ -4792,14 +4768,11 @@ body.liquid-enabled .liquid-bg {
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
-  transition: transform .32s cubic-bezier(.4,0,.2,1), visibility 0s linear .32s;
+  transition: transform .32s cubic-bezier(.4,0,.2,1);
   will-change: transform;
-  visibility: hidden;
 }
 .lib-subpage.open {
   transform: translateX(0);
-  visibility: visible;
-  transition: transform .32s cubic-bezier(.4,0,.2,1), visibility 0s linear 0s;
 }
 .lib-subpage-topbar {
   display: flex;

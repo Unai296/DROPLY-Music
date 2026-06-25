@@ -9054,7 +9054,6 @@ const MixesManager = (function() {
     requestAnimationFrame(() => {
       lineEls.forEach((el, i) => {
         el.classList.remove('active','prev-1','prev-2','next-1','next-2');
-        el.style.setProperty('--lyric-fill', '0%');
         const d = i - newLine;
         if      (d ===  0) el.classList.add('active');
         else if (d === -1) el.classList.add('prev-1');
@@ -9107,19 +9106,14 @@ const MixesManager = (function() {
     _scrollAnim = requestAnimationFrame(step);
   }
 
-  /* ── rAF ticker ───────────────────────────────────────────── */
-  function tick() {
-    const audio = document.getElementById('mainAudio');
-    if (audio && !audio.paused) {
-      updateActiveLine(audio.currentTime, false);
-      /* ── Fill animation en la línea activa ── */
-      if (lyricsReady && activeLine >= 0 && lineEls[activeLine]) {
-        const lineStart = activeLyrics[activeLine].t;
-        const lineEnd   = activeLyrics[activeLine + 1] ? activeLyrics[activeLine + 1].t : lineStart + 4;
-        const duration  = lineEnd - lineStart;
-        const elapsed   = audio.currentTime - lineStart;
-        const pct       = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 100;
-        lineEls[activeLine].style.setProperty('--lyric-fill', pct + '%');
+  /* ── rAF ticker — throttled a ~30fps, solo detecta cambio de línea ── */
+  let _lastTickT = 0;
+  function tick(now) {
+    if (now - _lastTickT >= 32) {   // ~30fps es más que suficiente
+      _lastTickT = now;
+      const audio = document.getElementById('mainAudio');
+      if (audio && !audio.paused) {
+        updateActiveLine(audio.currentTime, false);
       }
     }
     rafId = requestAnimationFrame(tick);
@@ -9161,15 +9155,6 @@ const MixesManager = (function() {
     audio.addEventListener('seeked', () => {
       if (lyricsReady) {
         updateActiveLine(audio.currentTime, true);
-        /* sync fill inmediato tras seek */
-        if (activeLine >= 0 && lineEls[activeLine]) {
-          const lineStart = activeLyrics[activeLine].t;
-          const lineEnd   = activeLyrics[activeLine + 1] ? activeLyrics[activeLine + 1].t : lineStart + 4;
-          const duration  = lineEnd - lineStart;
-          const elapsed   = audio.currentTime - lineStart;
-          const pct       = duration > 0 ? Math.min(100, Math.max(0, (elapsed / duration) * 100)) : 100;
-          lineEls[activeLine].style.setProperty('--lyric-fill', pct + '%');
-        }
       }
     }, { passive: true });
   })();
