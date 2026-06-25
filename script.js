@@ -4115,6 +4115,12 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     saveHistory();
     playCounts[item.file] = (playCounts[item.file] || 0) + 1;
     savePlayCounts();
+    // Actualizar racha al reproducir (una vez por día)
+    tickStreak();
+    updateStreakUI();
+    // Actualizar género favorito en perfil si está visible
+    const genreEl = document.getElementById('statGenre');
+    if (genreEl) { const g = getFavoriteGenre(); if (g) genreEl.textContent = g; }
     try { document.dispatchEvent(new CustomEvent("droply:trackchange", { detail: item })); } catch(_) {}
   }
 
@@ -5718,39 +5724,128 @@ function updateHomeContinueProgress() {
   });
 }
 
+/* ── PROFILE STATS HELPERS ── */
+
+// ── Minutos este mes (key con año-mes, se resetea sola cada mes) ──
+function _monthKey() {
+  const d = new Date();
+  return `droply_minutes_${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function getMonthMinutes() {
+  return parseInt(localStorage.getItem(_monthKey()) || '0');
+}
+function addMonthMinute() {
+  const key = _monthKey();
+  const v = parseInt(localStorage.getItem(key) || '0') + 1;
+  localStorage.setItem(key, v);
+  return v;
+}
+
+// ── Racha de días ──
+function _todayStr() {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+function getStreakData() {
+  try {
+    return JSON.parse(localStorage.getItem('droply_streak') || '{"count":0,"lastDate":""}');
+  } catch(_) { return { count: 0, lastDate: '' }; }
+}
+function saveStreakData(data) {
+  localStorage.setItem('droply_streak', JSON.stringify(data));
+}
+function tickStreak() {
+  const today = _todayStr();
+  const data  = getStreakData();
+  if (data.lastDate === today) return data.count; // ya contado hoy
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (data.lastDate === yesterday) {
+    data.count += 1; // día consecutivo
+  } else if (data.lastDate === '') {
+    data.count = 1;  // primera vez
+  } else {
+    data.count = 1;  // racha rota, reiniciar
+  }
+  data.lastDate = today;
+  saveStreakData(data);
+  return data.count;
+}
+function updateStreakUI() {
+  const el = document.getElementById('streakCount');
+  if (el) el.textContent = getStreakData().count;
+}
+
+// ── Género favorito (basado en playCounts + campo category) ──
+function getFavoriteGenre() {
+  const genreScores = {};
+  const tracks = media.filter(m => m.type === 'music' && m.category);
+  tracks.forEach(m => {
+    const plays = playCounts[m.file] || 0;
+    if (plays === 0) return;
+    const g = m.category;
+    genreScores[g] = (genreScores[g] || 0) + plays;
+  });
+  const entries = Object.entries(genreScores);
+  if (entries.length === 0) return null;
+  return entries.sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// ── Top 4 artistas por playCounts ──
+function getTopArtists(limit = 4) {
+  const artistScore = {};
+  const artistTrack = {};
+  media.filter(m => m.type === 'music').forEach(m => {
+    if (!m.artist) return;
+    const primary = m.artist.split(',')[0].trim();
+    const plays = playCounts[m.file] || 0;
+    artistScore[primary] = (artistScore[primary] || 0) + plays;
+    if (!artistTrack[primary]) artistTrack[primary] = m;
+  });
+
+  // Artistas con reproducciones reales, ordenados
+  let topList = Object.entries(artistScore)
+    .filter(([, s]) => s > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name]) => ({ name, track: artistTrack[name] }));
+
+  // Si hay menos de 4 con plays, rellenar con artistas únicos del catálogo
+  if (topList.length < limit) {
+    const used = new Set(topList.map(a => a.name));
+    const fallback = [];
+    media.filter(m => m.type === 'music').forEach(m => {
+      if (!m.artist) return;
+      const primary = m.artist.split(',')[0].trim();
+      if (!used.has(primary)) {
+        used.add(primary);
+        fallback.push({ name: primary, track: m });
+      }
+    });
+    topList = [...topList, ...fallback].slice(0, limit);
+  }
+
+  return topList;
+}
+
 /* ── PROFILE RENDER ── */
 function renderProfile() {
   const grid = document.getElementById("profileArtistsGrid");
   if (!grid) return;
-  
-  // Usamos los mismos artistas que en la home para coherencia
-  const artistMap = new Map();
-  
-  media.filter(m => m.type === "music").forEach(m => {
-    if (!m.artist) return;
-    const primary = m.artist.split(",")[0].trim();
-    if (!artistMap.has(primary)) {
-      artistMap.set(primary, m);
-    }
-  });
-  
-  const sortedArtists = Array.from(artistMap.values()).slice(0, 8);
-  
+
+  // Artistas top (4, ordenados por reproducciones reales)
+  const topArtists = getTopArtists(4);
   grid.innerHTML = "";
-  sortedArtists.forEach(m => {
-    const primary = m.artist.split(",")[0].trim();
-    const photo = ARTIST_PHOTOS[primary] || m.cover;
-    
+  topArtists.forEach(({ name, track }) => {
+    const photo = ARTIST_PHOTOS[name] || track.cover;
     const el = document.createElement("div");
     el.className = "home-artist-card";
     el.innerHTML = `
       <div class="home-artist-photo">
-        <img src="${photo}" alt="${primary}" loading="lazy" />
+        <img src="${photo}" alt="${name}" loading="lazy" />
       </div>
-      <p class="home-artist-name">${primary}</p>
+      <p class="home-artist-name">${name}</p>
     `;
     el.onclick = () => {
-      const artistTracks = media.filter(s => s.artist && s.artist.includes(primary));
+      const artistTracks = media.filter(s => s.artist && s.artist.includes(name));
       if (artistTracks.length > 0) {
         playlist = artistTracks;
         currentTrackIdx = 0;
@@ -5759,6 +5854,18 @@ function renderProfile() {
     };
     grid.appendChild(el);
   });
+
+  // Género favorito real
+  const favGenre = getFavoriteGenre();
+  const genreEl = document.getElementById('statGenre');
+  if (genreEl) genreEl.textContent = favGenre || '—';
+
+  // Minutos este mes reales
+  const statMinutes = document.getElementById('statMinutes');
+  if (statMinutes) statMinutes.textContent = getMonthMinutes().toLocaleString('es');
+
+  // Racha
+  updateStreakUI();
 }
 
 // ── Lógica Real de Ajustes y Personalización ──
@@ -5768,7 +5875,6 @@ function loadSavedSettings() {
   const theme = localStorage.getItem('droply_theme') || 'dark';
   const accent = localStorage.getItem('droply_accent') || '#8b5cf6';
   const liquid = localStorage.getItem('droply_liquid') !== 'false';
-  const totalMinutes = parseInt(localStorage.getItem('droply_minutes') || '1240');
 
   // Aplicar Tema
   if (theme === 'light') {
@@ -5786,9 +5892,9 @@ function loadSavedSettings() {
   document.body.classList.toggle('liquid-enabled', liquid);
   document.getElementById('liquidToggle')?.classList.toggle('active', liquid);
 
-  // Aplicar Estadísticas
+  // Aplicar Estadísticas (minutos reales del mes, no el valor antiguo)
   const statMinutes = document.getElementById('statMinutes');
-  if (statMinutes) statMinutes.textContent = totalMinutes.toLocaleString();
+  if (statMinutes) statMinutes.textContent = getMonthMinutes().toLocaleString('es');
 }
 
 // Escuchar cambios en los ajustes
@@ -5837,17 +5943,18 @@ document.addEventListener("click", e => {
   }
 });
 
-// Lógica de Estadísticas Reales (Minutos escuchados)
+// Lógica de Estadísticas Reales (Minutos escuchados este mes + racha)
 let lastMinuteUpdate = Date.now();
 setInterval(() => {
   if (isPlaying && !document.hidden) {
     const now = Date.now();
     if (now - lastMinuteUpdate >= 60000) { // Cada minuto real
-      let total = parseInt(localStorage.getItem('droply_minutes') || '1240');
-      total += 1;
-      localStorage.setItem('droply_minutes', total);
+      const total = addMonthMinute();
       const statMinutes = document.getElementById('statMinutes');
-      if (statMinutes) statMinutes.textContent = total.toLocaleString();
+      if (statMinutes) statMinutes.textContent = total.toLocaleString('es');
+      // Actualizar racha (tick diario al escuchar)
+      const streak = tickStreak();
+      updateStreakUI();
       lastMinuteUpdate = now;
     }
   } else {
@@ -5856,9 +5963,10 @@ setInterval(() => {
 }, 10000); // Chequear cada 10 segundos
 
 // Inicializar ajustes al cargar
-document.addEventListener('DOMContentLoaded', loadSavedSettings);
+document.addEventListener('DOMContentLoaded', () => { loadSavedSettings(); updateStreakUI(); });
 // Forzar carga inmediata por si el evento ya pasó
 loadSavedSettings();
+updateStreakUI();
 // También llamar después de renderizar el perfil por si acaso
 const originalRenderProfile = renderProfile;
 renderProfile = function() {
