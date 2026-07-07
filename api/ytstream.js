@@ -20,16 +20,22 @@ module.exports = async (req, res) => {
     const info = await ytdl.getInfo(videoId, {
       requestOptions: {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
           'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+          'Origin': 'https://www.youtube.com',
+          'Referer': 'https://www.youtube.com',
         }
       }
     });
 
-    const audioFormat = ytdl.chooseFormat(info.formats, {
-      filter: 'audioonly',
-      quality: 'lowestaudio'
-    });
+    // Intentar obtener el mejor formato de audio
+    let audioFormat = ytdl.chooseFormat(info.formats, { filter: 'audioonly', quality: 'lowestaudio' });
+
+    if (!audioFormat) {
+      audioFormat = info.formats
+        .filter(f => f.hasAudio && f.url)
+        .sort((a, b) => (a.bitrate || 0) - (b.bitrate || 0))[0];
+    }
 
     if (!audioFormat) {
       return res.status(404).json({ error: 'No audio format found' });
@@ -49,7 +55,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error('[ytstream] Error:', err.message);
 
-    if (err.message?.includes('Status code: 403') || err.message?.includes('copyright')) {
+    if (err.message?.includes('Status code: 403') || err.message?.includes('copyright') || err.message?.includes('Sign in')) {
       return res.status(200).json({
         error: 'Este video no está disponible para extracción de audio (restringido por copyright)'
       });

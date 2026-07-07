@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
         title: item.snippet.title,
         artist: item.snippet.channelTitle,
         cover: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-        category: 'YouTube',
+        category: '',
         duration: null,
         type: 'music'
       }));
