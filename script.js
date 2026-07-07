@@ -1917,8 +1917,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
     _ytTrackActive = false;
-    _ytBgFallback = false;
-    _ytFallbackUrl = null;
+    _stopYtKeepAlive();
     _stopYtProgressPoll();
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
@@ -2058,32 +2057,21 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 
 /* ══════════════════════════════════════════════════════
    YOUTUBE IFRAME PLAYER API
-   Reproduce audio a través del iframe embebido de YouTube.
+   Reproduce audio a través del iframe de YouTube.
 ══════════════════════════════════════════════════════ */
 let _ytPlayer = null;
 let _ytReady = false;
 let _ytTrackActive = false;
 let _ytPollId = null;
-let _ytState = -1; // -1=unstarted 0=ended 1=playing 2=paused 3=buffering 5=cued
-let _ytFallbackUrl = null; // cached audio URL for background playback
-let _ytPendingVideoId = null; // videoId to load once player is ready
-let _ytBgFallback = false; // true when playing via <audio> fallback in background
+let _ytState = -1; // -1=sininiciar 0=terminado 1=reproduciendo 2=pausado 3=buffering 5=cued
+let _ytKeepAliveId = null; // intervalo anti-pausa para segundo plano
 
-/* ── Expuesto globalmente por la IFrame API ── */
 window.onYouTubeIframeAPIReady = function () {
   _ytPlayer = new YT.Player('yt-player', {
-    height: 1,
-    width: 1,
+    height: 1, width: 1,
     playerVars: {
-      controls: 0,
-      disablekb: 1,
-      fs: 0,
-      iv_load_policy: 3,
-      modestbranding: 1,
-      playsinline: 1,
-      rel: 0,
-      autoplay: 0,
-      enablejsapi: 1,
+      controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3,
+      modestbranding: 1, playsinline: 1, rel: 0, autoplay: 0, enablejsapi: 1,
     },
     events: {
       onReady: () => { _ytReady = true; },
@@ -2095,42 +2083,26 @@ window.onYouTubeIframeAPIReady = function () {
 
 function _onYtStateChange(event) {
   _ytState = event.data;
-  if (!_ytTrackActive && event.data !== YT.PlayerState.CUED) return;
-
+  if (!_ytTrackActive && event.data !== 5) return;
   switch (event.data) {
-    case YT.PlayerState.PLAYING:
-      isPlaying = true;
-      updatePlayIcons(true);
-      _startYtProgressPoll();
+    case 1: // PLAYING
+      isPlaying = true; updatePlayIcons(true); _startYtProgressPoll();
       break;
-    case YT.PlayerState.PAUSED:
-      isPlaying = false;
-      updatePlayIcons(false);
-      _stopYtProgressPoll();
+    case 2: // PAUSED
+      isPlaying = false; updatePlayIcons(false); _stopYtProgressPoll();
       break;
-    case YT.PlayerState.ENDED:
-      isPlaying = false;
-      updatePlayIcons(false);
-      _stopYtProgressPoll();
-      _ytFallbackUrl = null;
-      if (repeatMode === 'one') {
-        if (_ytPlayer) { _ytPlayer.seekTo(0, true); _ytPlayer.playVideo(); }
-      } else {
-        _playNextImmediate();
-      }
-      break;
-    case YT.PlayerState.BUFFERING:
+    case 0: // ENDED
+      isPlaying = false; updatePlayIcons(false); _stopYtProgressPoll(); _stopYtKeepAlive();
+      if (repeatMode === 'one') { _ytPlayer?.seekTo(0, true); _ytPlayer?.playVideo(); _startYtKeepAlive(); }
+      else _playNextImmediate();
       break;
   }
 }
 
 function _onYtError(event) {
-  console.warn('[YT] Player error:', event.data);
   _stopYtProgressPoll();
-  if (_ytTrackActive && typeof showToast === 'function') {
-    const msg = event.data === 150 || event.data === 2 ? 'Video no disponible' : 'Error al reproducir';
-    showToast(msg, 'default');
-  }
+  if (_ytTrackActive && typeof showToast === 'function')
+    showToast(event.data === 150 || event.data === 2 ? 'Video no disponible' : 'Error al reproducir', 'default');
 }
 
 function _startYtProgressPoll() {
@@ -2155,18 +2127,30 @@ function _stopYtProgressPoll() {
   if (_ytPollId) { clearInterval(_ytPollId); _ytPollId = null; }
 }
 
+function _startYtKeepAlive() {
+  _stopYtKeepAlive();
+  // Cada 500ms, si la pista YT está activa pero en pausa y no ha terminado,
+  // la reanuda. Esto combate la pausa por visibilidad en segundo plano.
+  _ytKeepAliveId = setInterval(() => {
+    if (!_ytTrackActive || !_ytPlayer || !_ytReady || !document.hidden) return;
+    if (_ytState === 2) {
+      const dur = _ytPlayer.getDuration();
+      const cur = _ytPlayer.getCurrentTime();
+      if (dur && cur < dur - 0.5) _ytPlayer.playVideo();
+    }
+  }, 500);
+}
+
+function _stopYtKeepAlive() {
+  if (_ytKeepAliveId) { clearInterval(_ytKeepAliveId); _ytKeepAliveId = null; }
+}
+
 async function _playYouTubeTrack(item, token) {
   if (token !== _playToken) return;
-
-  _ytBgFallback = false;
-  _ytPendingVideoId = null;
-
-  // Stop any previous audio element playback
   try { activeAudio.pause(); } catch(_) {}
   activeAudio.removeAttribute('src');
   try { activeAudio.load(); } catch(_) {}
 
-  // Reset UI
   sheetFill.style.width = '0%';
   sheetThumb.style.left = '0%';
   sheetCurrent.textContent = '0:00';
@@ -2180,103 +2164,22 @@ async function _playYouTubeTrack(item, token) {
     sheetCover.src = item.cover;
   }
 
-  // Pre-fetch audio URL for potential background fallback
-  _ytFallbackUrl = null;
-  fetch(`/api/ytstream?videoId=${item.youtubeId}`)
-    .then(r => r.json())
-    .then(data => {
-      if (token !== _playToken) return;
-      if (!data.error && data.audioUrl && data.audioUrl.startsWith('http')) {
-        _ytFallbackUrl = data.audioUrl;
-        if (data.cover && (!item.cover || item.cover === getPlaceholderCover('music'))) {
-          item.cover = data.cover;
-          miniCover.src = data.cover;
-          sheetCover.src = data.cover;
-        }
-      }
-    })
-    .catch(() => {});
-
   if (_ytPlayer && _ytReady) {
     _ytPlayer.loadVideoById(item.youtubeId);
+    _startYtKeepAlive();
   } else {
-    _ytPendingVideoId = item.youtubeId;
     if (typeof showToast === 'function') showToast('Iniciando reproductor YouTube...', 'default');
-    const checkReady = setInterval(() => {
-      if (token !== _playToken) { clearInterval(checkReady); return; }
+    const check = setInterval(() => {
+      if (token !== _playToken) { clearInterval(check); return; }
       if (_ytPlayer && _ytReady) {
-        clearInterval(checkReady);
-        if (_ytPendingVideoId && !_ytBgFallback) {
-          _ytPlayer.loadVideoById(_ytPendingVideoId);
-          _ytPendingVideoId = null;
-        }
+        clearInterval(check);
+        _ytPlayer.loadVideoById(item.youtubeId);
+        _startYtKeepAlive();
       }
     }, 300);
-    setTimeout(() => clearInterval(checkReady), 15000);
+    setTimeout(() => clearInterval(check), 15000);
   }
 }
-
-/* ── Background-playback fallback ───────────────────── */
-document.addEventListener('visibilitychange', () => {
-  if (!_ytTrackActive || !_ytFallbackUrl) return;
-  if (document.hidden && !_ytBgFallback) {
-    // Page going to background — switch to <audio> fallback
-    _ytBgFallback = true;
-    if (_ytPlayer && _ytReady) {
-      try { _ytPlayer.pauseVideo(); } catch(_) {}
-    }
-    _stopYtProgressPoll();
-    activeAudio.src = _ytFallbackUrl;
-    activeAudio.muted = false;
-    if (activeAudio.volume === 0) activeAudio.volume = 1;
-    try { activeAudio.load(); } catch(_) {}
-    activeAudio.play()
-      .then(() => {
-        if (!_ytTrackActive) return;
-        isPlaying = true;
-        updatePlayIcons(true);
-        // Start polling from audio element
-        if (_ytPollId) clearInterval(_ytPollId);
-        _ytPollId = setInterval(() => {
-          if (!_ytTrackActive || !_ytBgFallback) { clearInterval(_ytPollId); _ytPollId = null; return; }
-          const dur = activeAudio.duration;
-          const cur = activeAudio.currentTime;
-          if (dur && isFinite(dur) && dur > 0) {
-            const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
-            sheetFill.style.width = pct + '%';
-            sheetThumb.style.left = pct + '%';
-            sheetCurrent.textContent = formatTime(cur);
-            sheetDuration.textContent = formatTime(dur);
-            miniProgressFill.style.width = pct + '%';
-            _updateMediaSessionPosition();
-          }
-        }, 250);
-      })
-      .catch(() => {
-        // Fallback failed — YT iframe will resume when visible again
-        _ytBgFallback = false;
-      });
-  } else if (!document.hidden && _ytBgFallback) {
-    // Page visible again — switch back to YT iframe
-    _ytBgFallback = false;
-    try { activeAudio.pause(); } catch(_) {}
-    activeAudio.removeAttribute('src');
-    try { activeAudio.load(); } catch(_) {}
-    _stopYtProgressPoll();
-    if (_ytPlayer && _ytReady) {
-      _ytPlayer.playVideo();
-    } else if (_ytPendingVideoId) {
-      const check = setInterval(() => {
-        if (_ytBgFallback) { clearInterval(check); return; }
-        if (_ytPlayer && _ytReady) {
-          clearInterval(check);
-          _ytPlayer.loadVideoById(_ytPendingVideoId);
-          _ytPendingVideoId = null;
-        }
-      }, 300);
-    }
-  }
-});
 
 function _makeYtTrack(item) {
   return {
