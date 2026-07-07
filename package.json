@@ -1,6 +1,5 @@
 {
   "name": "droply-music",
   "version": "6.0.0",
-  "description": "DROPLY Music — YouTube audio streaming PWA",
-  "dependencies": {}
+  "description": "DROPLY Music — YouTube audio streaming PWA"
 }

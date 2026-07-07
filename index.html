@@ -802,6 +802,7 @@
     </button>
 
     <audio id="mainAudio" preload="metadata" playsinline webkit-playsinline x-webkit-airplay="allow"></audio>
+    <div id="yt-player" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden" aria-hidden="true"></div>
   </div>
 
   <!-- ══ QUEUE PANEL — DROPLY PREMIUM ══ -->
@@ -1169,6 +1170,9 @@
     }
   })();
   </script>
+
+  <!-- ══ YOUTUBE IFRAME PLAYER ══ -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- ══ SUPABASE CLOUD (Carga prioritaria para Auth Wall) ══ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

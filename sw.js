@@ -70,11 +70,11 @@ self.addEventListener('fetch', event => {
   if (!url.protocol.startsWith('http')) return;
 
   /* Ignorar llamadas a nuestras propias APIs de YouTube */
-  if (url.pathname.startsWith('/api/ytstream') || url.pathname.startsWith('/api/ytsearch')) {
+  if (url.pathname.startsWith('/api/ytsearch')) {
     return;
   }
-  /* Ignorar URLs de streaming de YouTube CDN (googlevideo.com) */
-  if (url.hostname.includes('googlevideo.com')) {
+  /* Ignorar iframe de YouTube */
+  if (url.hostname.includes('youtube.com') || url.hostname.includes('ytimg.com') || url.hostname.includes('googlevideo.com')) {
     return;
   }
 
