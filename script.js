@@ -2059,7 +2059,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
    YOUTUBE IFRAME PLAYER API + RENDER BACKGROUND PLAYBACK
    Foreground:  YT iframe.  Background (<audio>) via Render/yt-dlp proxy.
 ══════════════════════════════════════════════════════ */
-const RENDER_SERVER = 'https://droply-music.onrender.com';
+const RENDER_SERVER = '';
 let _ytPlayer = null;
 let _ytReady = false;
 let _ytTrackActive = false;
