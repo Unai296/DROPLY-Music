@@ -2071,27 +2071,29 @@ async function _playYouTubeTrack(item, token) {
   miniProgressFill.style.width = "0%";
 
   try {
+    // use proxied audio URL (avoids CORS issues with YouTube CDN)
     let audioUrl = _ytAudioUrlCache[item.youtubeId];
 
-    if (!audioUrl) {
-      const res = await fetch(`/api/ytstream?videoId=${item.youtubeId}`, {
-        signal: _ytAbortController.signal
-      });
-      const data = await res.json();
+    // invalidate old direct CDN URLs from previous cache
+    if (audioUrl && audioUrl.startsWith('http')) _ytAudioUrlCache[item.youtubeId] = null;
 
-      if (data.error) {
-        if (typeof showToast === 'function') showToast(data.error, 'default');
-        return;
-      }
-
-      audioUrl = data.audioUrl;
+    if (!_ytAudioUrlCache[item.youtubeId]) {
+      audioUrl = `/api/ytstream?videoId=${item.youtubeId}`;
       _ytAudioUrlCache[item.youtubeId] = audioUrl;
 
-      if (data.cover && (!item.cover || item.cover === getPlaceholderCover('music'))) {
-        item.cover = data.cover;
-        miniCover.src = data.cover;
-        sheetCover.src = data.cover;
-      }
+      // fetch metadata (cover art) separately via json mode
+      fetch(`/api/ytstream?videoId=${item.youtubeId}&json=1`, {
+        signal: _ytAbortController.signal
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.error && data.cover && (!item.cover || item.cover === getPlaceholderCover('music'))) {
+            item.cover = data.cover;
+            miniCover.src = data.cover;
+            sheetCover.src = data.cover;
+          }
+        })
+        .catch(() => {});
     }
 
     if (token !== _playToken) return;
@@ -2107,15 +2109,26 @@ async function _playYouTubeTrack(item, token) {
       if (_canplayFired) return;
       _canplayFired = true;
       activeAudio.removeEventListener('canplay', _onCanPlay);
+      activeAudio.removeEventListener('error', _onError);
       _triggerPlay();
-    }, 800);
+    }, 5000);
 
     function _onCanPlay() {
       if (_canplayFired) return;
       _canplayFired = true;
       clearTimeout(_canplayTimeout);
       activeAudio.removeEventListener('canplay', _onCanPlay);
+      activeAudio.removeEventListener('error', _onError);
       _triggerPlay();
+    }
+
+    function _onError() {
+      if (_canplayFired) return;
+      _canplayFired = true;
+      clearTimeout(_canplayTimeout);
+      activeAudio.removeEventListener('canplay', _onCanPlay);
+      activeAudio.removeEventListener('error', _onError);
+      if (typeof showToast === 'function') showToast('Error al cargar audio', 'default');
     }
 
     function _triggerPlay() {
@@ -2134,6 +2147,7 @@ async function _playYouTubeTrack(item, token) {
     }
 
     activeAudio.addEventListener('canplay', _onCanPlay, { once: true });
+    activeAudio.addEventListener('error', _onError, { once: true });
   } catch (e) {
     if (e.name === 'AbortError') return;
     if (typeof showToast === 'function') showToast('Error al cargar audio', 'default');
