@@ -2074,7 +2074,6 @@ async function _playYouTubeTrack(item, token) {
     let audioUrl = _ytAudioUrlCache[item.youtubeId];
 
     if (!audioUrl) {
-      if (typeof showToast === 'function') showToast('Cargando audio...', 'default');
       const res = await fetch(`/api/ytstream?videoId=${item.youtubeId}`, {
         signal: _ytAbortController.signal
       });
