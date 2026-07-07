@@ -1917,6 +1917,8 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
   function _doPlay(audioSrc) {
     if (myToken !== _playToken) return;
     _ytTrackActive = false;
+    _ytBgFallback = false;
+    _ytFallbackUrl = null;
     _stopYtProgressPoll();
     _revokeBlobUrl();
     if (audioSrc && audioSrc.startsWith("blob:")) _currentBlobUrl = audioSrc;
@@ -2063,6 +2065,9 @@ let _ytReady = false;
 let _ytTrackActive = false;
 let _ytPollId = null;
 let _ytState = -1; // -1=unstarted 0=ended 1=playing 2=paused 3=buffering 5=cued
+let _ytFallbackUrl = null; // cached audio URL for background playback
+let _ytPendingVideoId = null; // videoId to load once player is ready
+let _ytBgFallback = false; // true when playing via <audio> fallback in background
 
 /* ── Expuesto globalmente por la IFrame API ── */
 window.onYouTubeIframeAPIReady = function () {
@@ -2107,6 +2112,7 @@ function _onYtStateChange(event) {
       isPlaying = false;
       updatePlayIcons(false);
       _stopYtProgressPoll();
+      _ytFallbackUrl = null;
       if (repeatMode === 'one') {
         if (_ytPlayer) { _ytPlayer.seekTo(0, true); _ytPlayer.playVideo(); }
       } else {
@@ -2152,10 +2158,13 @@ function _stopYtProgressPoll() {
 async function _playYouTubeTrack(item, token) {
   if (token !== _playToken) return;
 
+  _ytBgFallback = false;
+  _ytPendingVideoId = null;
+
   // Stop any previous audio element playback
   try { activeAudio.pause(); } catch(_) {}
   activeAudio.removeAttribute('src');
-  activeAudio.load();
+  try { activeAudio.load(); } catch(_) {}
 
   // Reset UI
   sheetFill.style.width = '0%';
@@ -2166,26 +2175,108 @@ async function _playYouTubeTrack(item, token) {
 
   _ytTrackActive = true;
 
-  // Update cover from item if available
   if (item.cover) {
     miniCover.src = item.cover;
     sheetCover.src = item.cover;
   }
 
+  // Pre-fetch audio URL for potential background fallback
+  _ytFallbackUrl = null;
+  fetch(`/api/ytstream?videoId=${item.youtubeId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (token !== _playToken) return;
+      if (!data.error && data.audioUrl && data.audioUrl.startsWith('http')) {
+        _ytFallbackUrl = data.audioUrl;
+        if (data.cover && (!item.cover || item.cover === getPlaceholderCover('music'))) {
+          item.cover = data.cover;
+          miniCover.src = data.cover;
+          sheetCover.src = data.cover;
+        }
+      }
+    })
+    .catch(() => {});
+
   if (_ytPlayer && _ytReady) {
     _ytPlayer.loadVideoById(item.youtubeId);
   } else {
+    _ytPendingVideoId = item.youtubeId;
     if (typeof showToast === 'function') showToast('Iniciando reproductor YouTube...', 'default');
     const checkReady = setInterval(() => {
       if (token !== _playToken) { clearInterval(checkReady); return; }
       if (_ytPlayer && _ytReady) {
         clearInterval(checkReady);
-        _ytPlayer.loadVideoById(item.youtubeId);
+        if (_ytPendingVideoId && !_ytBgFallback) {
+          _ytPlayer.loadVideoById(_ytPendingVideoId);
+          _ytPendingVideoId = null;
+        }
       }
     }, 300);
     setTimeout(() => clearInterval(checkReady), 15000);
   }
 }
+
+/* ── Background-playback fallback ───────────────────── */
+document.addEventListener('visibilitychange', () => {
+  if (!_ytTrackActive || !_ytFallbackUrl) return;
+  if (document.hidden && !_ytBgFallback) {
+    // Page going to background — switch to <audio> fallback
+    _ytBgFallback = true;
+    if (_ytPlayer && _ytReady) {
+      try { _ytPlayer.pauseVideo(); } catch(_) {}
+    }
+    _stopYtProgressPoll();
+    activeAudio.src = _ytFallbackUrl;
+    activeAudio.muted = false;
+    if (activeAudio.volume === 0) activeAudio.volume = 1;
+    try { activeAudio.load(); } catch(_) {}
+    activeAudio.play()
+      .then(() => {
+        if (!_ytTrackActive) return;
+        isPlaying = true;
+        updatePlayIcons(true);
+        // Start polling from audio element
+        if (_ytPollId) clearInterval(_ytPollId);
+        _ytPollId = setInterval(() => {
+          if (!_ytTrackActive || !_ytBgFallback) { clearInterval(_ytPollId); _ytPollId = null; return; }
+          const dur = activeAudio.duration;
+          const cur = activeAudio.currentTime;
+          if (dur && isFinite(dur) && dur > 0) {
+            const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
+            sheetFill.style.width = pct + '%';
+            sheetThumb.style.left = pct + '%';
+            sheetCurrent.textContent = formatTime(cur);
+            sheetDuration.textContent = formatTime(dur);
+            miniProgressFill.style.width = pct + '%';
+            _updateMediaSessionPosition();
+          }
+        }, 250);
+      })
+      .catch(() => {
+        // Fallback failed — YT iframe will resume when visible again
+        _ytBgFallback = false;
+      });
+  } else if (!document.hidden && _ytBgFallback) {
+    // Page visible again — switch back to YT iframe
+    _ytBgFallback = false;
+    try { activeAudio.pause(); } catch(_) {}
+    activeAudio.removeAttribute('src');
+    try { activeAudio.load(); } catch(_) {}
+    _stopYtProgressPoll();
+    if (_ytPlayer && _ytReady) {
+      _ytPlayer.playVideo();
+    } else if (_ytPendingVideoId) {
+      const check = setInterval(() => {
+        if (_ytBgFallback) { clearInterval(check); return; }
+        if (_ytPlayer && _ytReady) {
+          clearInterval(check);
+          _ytPlayer.loadVideoById(_ytPendingVideoId);
+          _ytPendingVideoId = null;
+        }
+      }, 300);
+    }
+  }
+});
 
 function _makeYtTrack(item) {
   return {

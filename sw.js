@@ -70,7 +70,7 @@ self.addEventListener('fetch', event => {
   if (!url.protocol.startsWith('http')) return;
 
   /* Ignorar llamadas a nuestras propias APIs de YouTube */
-  if (url.pathname.startsWith('/api/ytsearch')) {
+  if (url.pathname.startsWith('/api/ytsearch') || url.pathname.startsWith('/api/ytstream')) {
     return;
   }
   /* Ignorar iframe de YouTube */
