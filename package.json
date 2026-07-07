@@ -1,0 +1,8 @@
+{
+  "name": "droply-music",
+  "version": "6.0.0",
+  "description": "DROPLY Music — YouTube audio streaming PWA",
+  "dependencies": {
+    "@distube/ytdl-core": "^4.14.4"
+  }
+}

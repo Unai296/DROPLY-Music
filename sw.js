@@ -69,6 +69,15 @@ self.addEventListener('fetch', event => {
   /* Ignorar requests de extensiones o devtools */
   if (!url.protocol.startsWith('http')) return;
 
+  /* Ignorar llamadas a nuestras propias APIs de YouTube */
+  if (url.pathname.startsWith('/api/ytstream') || url.pathname.startsWith('/api/ytsearch')) {
+    return;
+  }
+  /* Ignorar URLs de streaming de YouTube CDN (googlevideo.com) */
+  if (url.hostname.includes('googlevideo.com')) {
+    return;
+  }
+
   /* ── Archivos de música (.mp3) → SIEMPRE a la red, sin interceptar ──
      El navegador necesita soporte nativo de Range requests (206 Partial Content)
      para reproducir audio desde background/pantalla bloqueada. Si el SW

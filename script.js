@@ -3192,7 +3192,14 @@ function updatePlayIcons(playing) {
   }
 }
 
-function getTrackByFile(file) { return media.find(m => m.file === file) || null; }
+let _ytLibrary = [];
+function loadYtLibrary() { try { return JSON.parse(localStorage.getItem('droply_ytlib') || '[]'); } catch(_) { return []; } }
+function saveYtLibrary() { try { localStorage.setItem('droply_ytlib', JSON.stringify(_ytLibrary)); } catch(_) {} }
+_ytLibrary = loadYtLibrary();
+
+function getTrackByFile(file) {
+  return media.find(m => m.file === file) || _ytLibrary.find(m => m.file === file) || null;
+}
 
 function downloadedEmojiHtml(isDownloaded) {
   return isDownloaded ? '<span class="track-dl-emoji" title="Descargada"><svg viewBox="0 0 8 8" width="8" height="8"><circle cx="4" cy="4" r="4" fill="#22c55e"/></svg></span>' : '';
@@ -4145,7 +4152,8 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 
   // ── Comprobación offline ──────────────────────────────────────────────────
   // Si no hay conexión y la canción no está descargada, avisar y salir
-  if (!navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(item.file)) {
+  // Saltar para YouTube items (requieren conexión)
+  if (!item.youtubeId && !navigator.onLine && typeof OfflineManager !== 'undefined' && !OfflineManager.isDownloaded(item.file)) {
     if (typeof showToast === 'function') {
       showToast(`"${item.title}" no está descargada — sin conexión`, 'default');
     }
@@ -4357,6 +4365,11 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
     _armPlaybackWatchdog();
   }
 
+  if (item.youtubeId) {
+    _playYouTubeTrack(item, myToken);
+    return;
+  }
+
   if (item._offlineSrc) {
     _doPlay(item._offlineSrc);
   } else if (typeof OfflineManager !== 'undefined' && OfflineManager.isDownloaded(item.file)) {
@@ -4400,6 +4413,119 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
 }
 
 
+
+/* ══════════════════════════════════════════════════════
+   YOUTUBE PLAYBACK
+   Cache de URLs de audio para no repetir peticiones
+══════════════════════════════════════════════════════ */
+let _ytAudioUrlCache = {};
+let _ytAbortController = null;
+
+async function _playYouTubeTrack(item, token) {
+  if (_ytAbortController) _ytAbortController.abort();
+  _ytAbortController = new AbortController();
+
+  // Reset UI state
+  sheetFill.style.width = "0%";
+  sheetThumb.style.left = "0%";
+  sheetCurrent.textContent = "0:00";
+  sheetDuration.textContent = "0:00";
+  miniProgressFill.style.width = "0%";
+
+  try {
+    let audioUrl = _ytAudioUrlCache[item.youtubeId];
+
+    if (!audioUrl) {
+      if (typeof showToast === 'function') showToast('Cargando audio de YouTube...', 'default');
+      const res = await fetch(`/api/ytstream?videoId=${item.youtubeId}`, {
+        signal: _ytAbortController.signal
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        if (typeof showToast === 'function') showToast(data.error, 'default');
+        return;
+      }
+
+      audioUrl = data.audioUrl;
+      _ytAudioUrlCache[item.youtubeId] = audioUrl;
+
+      if (data.cover && (!item.cover || item.cover === getPlaceholderCover('music'))) {
+        item.cover = data.cover;
+        miniCover.src = data.cover;
+        sheetCover.src = data.cover;
+      }
+    }
+
+    if (token !== _playToken) return;
+
+    activeAudio.src = audioUrl;
+    activeAudio.muted = false;
+    if (activeAudio.volume === 0) activeAudio.volume = 1;
+
+    try { activeAudio.load(); } catch(_) {}
+
+    let _canplayFired = false;
+    const _canplayTimeout = setTimeout(() => {
+      if (_canplayFired) return;
+      _canplayFired = true;
+      activeAudio.removeEventListener('canplay', _onCanPlay);
+      _triggerPlay();
+    }, 800);
+
+    function _onCanPlay() {
+      if (_canplayFired) return;
+      _canplayFired = true;
+      clearTimeout(_canplayTimeout);
+      activeAudio.removeEventListener('canplay', _onCanPlay);
+      _triggerPlay();
+    }
+
+    function _triggerPlay() {
+      if (token !== _playToken) return;
+      activeAudio.play()
+        .then(() => {
+          if (token !== _playToken) return;
+          isPlaying = true;
+          updatePlayIcons(true);
+        })
+        .catch(err => {
+          if (token !== _playToken) return;
+          isPlaying = false;
+          updatePlayIcons(false);
+        });
+    }
+
+    activeAudio.addEventListener('canplay', _onCanPlay, { once: true });
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    if (typeof showToast === 'function') showToast('Error al cargar audio de YouTube', 'default');
+  }
+}
+
+function _makeYtTrack(item) {
+  return {
+    type: 'music',
+    title: item.title,
+    artist: item.artist,
+    cover: item.cover || getPlaceholderCover('music'),
+    youtubeId: item.youtubeId,
+    file: 'yt:' + item.youtubeId,
+    category: item.category || 'YouTube',
+    duration: item.duration || null
+  };
+}
+
+/* ── Exponer para uso desde search results ── */
+window.playYouTubeTrack = function(item) {
+  const track = _makeYtTrack(item);
+  // Guardar en la biblioteca YouTube si no existe ya
+  if (!_ytLibrary.find(t => t.file === track.file)) {
+    _ytLibrary.push(track);
+    saveYtLibrary();
+  }
+  loadTrack(track);
+};
 
 /* ── Seek / Volume (always on active audio) ──────────── */
 // Volume
@@ -4523,7 +4649,7 @@ function toggleLike(item) {
 ══════════════════════════════════════════════════════ */
 function renderFavoritos() {
   favoritosList.innerHTML = "";
-  const likedItems = media.filter(m => m.type === "music" && likedTracks.has(m.file));
+  const likedItems = [...media, ..._ytLibrary].filter(m => m.type === "music" && likedTracks.has(m.file));
   if (likedItems.length === 0) {
     favoritosList.innerHTML = `<div class="fav-empty"><svg viewBox="0 0 24 24" width="48" height="48" style="margin:0 auto 1rem;display:block;color:#e94f4f;opacity:.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><p style="color:#b3b3b3;text-align:center;font-size:.9rem">Aún no tienes canciones favoritas.<br>Pulsa el ❤ en cualquier canción.</p></div>`;
     return;
@@ -5181,7 +5307,8 @@ searchInput.addEventListener("input", () => {
     if (!q) { searchBrowse.style.display = ""; searchResults.style.display = "none"; searchResults.innerHTML = ""; return; }
     searchBrowse.style.display = "none";
     searchResults.style.display = "";
-    const results = media.filter(item =>
+    const localCatalog = [...media, ..._ytLibrary.filter(yt => yt.file && !media.find(m => m.file === yt.file))];
+    const results = localCatalog.filter(item =>
       [item.title, item.artist, item.category].some(s => s.toLowerCase().includes(q.toLowerCase()))
     );
     if (results.length === 0) {
@@ -5361,6 +5488,100 @@ searchInput.addEventListener("input", () => {
 searchClear.addEventListener("click", () => {
   searchInput.value = ""; searchClear.style.display = "none";
   searchBrowse.style.display = ""; searchResults.style.display = "none"; searchResults.innerHTML = "";
+});
+
+/* ── YouTube Search ────────────────────────────── */
+let _ytSearchAbort = null;
+async function fetchYouTubeResults(query) {
+  if (_ytSearchAbort) { _ytSearchAbort.abort(); _ytSearchAbort = null; }
+  if (query.length < 2) return;
+
+  const existingSection = document.getElementById('ytSearchSection');
+  if (existingSection) existingSection.remove();
+
+  _ytSearchAbort = new AbortController();
+  try {
+    const res = await fetch(`/api/ytsearch?q=${encodeURIComponent(query)}`, {
+      signal: _ytSearchAbort.signal
+    });
+    const data = await res.json();
+    if (data.error) return;
+    if (!data.results || data.results.length === 0) return;
+
+    const section = document.createElement('div');
+    section.id = 'ytSearchSection';
+    section.style.marginTop = '.75rem';
+
+    const label = document.createElement('p');
+    label.className = 'search-section-label';
+    label.innerHTML = 'YouTube <span style="font-weight:400;color:#71717a;font-size:.7rem">resultados de búsqueda</span>';
+    section.appendChild(label);
+
+    data.results.forEach(item => {
+      const wrap = document.createElement('div');
+      wrap.className = 'search-result-row-wrap';
+
+      const queueBg = document.createElement('div');
+      queueBg.className = 'search-result-queue-bg';
+      queueBg.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><path d="M3 16l3 3 3-3"/></svg><span>EN COLA</span>`;
+      wrap.appendChild(queueBg);
+
+      const row = document.createElement('div');
+      row.className = 'search-result-row';
+      row.dataset.file = 'yt:' + item.youtubeId;
+      row.innerHTML = `
+        <img src="${item.cover || getPlaceholderCover('music')}" alt="${item.title}" onerror="this.src='${getPlaceholderCover('music')}'" />
+        <div class="search-result-info">
+          <span class="search-result-title">${item.title}<span class="yt-badge">YouTube</span></span>
+          <span class="search-result-artist">${item.artist}</span>
+        </div>
+        <div class="search-result-actions">
+          <button class="search-result-add-btn" title="Añadir a playlist" aria-label="Añadir a playlist">
+            <svg viewBox="0 0 24 24" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="search-result-more-btn library-action-more" title="Más opciones" aria-label="Más opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </button>
+        </div>
+        <span class="search-result-cat">YouTube</span>`;
+
+      row.addEventListener('click', e => {
+        if (e.target.closest('.search-result-more-btn') || e.target.closest('.search-result-add-btn')) return;
+        playYouTubeTrack(item);
+        showPage('pageHome');
+      });
+
+      row.querySelector('.search-result-add-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const track = _makeYtTrack(item);
+        openAddToPlaylist(track);
+      });
+
+      row.querySelector('.search-result-more-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const track = _makeYtTrack(item);
+        openContextMenu(track);
+      });
+
+      wrap.appendChild(row);
+      section.appendChild(wrap);
+    });
+
+    searchResults.appendChild(section);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+  }
+}
+
+let _ytSearchTimeout = null;
+searchInput.addEventListener('input', () => {
+  clearTimeout(_ytSearchTimeout);
+  _ytSearchTimeout = setTimeout(() => {
+    const q = searchInput.value.trim();
+    if (q.length >= 2) {
+      fetchYouTubeResults(q);
+    }
+  }, 400);
 });
 
 /* ══════════════════════════════════════════════════════
@@ -10212,7 +10433,7 @@ function renderLibLiked() {
   list.innerHTML = '';
 
   const likedItems = (typeof media !== 'undefined' && typeof likedTracks !== 'undefined')
-    ? media.filter(m => m.type === 'music' && likedTracks.has(m.file))
+    ? [...media, ...(typeof _ytLibrary !== 'undefined' ? _ytLibrary : [])].filter(m => m.type === 'music' && likedTracks.has(m.file))
     : [];
 
   if (countEl) countEl.textContent = likedItems.length === 1 ? '1 canción' : `${likedItems.length} canciones`;
@@ -10359,7 +10580,7 @@ async function renderLibDownloads() {
     likedPlayBtn._wired = true;
     likedPlayBtn.addEventListener('click', () => {
       const likedItems = (typeof media !== 'undefined' && typeof likedTracks !== 'undefined')
-        ? media.filter(m => m.type === 'music' && likedTracks.has(m.file)) : [];
+        ? [...media, ...(typeof _ytLibrary !== 'undefined' ? _ytLibrary : [])].filter(m => m.type === 'music' && likedTracks.has(m.file)) : [];
       if (likedItems.length > 0 && typeof loadTrack === 'function') loadTrack(likedItems[0], false, likedItems);
     });
   }
