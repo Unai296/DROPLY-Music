@@ -2059,7 +2059,9 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
    YOUTUBE IFRAME PLAYER API + RENDER BACKGROUND PLAYBACK
    Foreground:  YT iframe.  Background (<audio>) via Render/yt-dlp proxy.
 ══════════════════════════════════════════════════════ */
-const RENDER_SERVER = '';
+const SUPABASE_URL = 'https://fphbqbmibrtxesjlbydr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_AUGdgqLUfXEvA7c-E9aL9Q_gHRay8bN';
+const YT_PROXY_FN = `${SUPABASE_URL}/functions/v1/yt-proxy`;
 let _ytPlayer = null;
 let _ytReady = false;
 let _ytTrackActive = false;
@@ -2070,6 +2072,42 @@ let _ytAudioUrl = null;
 let _ytBgFallback = false;
 let _ytAudioPollId = null;
 let _ytPendingVideoId = null;
+let _ytSupabaseAttempted = false;
+
+/* ── Supabase URL cache helpers ─────────────────────────── */
+async function _fetchCachedAudioUrl(videoId) {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/cached_urls?video_id=eq.${videoId}&expires_at=gt.${new Date().toISOString()}&select=audio_url,title,duration,cover`,
+      { headers: { apikey: SUPABASE_ANON_KEY } }
+    );
+    if (!resp.ok) return null;
+    const rows = await resp.json();
+    return rows.length > 0 ? rows[0] : null;
+  } catch { return null; }
+}
+
+async function _fetchFromProxy(videoId) {
+  try {
+    const resp = await fetch(YT_PROXY_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.audio_url ? data : null;
+  } catch { return null; }
+}
+
+async function _resolveAudioUrl(videoId) {
+  if (window.SupabaseCloud?.getClient()) {
+    const cached = await _fetchCachedAudioUrl(videoId);
+    if (cached?.audio_url) return cached;
+  }
+  const proxied = await _fetchFromProxy(videoId);
+  return proxied;
+}
 
 window.onYouTubeIframeAPIReady = function () {
   _ytPlayer = new YT.Player('yt-player', {
@@ -2191,27 +2229,26 @@ async function _playYouTubeTrack(item, token) {
   _ytTrackActive = true;
   _ytBgFallback = false;
   _ytAudioUrl = null;
+  _ytSupabaseAttempted = false;
 
   if (item.cover) {
     miniCover.src = item.cover;
     sheetCover.src = item.cover;
   }
 
-  if (item.youtubeId && RENDER_SERVER) {
-    fetch(`${RENDER_SERVER}/info?videoId=${item.youtubeId}`)
-      .then(r => r.json())
-      .then(data => {
-        if (token !== _playToken) return;
-        if (!data.error && data.audioUrl) {
-          _ytAudioUrl = data.audioUrl;
-          if (data.cover && (!item.cover || item.cover.startsWith('data:'))) {
-            item.cover = data.cover;
-            miniCover.src = data.cover;
-            sheetCover.src = data.cover;
-          }
+  if (item.youtubeId) {
+    _resolveAudioUrl(item.youtubeId).then(data => {
+      if (token !== _playToken) return;
+      _ytSupabaseAttempted = true;
+      if (data?.audio_url) {
+        _ytAudioUrl = data.audio_url;
+        if (data.cover && (!item.cover || item.cover.startsWith('data:'))) {
+          item.cover = data.cover;
+          miniCover.src = data.cover;
+          sheetCover.src = data.cover;
         }
-      })
-      .catch(() => {});
+      }
+    });
   }
 
   if (_ytPlayer && _ytReady) {
@@ -2257,27 +2294,29 @@ window.playYouTubeTrack = function(item) {
   loadTrack(track);
 };
 
-/* ── Background playback via <audio> + Render proxy ──── */
+/* ── Background playback via <audio> + Supabase proxy ── */
 document.addEventListener('visibilitychange', () => {
   if (!_ytTrackActive) return;
 
-  if (document.hidden && _ytAudioUrl && !_ytBgFallback) {
+  if (document.hidden && !_ytBgFallback) {
     _ytBgFallback = true;
     _stopYtKeepAlive();
     if (_ytPlayer && _ytReady) try { _ytPlayer.pauseVideo(); } catch(_) {}
     _stopYtProgressPoll();
 
-    activeAudio.src = _ytAudioUrl;
-    activeAudio.muted = false;
-    if (activeAudio.volume === 0) activeAudio.volume = 1;
-    try { activeAudio.load(); } catch(_) {}
-    activeAudio.play()
-      .then(() => {
-        isPlaying = true;
-        updatePlayIcons(true);
-        _startAudioProgressPoll();
-      })
-      .catch(() => { _ytBgFallback = false; });
+    if (_ytAudioUrl) {
+      activeAudio.src = _ytAudioUrl;
+      activeAudio.muted = false;
+      if (activeAudio.volume === 0) activeAudio.volume = 1;
+      try { activeAudio.load(); } catch(_) {}
+      activeAudio.play()
+        .then(() => {
+          isPlaying = true;
+          updatePlayIcons(true);
+          _startAudioProgressPoll();
+        })
+        .catch(() => { _ytBgFallback = false; });
+    }
 
   } else if (!document.hidden && _ytBgFallback) {
     _ytBgFallback = false;

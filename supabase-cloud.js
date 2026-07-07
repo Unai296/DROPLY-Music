@@ -340,7 +340,8 @@ const SupabaseCloud = (() => {
     loginWithGoogle,
     logout,
     getUser:    () => user,
-    isReady:    () => _initialized,
+    getClient:  () => supabase,
+    isReady:    () => _initialized && supabase !== null,
     pullFromCloud,
 
     /* Llamado desde saveLiked(), savePlaylists(), saveHistory(), savePlayCounts() */
