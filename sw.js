@@ -87,6 +87,14 @@ self.addEventListener('fetch', event => {
     return; // dejar pasar al navegador sin interceptar
   }
 
+  /* ── Audio / media requests no deben ser interferidas por el SW ──
+     Muchas plataformas usan Range requests para reproducir audio en segundo
+     plano / pantalla bloqueada. Si el SW intercepta ese stream y responde
+     con un body cacheado sin Content-Range, el reproductor puede fallar. */
+  if (request.destination === 'audio' || request.destination === 'video' || request.headers.get('range')) {
+    return;
+  }
+
   /* ── Imágenes (covers) → Cache-First con límite + expiración ── */
   if (
     request.destination === 'image' ||

@@ -2247,6 +2247,20 @@ async function _playYouTubeTrack(item, token) {
           miniCover.src = data.cover;
           sheetCover.src = data.cover;
         }
+
+        if (document.hidden && _ytBgFallback) {
+          activeAudio.src = _ytAudioUrl;
+          activeAudio.muted = false;
+          if (activeAudio.volume === 0) activeAudio.volume = 1;
+          try { activeAudio.load(); } catch(_) {}
+          activeAudio.play()
+            .then(() => {
+              isPlaying = true;
+              updatePlayIcons(true);
+              _startAudioProgressPoll();
+            })
+            .catch(() => { _ytBgFallback = false; });
+        }
       }
     });
   }
@@ -3425,18 +3439,37 @@ function setupMediaSession(item) {
   // vació durante la pausa en segundo plano/pantalla bloqueada, esto
   // detecta el atasco y reintenta en vez de quedarse colgado sin sonar.
   navigator.mediaSession.setActionHandler("play", () => {
-    if (_ytTrackActive && _ytPlayer && _ytReady) { _ytPlayer.playVideo(); return; }
+    if (_ytTrackActive && _ytPlayer && _ytReady && !_ytBgFallback) {
+      _ytPlayer.playVideo();
+      return;
+    }
     _resumeWithWatchdog();
   });
 
   navigator.mediaSession.setActionHandler("pause", () => {
-    if (_ytTrackActive && _ytPlayer && _ytReady) { _ytPlayer.pauseVideo(); return; }
+    if (_ytTrackActive && _ytPlayer && _ytReady && !_ytBgFallback) {
+      _ytPlayer.pauseVideo();
+      return;
+    }
     const audio = activeAudio;
     if (!audio) return;
     audio.pause();
     isPlaying = false;
     updatePlayIcons(false);
   });
+
+  try {
+    navigator.mediaSession.setActionHandler("stop", () => {
+      if (_ytTrackActive && _ytPlayer && _ytReady) { _ytPlayer.pauseVideo(); }
+      const audio = activeAudio;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      isPlaying = false;
+      updatePlayIcons(false);
+    });
+  } catch (_) {}
 
   // Controles de pista — cuando vienen del lockscreen, document.hidden === true
   // normalmente, PERO en iOS (PWA standalone añadida a pantalla de inicio)
@@ -4132,7 +4165,7 @@ function hapticFeedback(style) {
 
 /* ── Toggle play / pause ────────────────────────────── */
 function togglePlay() {
-  if (_ytTrackActive && _ytPlayer && _ytReady) {
+  if (_ytTrackActive && _ytPlayer && _ytReady && !_ytBgFallback) {
     if (_ytState === 1) {
       _ytPlayer.pauseVideo();
     } else {
