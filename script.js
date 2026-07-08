@@ -1651,6 +1651,13 @@ function isIOSForOfflineCheck() {
          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
+function isIosPwaStandalone() {
+  return isIOSForOfflineCheck() && (
+    window.navigator.standalone ||
+    window.matchMedia('(display-mode: standalone)').matches
+  );
+}
+
 /* Cancela cualquier watchdog/retry pendiente del track anterior. Se llama
    al arrancar loadTrack() para garantizar que ningún timer fantasma del
    track viejo pueda interferir con el nuevo (causa real de los "errores
@@ -1932,18 +1939,16 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
       return;
     }
 
+    const lockscreenResume = window._droplyFromEnded || window._droplyFromLockscreen;
     window._droplyFromLockscreen = false;
 
     // Mostrar spinner de carga inmediatamente — se quitará en el evento "playing"
     if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(true);
 
-    // iOS: cuando venimos del evento "ended", el elemento de audio aún tiene el
-    // contexto de gesto activo. Si llamamos load() primero lo destruimos y el
-    // play() siguiente se deniega en silencio (el track "cambia" en la pantalla
-    // de bloqueo pero no suena). Solución: llamar play() inmediatamente sin load().
-    // En cualquier otro caso (tap manual, etc.) usamos el flujo normal con
-    // load() + espera de canplay para minimizar el delay de buffering.
-    if (window._droplyFromEnded) {
+    // iOS: cuando venimos del evento "ended" o desde la pantalla de bloqueo,
+    // el gesto del usuario ya está activo. Si llamamos load() primero lo
+    // destruimos y el play() siguiente puede denegarse en silencio.
+    if (lockscreenResume) {
       activeAudio.play()
         .then(() => {
           if (myToken !== _playToken) return;
@@ -1952,7 +1957,7 @@ function loadTrack(item, fromQueue = false, newPlaylistContext = null, options =
         })
         .catch(err => {
           if (myToken !== _playToken) return;
-          console.warn("[DROPLY] play (from ended) error:", err.name, err.message);
+          console.warn("[DROPLY] play (lockscreen/ended) error:", err.name, err.message);
           isPlaying = false;
           updatePlayIcons(false);
           if (typeof _setAudioLoadingState === 'function') _setAudioLoadingState(false);
@@ -2236,8 +2241,39 @@ async function _playYouTubeTrack(item, token) {
     sheetCover.src = item.cover;
   }
 
+  async function _switchToDirectYtAudio(url) {
+    if (token !== _playToken) return false;
+    if (!url) return false;
+
+    _ytTrackActive = false;
+    _ytBgFallback = false;
+    _ytPendingVideoId = null;
+    _stopYtKeepAlive();
+    _stopYtProgressPoll();
+
+    try { activeAudio.pause(); } catch(_) {}
+    activeAudio.removeAttribute('src');
+
+    activeAudio.src = url;
+    activeAudio.muted = false;
+    if (activeAudio.volume === 0) activeAudio.volume = 1;
+    try { activeAudio.load(); } catch(_) {}
+
+    try {
+      await activeAudio.play();
+      if (token !== _playToken) return false;
+      isPlaying = true;
+      updatePlayIcons(true);
+      return true;
+    } catch (err) {
+      console.warn('[DROPLY] direct YT audio play failed:', err && err.name, err && err.message);
+      return false;
+    }
+  }
+
   if (item.youtubeId) {
-    _resolveAudioUrl(item.youtubeId).then(data => {
+    const useDirectAudio = isIosPwaStandalone();
+    _resolveAudioUrl(item.youtubeId).then(async data => {
       if (token !== _playToken) return;
       _ytSupabaseAttempted = true;
       if (data?.audio_url) {
@@ -2248,18 +2284,9 @@ async function _playYouTubeTrack(item, token) {
           sheetCover.src = data.cover;
         }
 
-        if (document.hidden && _ytBgFallback) {
-          activeAudio.src = _ytAudioUrl;
-          activeAudio.muted = false;
-          if (activeAudio.volume === 0) activeAudio.volume = 1;
-          try { activeAudio.load(); } catch(_) {}
-          activeAudio.play()
-            .then(() => {
-              isPlaying = true;
-              updatePlayIcons(true);
-              _startAudioProgressPoll();
-            })
-            .catch(() => { _ytBgFallback = false; });
+        if (useDirectAudio || (document.hidden && _ytBgFallback)) {
+          const switched = await _switchToDirectYtAudio(_ytAudioUrl);
+          if (switched) return;
         }
       }
     });
@@ -2308,43 +2335,53 @@ window.playYouTubeTrack = function(item) {
   loadTrack(track);
 };
 
-/* ── Background playback via <audio> + Supabase proxy ── */
-document.addEventListener('visibilitychange', () => {
-  if (!_ytTrackActive) return;
+function _activateYtAudioFallback() {
+  if (!_ytTrackActive || _ytBgFallback || !_ytAudioUrl) return;
+  _ytBgFallback = true;
+  _stopYtKeepAlive();
+  if (_ytPlayer && _ytReady) try { _ytPlayer.pauseVideo(); } catch(_) {}
+  _stopYtProgressPoll();
 
-  if (document.hidden && !_ytBgFallback) {
-    _ytBgFallback = true;
-    _stopYtKeepAlive();
-    if (_ytPlayer && _ytReady) try { _ytPlayer.pauseVideo(); } catch(_) {}
-    _stopYtProgressPoll();
+  activeAudio.src = _ytAudioUrl;
+  activeAudio.muted = false;
+  if (activeAudio.volume === 0) activeAudio.volume = 1;
+  try { activeAudio.load(); } catch(_) {}
+  activeAudio.play()
+    .then(() => {
+      isPlaying = true;
+      updatePlayIcons(true);
+      _startAudioProgressPoll();
+    })
+    .catch(() => { _ytBgFallback = false; });
+}
 
-    if (_ytAudioUrl) {
-      activeAudio.src = _ytAudioUrl;
-      activeAudio.muted = false;
-      if (activeAudio.volume === 0) activeAudio.volume = 1;
-      try { activeAudio.load(); } catch(_) {}
-      activeAudio.play()
-        .then(() => {
-          isPlaying = true;
-          updatePlayIcons(true);
-          _startAudioProgressPoll();
-        })
-        .catch(() => { _ytBgFallback = false; });
-    }
+function _restoreYtPlayerFromFallback() {
+  if (!_ytTrackActive || !_ytBgFallback) return;
+  _ytBgFallback = false;
+  _stopAudioProgressPoll();
+  try { activeAudio.pause(); } catch(_) {}
+  activeAudio.removeAttribute('src');
+  try { activeAudio.load(); } catch(_) {}
 
-  } else if (!document.hidden && _ytBgFallback) {
-    _ytBgFallback = false;
-    _stopAudioProgressPoll();
-    try { activeAudio.pause(); } catch(_) {}
-    activeAudio.removeAttribute('src');
-    try { activeAudio.load(); } catch(_) {}
-
-    if (_ytPlayer && _ytReady) {
-      _ytPlayer.playVideo();
-      _startYtKeepAlive();
-    }
+  if (_ytPlayer && _ytReady) {
+    _ytPlayer.playVideo();
+    _startYtKeepAlive();
   }
-});
+}
+
+function _onVisibilityChanged() {
+  const hidden = document.hidden || document.webkitHidden || false;
+  if (hidden) {
+    _activateYtAudioFallback();
+  } else {
+    _restoreYtPlayerFromFallback();
+  }
+}
+
+document.addEventListener('visibilitychange', _onVisibilityChanged);
+document.addEventListener('webkitvisibilitychange', _onVisibilityChanged);
+window.addEventListener('pagehide', _onVisibilityChanged);
+window.addEventListener('pageshow', _onVisibilityChanged);
 
 /* ── Seek / Volume (always on active audio) ──────────── */
 // Volume
