@@ -1242,6 +1242,9 @@ function renderGrid() {
 ══════════════════════════════════════════════════════ */
 
 const activeAudio = audioEl;   // mainAudio del DOM — único elemento
+if (activeAudio) {
+  activeAudio.crossOrigin = "anonymous";
+}
 window.audioEl = activeAudio;
 
 /* ── Audio events ────────────────────────────────────── */
@@ -2251,12 +2254,23 @@ async function _playYouTubeTrack(item, token) {
     _stopYtKeepAlive();
     _stopYtProgressPoll();
 
+    const resumeAt = (_ytPlayer && _ytReady && typeof _ytPlayer.getCurrentTime === 'function')
+      ? _ytPlayer.getCurrentTime()
+      : activeAudio.currentTime || 0;
+
     try { activeAudio.pause(); } catch(_) {}
     activeAudio.removeAttribute('src');
 
     activeAudio.src = url;
     activeAudio.muted = false;
     if (activeAudio.volume === 0) activeAudio.volume = 1;
+    if (resumeAt > 0) {
+      const onReady = () => {
+        activeAudio.removeEventListener('loadedmetadata', onReady);
+        try { activeAudio.currentTime = resumeAt; } catch (_) {}
+      };
+      activeAudio.addEventListener('loadedmetadata', onReady, { once: true });
+    }
     try { activeAudio.load(); } catch(_) {}
 
     try {
@@ -2342,9 +2356,22 @@ function _activateYtAudioFallback() {
   if (_ytPlayer && _ytReady) try { _ytPlayer.pauseVideo(); } catch(_) {}
   _stopYtProgressPoll();
 
+  const resumeAt = (_ytPlayer && _ytReady && typeof _ytPlayer.getCurrentTime === 'function')
+    ? _ytPlayer.getCurrentTime()
+    : activeAudio.currentTime || 0;
+
   activeAudio.src = _ytAudioUrl;
   activeAudio.muted = false;
   if (activeAudio.volume === 0) activeAudio.volume = 1;
+
+  if (resumeAt > 0) {
+    const onReady = () => {
+      activeAudio.removeEventListener('loadedmetadata', onReady);
+      try { activeAudio.currentTime = resumeAt; } catch (_) {}
+    };
+    activeAudio.addEventListener('loadedmetadata', onReady, { once: true });
+  }
+
   try { activeAudio.load(); } catch(_) {}
   activeAudio.play()
     .then(() => {
@@ -2357,13 +2384,23 @@ function _activateYtAudioFallback() {
 
 function _restoreYtPlayerFromFallback() {
   if (!_ytTrackActive || !_ytBgFallback) return;
+  if (!document.hidden && activeAudio && !activeAudio.paused) {
+    // Mantener el fallback directo activo mientras el usuario sigue escuchando
+    // en primer plano, para evitar interrupciones en iOS al cambiar de contexto.
+    return;
+  }
+
   _ytBgFallback = false;
   _stopAudioProgressPoll();
+  const resumeAt = activeAudio ? activeAudio.currentTime || 0 : 0;
   try { activeAudio.pause(); } catch(_) {}
   activeAudio.removeAttribute('src');
   try { activeAudio.load(); } catch(_) {}
 
   if (_ytPlayer && _ytReady) {
+    if (resumeAt > 0 && typeof _ytPlayer.seekTo === 'function') {
+      try { _ytPlayer.seekTo(resumeAt, true); } catch (_) {}
+    }
     _ytPlayer.playVideo();
     _startYtKeepAlive();
   }
