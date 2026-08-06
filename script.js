@@ -2953,15 +2953,6 @@ const media = [
     category: "Dance-Pop",
     duration: "3:46"
   },
-
-
-
-
-
-
-
-
-
               {
     type:     "music",
     title:    "Ley Seca",
@@ -2971,6 +2962,15 @@ const media = [
     category: "Reggaeton",
     duration: "4:22"
   },
+              {
+    type:     "music",
+    title:    "Makina Time",
+    artist:   "Dimitri Vegas, Like Mike, Marlon Hoffstadt, DJ Konik",
+    cover:    "https://m.media-amazon.com/images/I/61-2d1nSj3L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/makinatime.mp3",
+    category: "Electronic",
+    duration: "2:10"
+  },
 
 
 
@@ -2984,13 +2984,54 @@ const media = [
 
               {
     type:     "music",
-    title:    "Makina Time",
-    artist:   "Dimitri Vegas, Like Mike, Marlon Hoffstadt, DJ Konik",
-    cover:    "https://m.media-amazon.com/images/I/61-2d1nSj3L._UXNaN_FMjpg_QL85_.jpg",
-    file:     "./Music/makinatime.mp3",
-    category: "Electronic",
-    duration: "2:10"
+    title:    "De Lejitos (Remix)",
+    artist:   "Jay Wheeler, Omar Courtz",
+    cover:    "https://i.scdn.co/image/ab67616d0000b27382ab4f8efbc0ce54730cd784",
+    file:     "./Music/delejitosremix.mp3",
+    category: "Reggaeton",
+    duration: "4:38"
   },
+
+
+
+
+
+
+
+
+
+              {
+    type:     "music",
+    title:    "M U S A E L E V Á",
+    artist:   "Omar Courtz",
+    cover:    "https://m.media-amazon.com/images/I/51wbVdnQDoL._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/musaeleva.mp3",
+    category: "Reggaeton",
+    duration: "3:07"
+  },
+
+
+
+
+
+
+
+
+              {
+    type:     "music",
+    title:    "DIABLA EN BELLAKERA",
+    artist:   "DJ DIESTRO",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/193e4fec1b62080f0a9fa3178a57baaa/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/diablaenbellakera.mp3",
+    category: "Dembow",
+    duration: "3:35"
+  },
+
+
+
+
+
+
 
 
 
