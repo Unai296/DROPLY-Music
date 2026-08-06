@@ -2971,17 +2971,6 @@ const media = [
     category: "Electronic",
     duration: "2:10"
   },
-
-
-
-
-
-
-
-
-
-
-
               {
     type:     "music",
     title:    "De Lejitos (Remix)",
@@ -3002,7 +2991,7 @@ const media = [
 
               {
     type:     "music",
-    title:    "M U S A E L E V Á",
+    title:    "Musa Elevá",
     artist:   "Omar Courtz",
     cover:    "https://m.media-amazon.com/images/I/51wbVdnQDoL._UXNaN_FMjpg_QL85_.jpg",
     file:     "./Music/musaeleva.mp3",
