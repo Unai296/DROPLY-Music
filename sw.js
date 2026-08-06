@@ -69,15 +69,6 @@ self.addEventListener('fetch', event => {
   /* Ignorar requests de extensiones o devtools */
   if (!url.protocol.startsWith('http')) return;
 
-  /* Ignorar llamadas a nuestras propias APIs de YouTube */
-  if (url.pathname.startsWith('/api/ytsearch') || url.pathname.startsWith('/api/ytstream') || url.pathname.startsWith('/info') || url.pathname.startsWith('/stream') || url.pathname === '/ping') {
-    return;
-  }
-  /* Ignorar iframe de YouTube */
-  if (url.hostname.includes('youtube.com') || url.hostname.includes('ytimg.com') || url.hostname.includes('googlevideo.com')) {
-    return;
-  }
-
   /* ── Archivos de música (.mp3) → SIEMPRE a la red, sin interceptar ──
      El navegador necesita soporte nativo de Range requests (206 Partial Content)
      para reproducir audio desde background/pantalla bloqueada. Si el SW
@@ -85,14 +76,6 @@ self.addEventListener('fetch', event => {
      Android Chrome no puede arrancar el audio en background. */
   if (url.pathname.endsWith('.mp3') || url.pathname.includes('/Music/')) {
     return; // dejar pasar al navegador sin interceptar
-  }
-
-  /* ── Audio / media requests no deben ser interferidas por el SW ──
-     Muchas plataformas usan Range requests para reproducir audio en segundo
-     plano / pantalla bloqueada. Si el SW intercepta ese stream y responde
-     con un body cacheado sin Content-Range, el reproductor puede fallar. */
-  if (request.destination === 'audio' || request.destination === 'video' || request.headers.get('range')) {
-    return;
   }
 
   /* ── Imágenes (covers) → Cache-First con límite + expiración ── */

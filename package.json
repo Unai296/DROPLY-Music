@@ -1,8 +1,0 @@
-{
-  "name": "droply-music",
-  "version": "6.1.0",
-  "description": "DROPLY Music — YouTube audio streaming PWA",
-  "scripts": {
-    "extract": "node extract-urls.js"
-  }
-}
