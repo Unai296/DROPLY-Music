@@ -2962,6 +2962,15 @@ const media = [
 
 
 
+              {
+    type:     "music",
+    title:    "Ley Seca",
+    artist:   "JHAYCO, Anuel AA",
+    cover:    "https://i.scdn.co/image/ab67616d0000b27321ee2e52263690b0b2c80c2a",
+    file:     "./Music/leyseca.mp3",
+    category: "Reggaeton",
+    duration: "4:22"
+  },
 
 
 
@@ -2972,6 +2981,16 @@ const media = [
 
 
 
+
+              {
+    type:     "music",
+    title:    "Makina Time",
+    artist:   "Dimitri Vegas, Like Mike, Marlon Hoffstadt, DJ Konik",
+    cover:    "https://m.media-amazon.com/images/I/61-2d1nSj3L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/makinatime.mp3",
+    category: "Electronic",
+    duration: "2:10"
+  },
 
 
 
