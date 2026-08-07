@@ -885,7 +885,7 @@ const media = [
   },
   {
     type:     "music",
-    title:    "DÁKITI",
+    title:    "DAKITI",
     artist:   "BAD BUNNY, JHAY CORTEZ",
     cover:    "https://i.scdn.co/image/ab67616d00001e02005ee342f4eef2cc6e8436ab",
     file:     "./Music/dakiti.mp3",
@@ -2980,15 +2980,6 @@ const media = [
     category: "Reggaeton",
     duration: "4:38"
   },
-
-
-
-
-
-
-
-
-
               {
     type:     "music",
     title:    "Musa Elevá",
@@ -2998,14 +2989,6 @@ const media = [
     category: "Reggaeton",
     duration: "3:07"
   },
-
-
-
-
-
-
-
-
               {
     type:     "music",
     title:    "DIABLA EN BELLAKERA",
@@ -3019,6 +3002,35 @@ const media = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
 
