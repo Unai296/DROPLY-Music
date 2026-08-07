@@ -3010,6 +3010,15 @@ const media = [
 
 
 
+              {
+    type:     "music",
+    title:    "DEL BARRIO AL MUNDIAL",
+    artist:   "ElRinconHawaiano",
+    cover:    "https://i.postimg.cc/pXQ6dD10/del-barrio-al-mundial-128x128.png",
+    file:     "./Music/delbarrioalmundial.mp3",
+    category: "Dance",
+    duration: "2:56"
+  },
 
 
 
@@ -3030,7 +3039,6 @@ const media = [
 
 
 
-  
 
 
 
