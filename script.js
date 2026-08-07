@@ -2998,18 +2998,6 @@ const media = [
     category: "Dembow",
     duration: "3:35"
   },
-
-
-
-
-
-
-
-
-
-
-
-
               {
     type:     "music",
     title:    "DEL BARRIO AL MUNDIAL",
@@ -3028,6 +3016,36 @@ const media = [
 
 
 
+              {
+    type:     "music",
+    title:    "Animals (Botnek Edit)",
+    artist:   "Martin Garrix",
+    cover:    "https://i1.sndcdn.com/artworks-000083498941-p8ab4h-t500x500.jpg",
+    file:     "./Music/animalsbotnek.mp3",
+    category: "Electronic",
+    duration: "4:20"
+  },
+
+
+
+
+
+
+
+
+
+ 
+
+
+              {
+    type:     "music",
+    title:    "TSUNAMI",
+    artist:   "DVBBS, Borgeous",
+    cover:    "https://i.scdn.co/image/ab67616d00001e029635b44daa189e25f11f6c4e",
+    file:     "./Music/tsunami.mp3",
+    category: "Electronic",
+    duration: "3:56"
+  },
 
 
 
@@ -3039,12 +3057,15 @@ const media = [
 
 
 
-
-
-
-
-
-
+              {
+    type:     "music",
+    title:    "Tremor",
+    artist:   "Martin Garrix, Dimitri Vegas, Like Mike",
+    cover:    "https://i1.sndcdn.com/artworks-000073585821-ovudv4-t500x500.jpg",
+    file:     "./Music/tremor.mp3",
+    category: "Electronic",
+    duration: "4:54"
+  },
 
 
 
