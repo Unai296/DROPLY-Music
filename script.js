@@ -3086,6 +3086,24 @@ const media = [
 
 
 
+              {
+    type:     "music",
+    title:    "El fin del Mundo",
+    artist:   "La La Love you",
+    cover:    "https://cdn-images.dzcdn.net/images/cover/43ee105c317b29dd1518b97325839eb6/0x1900-000000-80-0-0.jpg",
+    file:     "./Music/elfindelmundo.mp3",
+    category: "Pop",
+    duration: "3:14"
+  },
+
+
+
+
+
+
+   
+
+
   
 ];
 /* ══════════════════════════════════════════════════════
