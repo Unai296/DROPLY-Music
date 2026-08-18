@@ -3080,12 +3080,6 @@ const media = [
     category: "Reggaeton",
     duration: "2:47"
   },
-
-
-   
-
-
-
               {
     type:     "music",
     title:    "El fin del Mundo",
@@ -3097,6 +3091,16 @@ const media = [
   },
 
 
+
+      {
+    type:     "music",
+    title:    "No Le Digo Que No",
+    artist:   "Los Buyer",
+    cover:    "https://m.media-amazon.com/images/I/51gyHTLHp0L._UXNaN_FMjpg_QL85_.jpg",
+    file:     "./Music/noledigoqueno.mp3",
+    category: "Dance-Pop",
+    duration: "2:22"
+  },
 
 
 
